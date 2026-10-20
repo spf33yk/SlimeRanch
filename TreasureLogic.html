@@ -1,0 +1,275 @@
+<script>
+/* ===== 宝箱・おまもり装備 v1 ===== */
+
+const TREASURE_RARITIES={normal:{name:'NORMAL',label:'おまもり',count:1,max:3,color:'#ed5148'},epic:{name:'EPIC',label:'高貴なお守り',count:2,max:4,color:'#ab71f5'},legendary:{name:'LEGENDARY',label:'神のおまもり',count:3,max:5,color:'#f5c948'}};
+const TREASURE_STATS=[['hp','HP'],['atk','攻撃力'],['def','守備力'],['spd','素早さ'],['crit','クリティカル率'],['critDmg','クリティカルダメージ'],['maso','魔素湧き速度'],['masoGain','魔素取得量'],['heart','ハートドロップ率'],['drop','モンスタードロップ率'],['success','合成成功率']];
+let treasureFreezeBusy=false,treasurePending=null,treasureNoticeTimer=0;
+let treasureFreezeCallback=null,treasureFreezeSucceeded=false,treasureFreezeGuaranteed=false;
+const treasureFreezeQueue=[];
+function treasureFreezeIsPending(){return treasureFreezeBusy||treasureFreezeQueue.length>0;}
+
+// 旧セーブデータに label が無い場合でも、ステータスキーから日本語名を復元する。
+const TREASURE_STAT_LABELS=Object.fromEntries(TREASURE_STATS);
+function treasureNormalizeEffect(effect){
+  if(!effect||typeof effect!=='object')return;
+  // 初期実装では splice() の返り値をそのまま分割代入したため
+  // key が ['atk','攻撃力'] の配列で保存されていた。
+  if(Array.isArray(effect.key)){
+    const pair=Array.isArray(effect.key[0])?effect.key[0]:effect.key;
+    effect.key=pair[0];
+    effect.label=TREASURE_STAT_LABELS[effect.key]||pair[1]||effect.label;
+  }
+  if(typeof effect.key==='string' && effect.key.includes(',')){
+    const key=effect.key.split(',')[0];
+    if(TREASURE_STAT_LABELS[key])effect.key=key;
+  }
+  if(typeof effect.key==='string' && TREASURE_STAT_LABELS[effect.key]){
+    effect.label=TREASURE_STAT_LABELS[effect.key];
+  }
+}
+function treasureEffectLabel(effect){
+  if(!effect)return '不明なステータス';
+  treasureNormalizeEffect(effect);
+  return TREASURE_STAT_LABELS[effect.key]||(typeof effect.label==='string'&&effect.label.trim()&&effect.label!=='undefined'?effect.label:'不明なステータス');
+}
+function treasureEnsure(){
+  if(!Array.isArray(g.treasureChests))g.treasureChests=[];
+  if(!Array.isArray(g.treasureCharms))g.treasureCharms=[];
+  if(!g.treasureEquip||typeof g.treasureEquip!=='object')g.treasureEquip={main:null,sub:null};
+  if(!Number.isFinite(g.treasureNextId))g.treasureNextId=1;
+  for(const charm of g.treasureCharms){
+    if(!Array.isArray(charm.effects))continue;
+    for(const effect of charm.effects)treasureNormalizeEffect(effect);
+  }
+}
+function treasureNotify(t){const e=document.getElementById('treasureToast');if(!e)return;e.textContent=t;e.hidden=false;clearTimeout(treasureNoticeTimer);treasureNoticeTimer=setTimeout(()=>e.hidden=true,4200)}
+function treasureAwardChest(rarity,source){
+ treasureEnsure();
+ const id=g.treasureNextId++;
+ g.treasureChests.push({id,rarity,source,time:Date.now()});
+ treasureNotify('🎁 '+TREASURE_RARITIES[rarity].name+' 宝箱を獲得！ 装備画面から開封');
+ save();renderTreasure();
+ return TREASURE_RARITIES[rarity].name+'宝箱';
+}
+// フィールドは「ガセ」と「確定」を別々に抽選する。バトルは確定のみ。
+function treasureGateDrop(rarity,grant,guaranteed=false){
+ if(rarity==='normal'){grant();return '獲得';}
+ treasureFreezeQueue.push({rarity,grant,guaranteed});
+ treasureStartQueuedFreeze();
+ return guaranteed?'フリーズ確定':'ガセ演出';
+}
+function treasureStartQueuedFreeze(){
+ if(treasureFreezeBusy||!treasureFreezeQueue.length)return;
+ const next=treasureFreezeQueue.shift();
+ if(next.kind){treasureFreezePrompt(next.kind,next.callback||null,next.guaranteed===true);return;}
+ treasureFreezePrompt(1,function(success){
+  if(success)next.grant();
+  else treasureNotify('ガセ演出：宝箱の獲得なし');
+  treasureStartQueuedFreeze();
+ },next.guaranteed===true);
+}
+// 宝箱のレアリティは抽選テーブルで確定し、おまもりのレアリティは開封時に抽選する。
+function treasureRoll(tables){const results=[];for(const [denom,rarity] of tables){if(Math.random()<1/denom)results.push(rarity)}return results}
+function treasureCharmRarity(chestRarity){
+ if(chestRarity==='epic')return 'epic';
+ if(chestRarity==='legendary')return 'legendary';
+ return 'normal';
+}
+function treasureChestOddsText(rarity){
+ if(rarity==='epic')return '高貴なお守り 100%';
+ if(rarity==='legendary')return '神のおまもり 100%';
+ return 'おまもり 100%';
+}
+function treasurePlaceFieldChest(rarity){
+ const empty=[];
+ for(let i=0;i<g.tiles.length;i++)if(g.tiles[i]==='empty')empty.push(i);
+ if(empty.length){
+  g.tiles[empty[Math.floor(Math.random()*empty.length)]]='treasure:'+rarity;
+  if(typeof treasurePlaySound==='function')treasurePlaySound('beep');
+  if(typeof updateFieldCounts==='function')updateFieldCounts();
+  if(typeof drawField==='function')drawField();
+  treasureNotify('🎁 '+TREASURE_RARITIES[rarity].name+'宝箱がフィールドに出現！');
+  save();
+ }else treasureAwardChest(rarity,'field');
+}
+function treasureFieldRoll(){
+ let count=0;
+ // 魔素採集1回あたりの宝箱抽選。EPIC/LEGENDARY当選後に50%でガセ・確定を決める。
+ if(Math.random()<1/4096){treasurePlaceFieldChest('normal');count++}
+ for(const [rarity,denom] of [['epic',8192],['legendary',16384]]){
+  if(Math.random()>=1/denom)continue;
+  const guaranteed=Math.random()<0.5;
+  treasureGateDrop(rarity,()=>treasurePlaceFieldChest(rarity),guaranteed);
+  count++;
+ }
+ return count;
+}
+function treasureBattleRoll(stage){
+ const tables=stage<500?[[4096,'normal']]:[[4096,'normal'],[8192,'epic'],[16384,'legendary']];
+ const got=treasureRoll(tables);
+ // バトル勝利時は未開封宝箱を即時所持品へ追加する。レア演出は獲得後に再生する。
+ for(const rarity of got){
+  treasureAwardChest(rarity,'battle');
+  if(rarity!=='normal')treasureGateDrop(rarity,()=>{},true);
+ }
+ return got.length?got.map(r=>TREASURE_RARITIES[r].name+'宝箱'+(r==='normal'?'':'（確定フリーズ）')).join('・'):'';
+}
+function treasureOpenChest(id){treasureEnsure();const i=g.treasureChests.findIndex(c=>c.id===id);if(i<0)return;const c=g.treasureChests.splice(i,1)[0],charmRarity=treasureCharmRarity(c.rarity),cfg=TREASURE_RARITIES[charmRarity];const keys=[...TREASURE_STATS];const effects=[];for(let n=0;n<cfg.count;n++){const p=Math.floor(Math.random()*keys.length);const [key,label]=keys.splice(p,1)[0];effects.push({key,label,mult:Number((1.1+Math.random()*(cfg.max-1.1)).toFixed(2))})}const charm={id:g.treasureNextId++,rarity:charmRarity,name:cfg.label,effects};g.treasureCharms.push(charm);save();renderTreasure();treasureNotify('✨ '+cfg.label+'を入手！');if(charmRarity==='legendary'&&effects.reduce((v,x)=>v+x.mult,0)>10)treasureFreezePrompt(1)}
+function treasureEquipCharm(slot,id){treasureEnsure();g.treasureEquip[slot]=id||null;save();renderTreasure();render()}
+function treasureCharm(slot){treasureEnsure();return g.treasureCharms.find(c=>c.id===g.treasureEquip[slot])||null}
+const treasureOriginalSingleStats=singleStats;
+singleStats=function(m){const v=treasureOriginalSingleStats(m);treasureEnsure();const slots=[];if(m&&main()&&m.id===main().id)slots.push('main');if(m&&sub()&&m.id===sub().id)slots.push('sub');for(const slot of slots){const charm=treasureCharm(slot);if(charm)for(const e of charm.effects)if(Number.isFinite(v[e.key]))v[e.key]*=e.mult}return v};
+function treasureRenderCards(){
+ const a=document.getElementById('mainCard'),b=document.getElementById('subCard');
+ for(const [slot,card] of [['main',a],['sub',b]]){
+  if(!card)continue;
+  card.classList.remove('treasure-equip-active','treasure-equip-epic','treasure-equip-normal');
+  card.querySelectorAll('.treasure-equip-action,.treasure-bonus-caption').forEach(x=>x.remove());
+  const charm=treasureCharm(slot);
+  if(charm){card.classList.add('treasure-equip-active');if(charm.rarity==='epic')card.classList.add('treasure-equip-epic');if(charm.rarity==='normal')card.classList.add('treasure-equip-normal');
+   const caption=document.createElement('div');caption.className='treasure-bonus-caption';caption.textContent='✨ おまもり補正：'+charm.effects.map(e=>treasureEffectLabel(e)+' ×'+Number(e.mult).toFixed(2)).join(' / ');card.appendChild(caption);
+  }
+  const btn=document.createElement('button');btn.className='treasure-equip-action';btn.textContent='🎁 '+(charm?'装備：'+charm.name:'装備・宝箱');btn.onclick=()=>treasureDialog(slot);card.appendChild(btn);
+ }
+}
+const treasureOriginalRender=render;
+render=function(){treasureEnsure();treasureOriginalRender();treasureRenderCards();renderTreasure()};
+let treasureSlot='main';
+function treasureDialog(slot){treasureSlot=slot||'main';document.getElementById('treasureModal').hidden=false;renderTreasure()}
+function treasureClose(){document.getElementById('treasureModal').hidden=true}
+function renderTreasure(){
+ const root=document.getElementById('treasureModal');if(!root||root.hidden)return;
+ treasureEnsure();document.getElementById('treasureSlot').value=treasureSlot;
+ const chestCount=document.getElementById('treasureChestCount'),charmCount=document.getElementById('treasureCharmCount');
+ if(chestCount)chestCount.textContent=g.treasureChests.length+'個';
+ if(charmCount)charmCount.textContent=g.treasureCharms.length+'個';
+ const chests=document.getElementById('treasureChestList');
+ chests.innerHTML=g.treasureChests.length?g.treasureChests.map(c=>'<div class="treasure-entry"><img src="'+TREASURE_ASSETS.chest+'" style="filter:'+(c.rarity==='epic'?'hue-rotate(235deg)':c.rarity==='legendary'?'hue-rotate(40deg) saturate(1.5)':'none')+'"><div class="treasure-entry-info"><b style="color:'+TREASURE_RARITIES[c.rarity].color+'">'+TREASURE_RARITIES[c.rarity].name+' 宝箱</b><div class="small">'+treasureChestOddsText(c.rarity)+'</div></div><button data-topen="'+c.id+'">開封</button></div>').join(''):'<p class="small">宝箱はまだありません。</p>';
+ const charms=document.getElementById('treasureCharmList');
+ const selected=new Set([...charms.querySelectorAll('input[data-tselect]:checked')].map(x=>Number(x.dataset.tselect)));
+ charms.innerHTML='<div class="treasure-entry"><span class="treasure-entry-info">装備なし</span><button data-tequip="0">外す</button></div>'+g.treasureCharms.map(c=>{
+   const equipped=g.treasureEquip.main===c.id||g.treasureEquip.sub===c.id;
+   return '<div class="treasure-entry"><input type="checkbox" class="treasure-select" aria-label="削除選択" data-tselect="'+c.id+'" '+(selected.has(c.id)?'checked ':'')+(equipped?'disabled title="装備中は削除できません"':'')+'><img src="'+TREASURE_ASSETS.charm+'" style="filter:'+(c.rarity==='epic'?'hue-rotate(235deg)':c.rarity==='legendary'?'hue-rotate(35deg) saturate(1.7)':'none')+'"><div class="treasure-entry-info"><b style="color:'+TREASURE_RARITIES[c.rarity].color+'">'+c.name+'</b><div class="small">'+c.effects.map(e=>treasureEffectLabel(e)+' ×'+Number(e.mult).toFixed(2)).join(' / ')+'</div></div><button data-tequip="'+c.id+'">'+(g.treasureEquip[treasureSlot]===c.id?'装備中':'装備')+'</button></div>';
+ }).join('');
+}
+function treasureDeleteSelected(){
+ const ids=new Set([...document.querySelectorAll('#treasureCharmList input[data-tselect]:checked')].map(x=>Number(x.dataset.tselect)));
+ ids.delete(g.treasureEquip.main);ids.delete(g.treasureEquip.sub);
+ if(!ids.size){treasureNotify('削除する未装備のおまもりを選択してください');return}
+ if(!confirm('選択した'+ids.size+'個のおまもりを削除しますか？ この操作は取り消せません。'))return;
+ g.treasureCharms=g.treasureCharms.filter(c=>!ids.has(c.id));save();renderTreasure();treasureNotify(ids.size+'個のおまもりを削除しました');
+}
+function treasureBattleResultFx(kind){
+ const old=document.querySelector('.treasure-battle-result');if(old)old.remove();
+ const el=document.createElement('div');el.className='treasure-battle-result '+kind;
+ const label=document.createElement('strong');label.textContent=kind==='win'?'WIN':'LOSE';el.appendChild(label);
+ (document.getElementById('enemyCard')||document.body).appendChild(el);setTimeout(()=>el.remove(),1500);
+}
+
+let treasureSoundPlayer=null;
+function treasurePlaySound(name){
+  if(typeof soundOn!=='undefined'&&!soundOn)return;
+  if(typeof TREASURE_SOUNDS==='undefined'||!TREASURE_SOUNDS[name])return;
+  try{
+    if(treasureSoundPlayer){treasureSoundPlayer.pause();treasureSoundPlayer.currentTime=0;}
+    const audio=new Audio(TREASURE_SOUNDS[name]);audio.volume=0.65;
+    treasureSoundPlayer=audio;
+    const pending=audio.play();if(pending&&pending.catch)pending.catch(()=>{});
+  }catch(e){console.warn('宝箱効果音の再生に失敗:',e)}
+}
+function treasureFreezePrompt(kind,callback=null,guaranteed=false){
+ if(treasureFreezeBusy){
+  // 装備時の演出もキューに入れて取りこぼしを防ぐ。
+  treasureFreezeQueue.push({rarity:null,grant:()=>{},kind,callback,guaranteed});
+  return;
+ }
+ treasureFreezeBusy=true;treasurePending=kind;
+ treasureFreezeCallback=callback;treasureFreezeSucceeded=false;treasureFreezeGuaranteed=guaranteed;
+ const overlay=document.getElementById('treasureFreeze');overlay.hidden=false;
+ treasurePlaySound('beep');
+ document.getElementById('treasureFreezeVideo').hidden=true;
+ document.getElementById('treasurePush').hidden=false;
+ document.getElementById('treasureFreezeMessage').textContent='';
+}
+function treasureFreezePush(){
+ const push=document.getElementById('treasurePush');push.hidden=true;
+ if(!treasureFreezeGuaranteed){
+  document.getElementById('treasureFreezeMessage').textContent='……';
+  setTimeout(treasureFreezeEnd,900);return;
+ }
+ treasureFreezeSucceeded=true;
+ treasurePlaySound('freeze');
+ const video=document.getElementById('treasureFreezeVideo');
+ video.src=window.SLIME_FREEZE_VIDEOS?.freeze1||'';
+ video.hidden=false;video.currentTime=0;
+ // フリーズ演出の終了後に、共通の宝箱オープン動画を続けて再生する。
+ // 追加動画が完了するまではオート攻撃・自動進行を再開しない。
+ video.onended=treasurePlayOpeningVideo;
+ video.onerror=treasurePlayOpeningVideo;
+ video.play().catch(()=>treasurePlayOpeningVideo());
+}
+function treasurePlayOpeningVideo(){
+ if(!treasureFreezeBusy)return;
+ const video=document.getElementById('treasureFreezeVideo');
+ video.onended=null;video.onerror=null;
+ const opening=window.SLIME_TREASURE_OPEN_VIDEO;
+ if(!opening){treasureFreezeEnd();return;}
+ video.pause();video.src=opening;video.hidden=false;
+ video.onended=treasureFreezeEnd;video.onerror=treasureFreezeEnd;
+ try{video.currentTime=0;}catch(e){}
+ const p=video.play();
+ if(p&&p.catch)p.catch(()=>{document.getElementById('treasureFreezeMessage').textContent='宝箱動画を再生できませんでした';setTimeout(treasureFreezeEnd,1200)});
+}
+function treasureFreezeEnd(){
+ if(!treasureFreezeBusy)return;
+ const v=document.getElementById('treasureFreezeVideo');
+ v.pause();v.onended=null;v.onerror=null;v.removeAttribute('src');v.load();
+ document.getElementById('treasureFreeze').hidden=true;
+ const callback=treasureFreezeCallback,success=treasureFreezeSucceeded;
+ treasureFreezeBusy=false;treasurePending=null;treasureFreezeCallback=null;treasureFreezeSucceeded=false;treasureFreezeGuaranteed=false;
+ try{if(callback)callback(success);}finally{treasureStartQueuedFreeze();}
+}
+function treasureDebugPlaceField(rarity,fake=false){
+  if(fake&&rarity==='normal')return;
+  treasureEnsure();
+  const empty=[];
+  for(let i=0;i<g.tiles.length;i++)if(g.tiles[i]==='empty')empty.push(i);
+  if(!empty.length){treasureNotify('フィールドに空きマスがありません');return}
+  const i=empty[Math.floor(Math.random()*empty.length)];
+  g.tiles[i]='treasure:'+rarity+(fake?':debug-fake':':debug');
+  treasureNotify('🎁 '+TREASURE_RARITIES[rarity].name+(fake?' ガセ宝箱を出現させました（回収後は獲得なし）':' 宝箱をフィールドに出現させました（回収時に確定フリーズ）'));
+  save();render();
+}
+// デバッグ：バトル勝利時の宝箱獲得・確定フリーズ経路を再現。戦闘状態は変更しない。
+function treasureDebugBattleChest(rarity){
+ if(!TREASURE_RARITIES[rarity])return;
+ treasureAwardChest(rarity,'battle-debug');
+ if(rarity!=='normal')treasureGateDrop(rarity,()=>{},true);
+ treasureNotify('⚔️ バトルで'+TREASURE_RARITIES[rarity].name+'宝箱が当選した状態を再現しました');
+}
+// 副作用のない抽選統計。所持品・セーブデータ・ステージは変更しない。
+function treasureDebugBattleOdds(){
+ const count=100000;
+ const run=(stage)=>{
+  const totals={normal:0,epic:0,legendary:0};
+  const tables=stage<500?[[4096,'normal']]:[[4096,'normal'],[8192,'epic'],[16384,'legendary']];
+  for(let i=0;i<count;i++)for(const rarity of treasureRoll(tables))totals[rarity]++;
+  return totals;
+ };
+ const a=run(499),b=run(500);
+ alert('バトル勝利時の宝箱抽選（各'+count.toLocaleString('ja-JP')+'回）\n'+
+ 'STAGE 499：NORMAL '+a.normal+' / EPIC '+a.epic+' / LEGENDARY '+a.legendary+'\n'+
+ 'STAGE 500：NORMAL '+b.normal+' / EPIC '+b.epic+' / LEGENDARY '+b.legendary+'\n'+
+ '理論値：NORMAL 1/4,096、EPIC 1/8,192、LEGENDARY 1/16,384（500以降）\n'+
+ '※結果は乱数により変動。所持品・ステージには影響しません。');
+}
+function treasureDebugGive(rarity){treasureAwardChest(rarity,'debug');save()}
+function treasureDebugClear(){if(!confirm('宝箱・おまもり・装備をすべて削除しますか？'))return;g.treasureChests=[];g.treasureCharms=[];g.treasureEquip={main:null,sub:null};save();render()}
+function treasureSetup(){if(typeof TREASURE_FIELD_IMAGE!=='undefined'&&typeof TREASURE_ASSETS!=='undefined'&&!TREASURE_FIELD_IMAGE.src)TREASURE_FIELD_IMAGE.src=TREASURE_ASSETS.chest;treasureEnsure();const pushImage=document.querySelector('#treasurePush img');if(pushImage&&typeof TREASURE_ASSETS!=='undefined')pushImage.src=TREASURE_ASSETS.push;document.getElementById('treasureClose').onclick=treasureClose;document.getElementById('treasureSlot').onchange=e=>{treasureSlot=e.target.value;renderTreasure()};document.getElementById('treasureModal').addEventListener('click',e=>{if(e.target===e.currentTarget)treasureClose();const op=e.target.closest('[data-topen]');if(op)treasureOpenChest(Number(op.dataset.topen));const eq=e.target.closest('[data-tequip]');if(eq)treasureEquipCharm(treasureSlot,Number(eq.dataset.tequip))});document.getElementById('treasurePush').onclick=treasureFreezePush;document.getElementById('treasureFreeze').addEventListener('click',e=>{if(e.target===e.currentTarget&&treasurePending===null)treasureFreezeEnd()});document.getElementById('treasureDebugButtons').addEventListener('click',e=>{const a=e.target.dataset.tdebug;if(a==='normal'||a==='epic'||a==='legendary')treasureDebugGive(a);if(a&&a.startsWith('field-')){const name=a.slice(6);treasureDebugPlaceField(name.replace(/-fake$/,''),name.endsWith('-fake'));}if(a&&a.startsWith('battle-')){if(a==='battle-odds')treasureDebugBattleOdds();else treasureDebugBattleChest(a.slice(7));}if(a==='freeze1')treasureFreezePrompt(1,null,true);if(a==='clear')treasureDebugClear();if(a==='open')treasureDialog('main')});}
+
+init();treasureSetup();
+const treasureDeleteButton=document.getElementById('treasureDeleteSelected');if(treasureDeleteButton)treasureDeleteButton.addEventListener('click',treasureDeleteSelected);
+const treasureSelectUnusedButton=document.getElementById('treasureSelectUnused');if(treasureSelectUnusedButton)treasureSelectUnusedButton.addEventListener('click',()=>document.querySelectorAll('#treasureCharmList input[data-tselect]:not(:disabled)').forEach(x=>x.checked=true));
+setInterval(()=>{const c=g.lv>=SIZES.length-1?null:COSTS[g.lv+1];$('expand').disabled=c===null||g.maso<c;const yc=Math.ceil(12*Math.pow(1.75,g.yield));$('yieldUp').disabled=g.maso<yc;const rc=rangeCost();$('rangeUp').disabled=rc===null||g.maso<rc;if(g.batchUnlocked){const remain=Math.max(0,Math.ceil((g.batchLast+60000-Date.now())/1000));$('collectAll').disabled=remain>0;$('collectAll').textContent=remain?'✨ まとめて採集（あと'+remain+'秒）':'✨ まとめて採集'}},1000);setInterval(()=>{if(g.autoFight&&!g.won)battle(true)},800);setInterval(()=>advanceFieldSpawn(250),250);setInterval(save,10000);
+
+</script>
