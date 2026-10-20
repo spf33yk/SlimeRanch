@@ -1,0 +1,98 @@
+<script>
+/* Local file transfer only. Save data is never sent to GitHub or a server. */
+(()=>{
+ 'use strict';
+ const KEY='slimeRanchCodex1',BACKUP=KEY+':beforeImport',MAX_BYTES=4*1024*1024;
+ function parse(text){
+  if(typeof text!=='string'||new Blob([text]).size>MAX_BYTES)throw Error('ファイルは4MB以内のJSONを選んでください。');
+  let data;try{data=JSON.parse(text);}catch{throw Error('JSONとして読み込めませんでした。');}
+  const state=data?.format==='slime-ranch-save'?(data.version===1?data.state:null):data;
+  if(!state||typeof state!=='object'||Array.isArray(state))throw Error('対応していないセーブ形式です。');
+  let count=0;
+  function walk(value,depth=0){
+   if(++count>200000||depth>30)throw Error('セーブの構造が大きすぎます。');
+   if(typeof value==='number'&&(!Number.isFinite(value)||Math.abs(value)>1e300))throw Error('不正な数値が含まれています。');
+   if(typeof value==='string'&&(value.length>20000||/[<>]/.test(value)))throw Error('長すぎる文字列、またはHTML記号が含まれています。');
+   if(value&&typeof value==='object')for(const [key,v] of Object.entries(value)){
+    if(['__proto__','prototype','constructor'].includes(key))throw Error('不正なキーが含まれています。');
+    walk(v,depth+1);
+   }
+  }
+  walk(state);
+  const nonnegative=(value,label,integer=false)=>{
+   if(typeof value!=='number'||!Number.isFinite(value)||value<0||(integer&&!Number.isSafeInteger(value)))throw Error(label+'の数値が不正です。');
+  };
+  nonnegative(state.maso,'魔素');
+  nonnegative(state.stage,'ステージ',true);
+  if(state.stage<1||state.stage>100000)throw Error('ステージが対応範囲外です。');
+  if(!Array.isArray(state.slimes)||!state.slimes.length||state.slimes.length>10000)throw Error('モンスターデータがありません。');
+  const ids=new Set();
+  for(const m of state.slimes){
+   if(!m||typeof m!=='object'||Array.isArray(m))throw Error('モンスターの形式が不正です。');
+   nonnegative(m.id,'個体ID',true);
+   if(ids.has(m.id))throw Error('個体IDが重複しています。');ids.add(m.id);
+   for(const key of ['atk','hp','level'])nonnegative(m[key],key);
+   if(typeof m.species!=='string'||typeof m.name!=='string')throw Error('モンスター名が不正です。');
+   if(m.uniq!==undefined&&(!Array.isArray(m.uniq)||m.uniq.some(x=>!x||typeof x!=='object'||typeof x.type!=='string'||!Number.isFinite(x.value))))throw Error('スキルの形式が不正です。');
+  }
+  const arrayKeys=['tiles','heartItems','logs','bLogs','treasureChests','treasureCharms'];
+  for(const key of arrayKeys)if(state[key]!==undefined&&!Array.isArray(state[key]))throw Error(key+'の形式が不正です。');
+  if(!state.tiles||state.tiles.length>576||!Number.isInteger(Math.sqrt(state.tiles.length))||!state.tiles.length||state.tiles.some(t=>typeof t!=='string'))throw Error('フィールドデータが不正です。');
+  for(const key of ['lv','kills','hearts','nextId','yield','maxStage','monsterCapacity'])if(state[key]!==undefined)nonnegative(state[key],key,true);
+  if((state.maxStage||state.stage)>100000||state.hearts>10000)throw Error('セーブの数値が対応範囲外です。');
+  for(const key of ['seenSpecies','seenEnemies','clearedStages','treasureEquip'])if(state[key]!==undefined&&(!state[key]||typeof state[key]!=='object'||Array.isArray(state[key])))throw Error(key+'の形式が不正です。');
+  return state;
+ }
+ function encode(){
+  const state=JSON.parse(JSON.stringify(g));
+  state.lastTime=Date.now();
+  return JSON.stringify({format:'slime-ranch-save',version:1,exportedAt:new Date().toISOString(),state},null,2);
+ }
+ function download(text,label='slime-ranch'){
+  const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');
+  a.href=url;a.download=label+'-'+new Date().toISOString().replace(/[:.]/g,'-')+'.save.json';
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }
+ function restore(text){
+  const state=parse(text),previous=g,previousText=localStorage.getItem(KEY),previousBackup=localStorage.getItem(BACKUP);
+  // Validate before touching either the running game or the save key.
+  const prior=JSON.stringify(previous);
+  localStorage.setItem(BACKUP,prior);
+  try{
+   localStorage.setItem(KEY,JSON.stringify(state));
+   g=fresh();load();normalizeNewData();enforceFieldCap();treasureEnsure();render();
+   // Do not use save(), which swallows quota errors.
+   g.lastTime=Date.now();localStorage.setItem(KEY,JSON.stringify(g));
+  }catch(error){
+   g=previous;
+   try{
+    if(previousText===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,previousText);
+    if(previousBackup===null)localStorage.removeItem(BACKUP);else localStorage.setItem(BACKUP,previousBackup);
+   }catch{}
+   try{render();}catch{}
+   throw Error('読み込みを取り消しました。元のデータを保持しています。 '+error.message);
+  }
+ }
+ window.SlimeSaveTransfer={parse,encode,restore};
+ document.addEventListener('DOMContentLoaded',()=>{
+  const host=document.getElementById('uiSettings')||document.getElementById('guideResearch');
+  const section=document.createElement('section');
+  section.style.cssText='margin-top:20px;border-top:1px solid #6b737c;padding-top:14px';
+  section.innerHTML='<h3>セーブの引き継ぎ</h3><p class="small">GAS版からの移行・端末変更はJSONで引き継げます。データは端末内だけで扱います。</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="saveExport">バックアップを書き出す</button><button type="button" id="saveImport">JSONを読み込む</button><button type="button" id="savePrevious">読み込み前のデータを書き出す</button></div><input id="saveImportFile" type="file" accept=".json,application/json" hidden><p id="saveTransferStatus" role="status" style="line-height:1.7"></p><details><summary>ファイルを保存できない場合</summary><p class="small">書き出し後に表示されるJSONをコピーし、.jsonファイルに保存してください。</p><textarea id="saveTransferText" readonly aria-label="セーブJSON" style="width:100%;min-height:100px"></textarea></details>';
+  host.append(section);
+  const get=id=>document.getElementById(id),status=get('saveTransferStatus'),file=get('saveImportFile');
+  get('saveExport').onclick=()=>{try{const text=encode();get('saveTransferText').value=text;download(text);status.textContent='バックアップを書き出しました。大切に保管してください。';}catch(e){status.textContent=e.message;}};
+  get('savePrevious').onclick=()=>{try{const text=localStorage.getItem(BACKUP);if(!text)throw Error('読み込み前のバックアップはまだありません。');get('saveTransferText').value=text;download(text,'slime-ranch-before-import');status.textContent='読み込み前のデータを書き出しました。';}catch(e){status.textContent=e.message;}};
+  get('saveImport').onclick=()=>file.click();
+  file.onchange=async()=>{
+   try{
+    const selected=file.files[0];if(!selected)return;
+    if(selected.size>MAX_BYTES)throw Error('ファイルは4MB以内にしてください。');
+    const text=await selected.text(),state=parse(text);
+    if(!confirm('STAGE '+state.stage+' / '+state.slimes.length+'体のデータを読み込みます。現在の進行状況を置き換えますか？（直前データは端末内に退避します）'))return;
+    restore(text);status.textContent='読み込みました。続きからプレイできます。';
+   }catch(e){status.textContent=e.message;}finally{file.value='';}
+  };
+ });
+})();
+</script>

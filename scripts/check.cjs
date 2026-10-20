@@ -1,0 +1,10 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
+assert(!html.includes('<?'),'Unresolved GAS include');
+assert(!/data:(?:image|audio|video|font)\/[^;]+;base64,[A-Za-z0-9+/]{100}/.test(html),'Media still embedded');
+for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new vm.Script(m[1]);
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'dist/asset-manifest.json')));
+for(const [name,data] of Object.entries(manifest))assert.equal(fs.statSync(path.join(root,'dist',name)).size,data.bytes);
+assert(Object.values(manifest).some(x=>x.type==='audio/mpeg'));
+assert(Object.values(manifest).some(x=>x.type==='video/mp4'));
+console.log('Includes, JavaScript syntax, extracted media: OK');

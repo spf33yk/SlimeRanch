@@ -1,0 +1,27 @@
+<!-- GAS移行時だけ：現在のindex.htmlの </body> 直前に、このファイルを全文貼り付ける。 -->
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const box=document.createElement('section');
+ box.style.cssText='margin:20px auto;padding:16px;max-width:900px;border:2px solid #a0bcd0;background:#202b36;color:white';
+ box.innerHTML='<h3>GitHub版へセーブを引き継ぐ</h3><p>移行前にバックアップを保存してください。GAS側のデータは消去しません。</p><button type="button">セーブJSONを書き出す</button><p role="status"></p><details><summary>保存できない場合はJSONをコピー</summary><textarea readonly aria-label="引き継ぎ用セーブJSON" style="width:100%;height:150px"></textarea></details>';
+ document.body.append(box);
+ box.querySelector('button').onclick=()=>{
+  try{
+   let state;
+   if(typeof g!=='undefined')state=JSON.parse(JSON.stringify(g));
+   else{
+    const keys=['slimeRanchCodex1','slimeRanchFinal','slimeRanchGAS_v3','slimeRanchGAS_v2','slimeRanchGAS_v1','slimeRanchPixel_v4'];
+    const raw=keys.map(k=>localStorage.getItem(k)).find(Boolean);
+    if(!raw)throw Error('保存データがありません。いつも遊んでいるブラウザで開いてください。');
+    state=JSON.parse(raw);
+   }
+   state.lastTime=Date.now();
+   const text=JSON.stringify({format:'slime-ranch-save',version:1,exportedAt:new Date().toISOString(),state},null,2);
+   box.querySelector('textarea').value=text;
+   const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),link=document.createElement('a');
+   link.href=url;link.download='slime-ranch-gas-'+Date.now()+'.save.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+   box.querySelector('[role=status]').textContent='書き出しました。保存できない場合は下のJSONをコピーしてください。';
+  }catch(e){box.querySelector('[role=status]').textContent=e.message;}
+ };
+});
+</script>

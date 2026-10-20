@@ -1,0 +1,16 @@
+{
+  "name": "slime-ranch",
+  "private": true,
+  "version": "0.2.1",
+  "type": "commonjs",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "serve": "node scripts/serve.cjs",
+    "test": "playwright test",
+    "check": "node scripts/check.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}
