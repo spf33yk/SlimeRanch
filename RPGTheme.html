@@ -294,7 +294,9 @@ document.addEventListener('DOMContentLoaded',()=>{
  const reveal=(details,target=details)=>{details.open=true;const align=()=>{const behavior=matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';if(target===details)details.scrollIntoView({behavior,block:'start'});else{const r=target.getBoundingClientRect(),top=scrollY+r.top+r.height/2-innerHeight/2;if(details.id==='uiFusion'&&target.id==='fuse'){const max= document.scrollingElement.scrollHeight-innerHeight,space=Math.max(0,Math.ceil(top-max+12));document.body.style.setProperty('--ui-fusion-center-space',space+'px');document.body.classList.add('ui-fusion-center-scroll')}window.scrollTo({top:Math.max(0,top),behavior})}};requestAnimationFrame(()=>{align();requestAnimationFrame(align);setTimeout(align,120)})};
  const actions=make('div','ui-ranch-actions');
  actions.append(button('合成',()=>reveal(fusion,byId('fuse'))),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('装備・宝箱',()=>treasureDialog('main')),button('モンスター一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
- actions.addEventListener('click',()=>nav.querySelectorAll('button').forEach(tab=>tab.blur()),true);
+ const clearNavFocus=()=>nav.querySelectorAll('button').forEach(tab=>tab.blur());
+ actions.addEventListener('pointerdown',clearNavFocus,true);
+ actions.addEventListener('click',()=>{clearNavFocus();requestAnimationFrame(clearNavFocus);setTimeout(clearNavFocus,240)},true);
  ranch.querySelector('.ranch-layout').before(actions);
  byId('fuse').addEventListener('click',()=>document.body.classList.remove('ui-fusion-center-scroll'));
  document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',()=>{if(tab.dataset.tab!=='ranch')document.body.classList.remove('ui-fusion-center-scroll')}));

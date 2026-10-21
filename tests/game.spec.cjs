@@ -228,7 +228,12 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await page.evaluate(()=>document.querySelector('[data-tab="battle"]').focus());
  await actions.getByRole('button',{name:'合成',exact:true}).click();
  expect(await page.locator('[data-tab=battle]').evaluate(el=>el.matches(':focus-visible'))).toBe(false);
- await expect(page.locator('[data-tab=ranch]')).toHaveClass(/active/);
+ await expect.poll(()=>page.locator('[data-tab]').evaluateAll(tabs=>tabs.filter(el=>el.classList.contains('active')).map(el=>el.dataset.tab))).toEqual(['ranch']);
+ await page.waitForTimeout(300);
+ const battleTab=page.locator('[data-tab=battle]');
+ expect(await battleTab.evaluate(el=>el.matches(':focus')||el.matches(':focus-visible'))).toBe(false);
+ expect(await battleTab.evaluate(el=>getComputedStyle(el).outlineStyle)).toBe('none');
+ expect(await battleTab.evaluate(el=>getComputedStyle(el).borderTopColor)).not.toBe('rgb(224, 201, 135)');
  await expect(page.locator('#fuse')).toBeVisible();
  await actions.getByRole('button',{name:'一括合成',exact:true}).click();
  await expect(page.locator('#bulkFusionDialog')).toBeVisible();
