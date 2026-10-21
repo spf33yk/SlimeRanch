@@ -23,7 +23,7 @@
   <div class="tutorial-card-head"><span id="tutorialCounter">はじめての冒険</span><span>GUIDE</span></div>
   <h2 id="tutorialTitle"></h2><div class="tutorial-progress" aria-hidden="true"><span id="tutorialProgress"></span></div>
   <p id="tutorialText"></p>
-  <div class="tutorial-actions"><button id="tutorialSkip" type="button">いつでもスキップ</button><button id="tutorialContinue" type="button" hidden>つづける</button></div>
+  <div class="tutorial-actions"><button id="tutorialSkip" type="button">スキップ</button><button id="tutorialContinue" type="button" hidden>つづける</button></div>
  </section>
 </div>
 <script>
@@ -59,7 +59,7 @@
   el('tutorialTitle').textContent=done?'チュートリアル完了':step.title;
   el('tutorialText').textContent=done?'採集・強化・合成・バトルの基本は以上です。続きは冒険の書からいつでも見直せます。':step.text;
   el('tutorialProgress').style.width=(done?100:(state.step/steps.length)*100)+'%';
-  el('tutorialContinue').hidden=!done;
+  el('tutorialContinue').hidden=!done;el('tutorialSkip').hidden=done;
   clearFocus();focus=findTargets().filter(Boolean);
   const target=focus.find(node=>!node.disabled)||focus[0];
   const dimmers=['tutorialDimTop','tutorialDimBottom','tutorialDimLeft','tutorialDimRight'].map(el);

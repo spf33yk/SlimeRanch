@@ -418,6 +418,7 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await page.click('#gameStart');
  await expect(page.locator('#openingScreen')).toBeHidden();
  await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
+ await expect(page.locator('#tutorialSkip')).toHaveText('スキップ');
  const firstTiles=await page.evaluate(()=>({magic:g.tiles.indexOf('magic'),spawn:g.tiles.findIndex(t=>t==='spawn'||t.startsWith('spawn:'))}));
  expect(firstTiles.magic).toBeGreaterThanOrEqual(0);expect(firstTiles.spawn).toBeGreaterThanOrEqual(0);expect(firstTiles.magic).not.toBe(firstTiles.spawn);
  expect(await page.locator('#tutorialDimTop').evaluate(el=>parseFloat(el.style.height))).toBeLessThan(await page.locator('#fieldCanvas').evaluate(el=>el.closest('.panel').getBoundingClientRect().top));
@@ -438,6 +439,7 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await page.locator('.ui-ranch-actions button').first().click();
  await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
  await expect(page.locator('#fuse')).toHaveClass(/tutorial-focus/);
+ await expect.poll(()=>page.locator('#fuse').evaluate(el=>{const r=el.getBoundingClientRect();return Math.abs((r.top+r.bottom)/2-innerHeight/2)})).toBeLessThan(80);
  await page.click('#fuse');
  await expect(page.locator('#tutorialTitle')).toHaveText('バトルに挑戦しよう');
  await page.click('[data-tab="battle"]');
@@ -460,6 +462,7 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await page.locator('#subSelect').selectOption(String(subId));
  await expect(page.locator('#tutorialTitle')).toHaveText('チュートリアル完了');
  await expect(page.locator('#tutorialContinue')).toBeVisible();
+ await expect(page.locator('#tutorialSkip')).toBeHidden();
  await page.click('#tutorialContinue');
  await page.click('[data-tab="guide"]');
  await page.click('#tutorialReplay');
