@@ -126,8 +126,11 @@ test('field starts with click collection and has a separate drag collection unlo
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
  await page.click('#rangeUp');
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
+ const masoBeforeUnlock=await page.evaluate(()=>g.maso);
  await page.click('#dragUnlock');
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
+ expect(await page.evaluate(()=>g.maso)).toBe(masoBeforeUnlock-120);
+ await expect(page.locator('body')).toHaveClass(/field-drag-unlocked/);
  await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
  const dragPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
  const beforeDrag=await page.evaluate(()=>g.maso);
@@ -149,6 +152,7 @@ test('field has no manual collect button, batch collect spans the row and uses a
  await page.goto('./');
  expect(await page.locator('#uiCollect').count()).toBe(0);
  await expect(page.locator('#treasureOdds')).toBeVisible();
+ expect(await page.locator('#treasureOdds').evaluate(el=>el.parentElement.classList.contains('ui-field-facts'))).toBe(true);
  expect(await page.locator('#collectAll').evaluate(el=>getComputedStyle(el).gridColumnEnd)).toBe('-1');
  await page.evaluate(()=>{g.maso=1000;g.tiles.fill('magic');render()});
  const before=await page.evaluate(()=>g.maso);
@@ -157,22 +161,25 @@ test('field has no manual collect button, batch collect spans the row and uses a
  await page.evaluate(()=>{g.tiles.fill('magic');render()});
  await page.click('#collectAll');
  expect(await page.evaluate(()=>Date.now()-g.batchLast<1000)).toBe(true);
- await expect(page.locator('#collectAll')).toContainText('30分');
+ await expect(page.locator('#collectAll')).toContainText('30分00秒');
  expect(await page.locator('#collectAll').isDisabled()).toBe(true);
  await page.evaluate(()=>{g.batchLast=Date.now()-BATCH_COOLDOWN_MS+1000;render()});
  await expect(page.locator('#collectAll')).toContainText('1秒');
+ await page.evaluate(()=>{g.batchLast=Date.now()-BATCH_COOLDOWN_MS+59000;renderBatchButton()});
+ await expect(page.locator('#collectAll')).toContainText('59秒');
  await page.evaluate(()=>{g.batchLast=Date.now()-BATCH_COOLDOWN_MS-1;render()});
  await expect(page.locator('#collectAll')).toBeEnabled();
 });
 test('battle result band leaves the enemy name and HP area visible',async({page})=>{
  await page.goto('./');await page.click('[data-tab=battle]');
- const result=await page.evaluate(()=>{treasureBattleResultFx('win');const card=document.getElementById('enemyCard'),overlay=document.querySelector('.treasure-battle-result'),name=document.getElementById('enemyName'),bar=document.getElementById('enemyBar'),r=overlay.getBoundingClientRect(),c=card.getBoundingClientRect(),n=name.getBoundingClientRect(),h=bar.getBoundingClientRect();return{insideCard:r.top>c.top&&r.bottom<c.bottom,belowName:r.top>n.bottom,aboveHp:r.bottom<h.top,ratio:r.height/c.height}});
- expect(result.insideCard).toBe(true);expect(result.belowName).toBe(true);expect(result.aboveHp).toBe(true);expect(result.ratio).toBeLessThan(.4);
+ const result=await page.evaluate(()=>{treasureBattleResultFx('win');const card=document.getElementById('enemyCard'),overlay=document.querySelector('.treasure-battle-result'),name=document.getElementById('enemyName'),bar=document.getElementById('enemyBar'),r=overlay.getBoundingClientRect(),c=card.getBoundingClientRect(),n=name.getBoundingClientRect(),h=bar.parentElement.getBoundingClientRect();return{insideCard:r.top>c.top&&r.bottom<c.bottom,belowName:r.top>n.bottom,aboveHp:r.bottom<h.top,ratio:r.height/c.height}});
+ expect(result.insideCard).toBe(true);expect(result.belowName).toBe(true);expect(result.aboveHp).toBe(true);expect(result.ratio).toBeGreaterThan(.3);expect(result.ratio).toBeLessThan(.85);
 });
 test('ranch shortcuts, equipment and battle controls remain connected',async({page})=>{
  await page.goto('./');
  await page.click('[data-tab=ranch]');
  const actions=page.locator('.ui-ranch-actions');
+ await expect(page.locator('#uiFusion > summary')).toHaveText('合成');
  await actions.getByRole('button',{name:'合成',exact:true}).click();
  await expect(page.locator('#fuse')).toBeVisible();
  await actions.getByRole('button',{name:'一括合成',exact:true}).click();
