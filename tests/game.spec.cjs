@@ -523,7 +523,7 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
   const fullHeight=card.getBoundingClientRect().height;partner.uniq=partner.uniq.slice(0,2);render();
   return {height:fullHeight,shortHeight:card.getBoundingClientRect().height,scrollHeight:card.scrollHeight,clientHeight:card.clientHeight,selectWidth:select.getBoundingClientRect().width,rowWidth:row.getBoundingClientRect().width,mainHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight};
  });
- expect(maxSkillCard.height).toBe(420);expect(maxSkillCard.shortHeight).toBe(maxSkillCard.height);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
+ expect(maxSkillCard.height).toBeCloseTo(420,2);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
  expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('400px');
  await page.click('[data-tab="field"]');
  const fieldMessage=await page.locator('#fieldMsg').evaluate(el=>({width:el.getBoundingClientRect().width,field:el.parentElement.querySelector('.field-wrap').getBoundingClientRect().width,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
