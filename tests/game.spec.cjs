@@ -94,15 +94,18 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await page.evaluate(()=>{treasureEnsure();g.treasureCharms.push({id:999,name:'Test Charm',rarity:'normal',effects:[{key:'atk',label:'攻撃力',mult:1.1}]});treasureEquipCharm('main',999);});
  expect(await page.evaluate(()=>!!g.treasureEquip.main)).toBe(true);
  await page.click('[data-tab=battle]');
- await page.evaluate(()=>{g.won=false;g.autoNext=true;g.autoFight=false;g.enemyHP=enemyMax(g.stage)*10;render();});
+ // Keep the target alive while exercising the auto settings so a fast CI
+ // worker cannot trigger the victory continuation between the button clicks.
+ await page.evaluate(()=>{g.won=false;g.autoNext=true;g.autoFight=false;g.enemyHP=Number.MAX_SAFE_INTEGER;render();});
  const before=await page.evaluate(()=>g.enemyHP);
  await page.click('#attack');
  expect(await page.evaluate(()=>g.enemyHP)).toBeLessThan(before);
+ await page.click('#autoNext');
+ await expect(page.locator('#autoNext')).toHaveAttribute('aria-pressed','false');
  await page.click('#autoFight');
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','true');
  await page.click('#autoFight');
- await page.click('#autoNext');
- await expect(page.locator('#autoNext')).toHaveAttribute('aria-pressed','false');
+ await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','false');
 });
 test('externalized backgrounds, BGM and videos resolve',async({page})=>{
  await page.goto('./');
