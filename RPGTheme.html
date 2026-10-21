@@ -135,6 +135,9 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .screen .panel:before,.ui-v2 .screen .panel:after{content:"";position:absolute;top:6px;width:5px;height:5px;border:1px solid #a8a9a8;background:#555b63;transform:rotate(45deg);pointer-events:none}
 .ui-v2 .screen .panel:before{left:6px}.ui-v2 .screen .panel:after{right:6px}
 .ui-v2 .ui-ranch-actions{margin-top:0}
+ .ui-v2 #uiSubCompanion{grid-column:1/-1}
+ .ui-v2 #uiSubCompanion #subCard{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px}
+ .ui-v2 #uiSubCompanion #subCard>.mcard{margin:0}
 .ui-v2 .ui-stat-details{margin-top:14px;font-size:13px;color:#c4ccd3}
 .ui-v2 summary{cursor:pointer;line-height:1.6}
 .ui-v2 #ranchTeamStats .team-stats-grid>div{background:#1c2129!important;border-color:#616872!important;border-radius:3px!important}
@@ -151,7 +154,7 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
  .ui-v2 #monsterList{grid-template-columns:1fr}
 }
 @media(max-width:760px){
- .ui-v2 header{padding:12px;gap:10px}.ui-v2 .brand{font-size:22px;flex:1}.ui-v2 .resources{order:3;width:100%;display:grid;grid-template-columns:1.4fr 1fr 1fr;margin:0;gap:6px}
+ .ui-v2 header{padding:12px;gap:10px}.ui-v2 .brand{font-size:22px;flex:1}.ui-v2 .resources{order:3;width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0;gap:6px}
  .ui-v2 .resource{min-width:0;gap:7px;justify-content:space-between}.ui-v2 .resource small{font-size:11px}.ui-v2 .resource b{font-size:17px}
  .ui-v2 nav{padding:8px 10px 10px;gap:5px;grid-template-columns:repeat(4,minmax(0,1fr))}
  .ui-v2 nav button{padding:9px 3px;font-size:12px;min-height:48px;letter-spacing:0}.ui-v2 nav button.active:after{display:none}
@@ -215,9 +218,12 @@ document.addEventListener('DOMContentLoaded',()=>{
  const fusion=fold(ranchPanels[0],'合成工房','uiFusion'),inventory=fold(ranchPanels[1],'相棒・ハート一覧','uiInventory');
  const reveal=details=>{details.open=true;details.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});};
  const actions=make('div','ui-ranch-actions');
- actions.append(button('合成',()=>reveal(fusion)),button('一括合成',()=>byId('openBulkFusion').click()),button('装備・宝箱',()=>treasureDialog('main')),button('相棒一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
+ actions.append(button('合成',()=>reveal(fusion)),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('装備・宝箱',()=>treasureDialog('main')),button('相棒一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
  ranch.querySelector('.ranch-layout').before(actions);
  const ranchIntro=ranch.querySelector('.ranch-layout>.panel>p');ranchIntro.textContent='メインとサブの能力が冒険を支えます。大切な個体は一覧からロックして保護できます。';
+ const subPanel=make('div','panel');subPanel.id='uiSubCompanion';subPanel.append(make('h2','','サブ相棒'));
+ ['subSelect','subCard'].forEach(id=>{const el=byId(id),label=id==='subSelect'?ranch.querySelector('label[for="subSelect"]'):null;if(label)subPanel.append(label);subPanel.append(el);});
+ ranch.querySelector('.ranch-layout').after(subPanel);
 
  // Battle: stage and automation in a side panel, combatants share one scene.
  const battlePanel=byId('battle').querySelector(':scope > .panel');battlePanel.classList.add('battle-control');

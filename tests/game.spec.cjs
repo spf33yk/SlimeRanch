@@ -166,3 +166,57 @@ test('GAS export helper produces a compatible save without clearing the game',as
  expect(await page.evaluate(()=>g.maso)).toBe(12345);
  await legacy.close();
 });
+test('ranch header, capacity upgrades, companion layout and sub charm stats work',async({page})=>{
+ await page.goto('./');
+ await page.click('[data-tab=ranch]');
+ expect(await page.locator('#headerMonsterCount').textContent()).toBe('1 / 100');
+ const layout=await page.evaluate(()=>({main:document.getElementById('mainCard').getBoundingClientRect().top,stats:document.getElementById('ranchTeamStats').getBoundingClientRect().top,sub:document.getElementById('uiSubCompanion').getBoundingClientRect().top,statsBottom:document.getElementById('ranchTeamStats').getBoundingClientRect().bottom}));
+ expect(layout.stats).toBeLessThan(layout.sub);expect(layout.main).toBeLessThan(layout.sub);expect(layout.statsBottom).toBeLessThanOrEqual(layout.sub);
+ await page.getByRole('button',{name:'相棒一覧',exact:true}).click();
+ await page.evaluate(()=>{g.maso=1000;render();});
+ await page.click('#capacityUp');
+ expect(await page.evaluate(()=>({capacity:cap(),price:capCost(),header:document.getElementById('headerMonsterCount').textContent}))).toEqual({capacity:110,price:405,header:'1 / 110'});
+ const charmStats=await page.evaluate(()=>{
+  const partner=monster('森スライム');partner.name='装備確認用サブ';g.slimes.push(partner);g.kills=5;g.sub=partner.id;
+  const charm={id:g.treasureNextId++,rarity:'normal',name:'検証用',effects:[{key:'atk',label:'攻撃力',mult:2}]};g.treasureCharms.push(charm);treasureEquipCharm('sub',charm.id);
+  return {sub:singleStats(partner).atk,base:treasureOriginalSingleStats(partner).atk,team:teamBattleStats().atk,main:singleStats(main()).atk};
+ });
+ expect(charmStats.sub).toBe(charmStats.base*2);expect(charmStats.team).toBe(charmStats.sub+charmStats.main);
+ expect(await page.locator('#headerMonsterCount').textContent()).toBe('2 / 110');
+ await expect(page.locator('#uiSubCompanion #subCard')).toContainText('装備確認用サブ');
+});
+test('bulk fusion tries each selected material once, even when every attempt fails',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
+ await page.evaluate(()=>{
+  g.maso=100000;g.slimes.push(monster('森スライム'),monster('森スライム'));render();
+  document.querySelectorAll('.bulk-material').forEach(x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));});
+  window.__fusionCalls=0;performFusion=()=>{window.__fusionCalls++;return 'fail';};
+ });
+ page.on('dialog',dialog=>dialog.accept());
+ await page.click('#bulkFuse');
+ expect(await page.evaluate(()=>window.__fusionCalls)).toBe(2);
+ await expect(page.locator('#fuseMsg')).toContainText('失敗 2個');
+});
+test('field and battle epic chests skip freeze and guaranteed freeze can be skipped safely',async({page})=>{
+ await page.goto('./');
+ const result=await page.evaluate(()=>{
+  let awarded=0,freezeCalls=0,callbackValue=null;
+  const oldPrompt=treasureFreezePrompt,oldRandom=Math.random;
+  try{
+   treasureFreezePrompt=()=>{freezeCalls++;};Math.random=()=>0;g.tiles.fill('empty');
+   treasureFieldRoll();
+   const fieldEpic=g.tiles.includes('treasure:epic');
+   const fieldFreezeCalls=freezeCalls;
+   treasureBattleRoll(500);
+   const battleEpic=g.treasureChests.some(c=>c.rarity==='epic');
+   treasureFreezePrompt=oldPrompt;Math.random=oldRandom;
+   treasureGateDrop('epic',()=>awarded++,true);
+   treasureFreezePrompt(1,success=>callbackValue=success,true);
+   const visible=!document.getElementById('treasureFreezeSkip').hidden;
+   document.getElementById('treasureFreezeSkip').click();
+   return {awarded,fieldEpic,fieldFreezeCalls,battleEpic,battleFreezeCalls:freezeCalls-fieldFreezeCalls,visible,hidden:document.getElementById('treasureFreeze').hidden,busy:treasureFreezeBusy,callbackValue};
+  }finally{treasureFreezePrompt=oldPrompt;Math.random=oldRandom;}
+ });
+ expect(result).toEqual({awarded:1,fieldEpic:true,fieldFreezeCalls:1,battleEpic:true,battleFreezeCalls:1,visible:true,hidden:true,busy:false,callbackValue:true});
+});
