@@ -523,7 +523,7 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
   const fullHeight=card.getBoundingClientRect().height;partner.uniq=partner.uniq.slice(0,2);render();
   return {height:fullHeight,shortHeight:card.getBoundingClientRect().height,scrollHeight:card.scrollHeight,clientHeight:card.clientHeight,selectWidth:select.getBoundingClientRect().width,rowWidth:row.getBoundingClientRect().width,mainHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight};
  });
- expect(maxSkillCard.height).toBeCloseTo(420,2);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
+ expect(maxSkillCard.height).toBeCloseTo(340,2);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
  expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('400px');
  await page.click('[data-tab="field"]');
  const fieldMessage=await page.locator('#fieldMsg').evaluate(el=>({width:el.getBoundingClientRect().width,field:el.parentElement.querySelector('.field-wrap').getBoundingClientRect().width,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
@@ -532,6 +532,15 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
  const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,rows:[...document.querySelectorAll('.ui-monster-select-row')].map(row=>({row:row.getBoundingClientRect().width,select:row.querySelector('select').getBoundingClientRect().width}))}));
  expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.viewport);expect(mobile.rows).toHaveLength(2);
  for(const row of mobile.rows)expect(row.select).toBeLessThanOrEqual(row.row);
+});
+test('battle control card matches the ranch sub-monster card height without its helper text',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=battle]');
+ await expect(page.locator('#battle')).not.toContainText('敵を倒して次のステージを解放。');
+ const desktop=await page.locator('#battle .battle-control').evaluate(el=>({height:el.getBoundingClientRect().height,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}));
+ expect(desktop.height).toBeCloseTo(520,2);expect(desktop.scrollHeight).toBeGreaterThanOrEqual(desktop.clientHeight);
+ await page.setViewportSize({width:390,height:844});
+ const mobile=await page.locator('#battle .battle-control').evaluate(el=>({height:el.getBoundingClientRect().height,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,documentWidth:document.documentElement.scrollWidth,viewport:innerWidth}));
+ expect(mobile.height).toBeGreaterThan(420);expect(mobile.scrollHeight).toBeLessThanOrEqual(mobile.clientHeight);expect(mobile.documentWidth).toBeLessThanOrEqual(mobile.viewport);
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
  await page.goto('./');
