@@ -314,17 +314,32 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
 });
 test('auto battle keeps ranch monster idle animations attached and smooth',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
- await page.evaluate(()=>{const m=monster('森スライム');g.slimes.push(m);g.sub=m.id;g.kills=3;g.teamHP=1e20;g.won=false;g.autoNext=false;g.autoFight=true;g.enemyHP=1;render()});
+ await page.evaluate(()=>{const m=main(),partner=monster('森スライム');m.atk=1e30;m.hp=1e30;partner.hp=1e30;g.slimes.push(partner);g.sub=partner.id;g.kills=3;g.teamHP=teamMax();g.won=false;g.autoNext=false;g.autoFight=false;Math.random=()=>.99;render()});
  await expect(page.locator('#mainCard .ui-monster-idle-motion--main')).toHaveCount(1);
  await expect(page.locator('#subCard .ui-monster-idle-motion--sub')).toHaveCount(1);
- const result=await page.evaluate(()=>{
-  const mainMotion=document.querySelector('#mainCard .ui-monster-idle-motion--main');
-  const subMotion=document.querySelector('#subCard .ui-monster-idle-motion--sub');
-  for(let i=0;i<4;i++){g.won=false;g.enemyHP=1;g.teamHP=1e20;battle(true)}
-  g.autoFight=false;
-  return {mainPreserved:mainMotion===document.querySelector('#mainCard .ui-monster-idle-motion--main'),subPreserved:subMotion===document.querySelector('#subCard .ui-monster-idle-motion--sub'),mainConnected:mainMotion.isConnected,subConnected:subMotion.isConnected,mainAnimation:getComputedStyle(mainMotion).animationName,subAnimation:getComputedStyle(subMotion).animationName};
+ const initial=await page.evaluate(()=>{
+  window.__ranchMainMotion=document.querySelector('#mainCard .ui-monster-idle-motion--main');
+  window.__ranchSubMotion=document.querySelector('#subCard .ui-monster-idle-motion--sub');
+  return {kills:g.kills,mainTime:window.__ranchMainMotion.getAnimations()[0]?.currentTime,subTime:window.__ranchSubMotion.getAnimations()[0]?.currentTime};
  });
- expect(result).toEqual({mainPreserved:true,subPreserved:true,mainConnected:true,subConnected:true,mainAnimation:'slime-idle',subAnimation:'slime-idle'});
+ await page.evaluate(()=>document.getElementById('autoFight').click());
+ await page.waitForFunction(kills=>g.kills>=kills+3,initial.kills,{timeout:8000});
+ const result=await page.evaluate(()=>({
+  kills:g.kills,
+  mainPreserved:window.__ranchMainMotion===document.querySelector('#mainCard .ui-monster-idle-motion--main'),
+  subPreserved:window.__ranchSubMotion===document.querySelector('#subCard .ui-monster-idle-motion--sub'),
+  mainConnected:window.__ranchMainMotion.isConnected,subConnected:window.__ranchSubMotion.isConnected,
+  mainAnimation:getComputedStyle(window.__ranchMainMotion).animationName,subAnimation:getComputedStyle(window.__ranchSubMotion).animationName,
+  mainPlayState:window.__ranchMainMotion.getAnimations()[0]?.playState,subPlayState:window.__ranchSubMotion.getAnimations()[0]?.playState,
+  mainTime:window.__ranchMainMotion.getAnimations()[0]?.currentTime,subTime:window.__ranchSubMotion.getAnimations()[0]?.currentTime
+ }));
+ await page.evaluate(()=>{g.autoFight=false;render()});
+ expect(result.kills).toBeGreaterThanOrEqual(initial.kills+3);
+ expect(result.mainPreserved).toBe(true);expect(result.subPreserved).toBe(true);
+ expect(result.mainConnected).toBe(true);expect(result.subConnected).toBe(true);
+ expect(result.mainAnimation).toBe('slime-idle');expect(result.subAnimation).toBe('slime-idle');
+ expect(result.mainPlayState).toBe('running');expect(result.subPlayState).toBe('running');
+ expect(result.mainTime).toBeGreaterThan(initial.mainTime);expect(result.subTime).toBeGreaterThan(initial.subTime);
 });
 test('selected monsters lock themselves and hover does not shift game controls',async({page})=>{
  await page.goto('./');
