@@ -27,6 +27,8 @@ html=html.replace(/<base\s+target="_top"\s*>/,'');
 if(html.includes('<?'))throw Error('Unresolved GAS template');
 for(const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new vm.Script(match[1]);
 fs.writeFileSync(path.join(dist,'index.html'),html);
+const staticAssets=path.join(root,'assets');
+if(fs.existsSync(staticAssets))fs.cpSync(staticAssets,assets,{recursive:true});
 fs.writeFileSync(path.join(dist,'.nojekyll'),'');
 fs.writeFileSync(path.join(dist,'asset-manifest.json'),JSON.stringify(Object.fromEntries(manifest),null,2));
 console.log(`Built dist/index.html: ${Buffer.byteLength(html).toLocaleString()} bytes; ${manifest.size} external media files.`);

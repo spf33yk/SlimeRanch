@@ -1,0 +1,81 @@
+<style id="slime-opening-screen">
+body.opening-active{height:100dvh;min-height:0;overflow:hidden}
+body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
+#openingScreen[hidden]{display:none!important}
+#openingScreen{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;overflow:auto;padding:clamp(16px,4vw,48px);isolation:isolate;background:#10131a;color:#f7f0de}
+.opening-art,.opening-shade{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.opening-art{overflow:hidden}
+.opening-art img{width:100%;height:100%;object-fit:cover;object-position:43% 52%;filter:saturate(.92);animation:opening-drift 24s ease-in-out infinite alternate}
+.opening-shade{background:linear-gradient(90deg,#0a0e13b8 0%,#10141b70 35%,#11172130 68%,#10141b55 100%),linear-gradient(0deg,#0a0d12d9 0%,#0a0d1266 20%,transparent 55%,#10131a70 100%)}
+.opening-frame{width:min(500px,100%);margin:0 auto 0 clamp(0px,4vw,58px);padding:clamp(20px,4vw,38px);border:2px solid #b49a60;border-radius:8px;background:linear-gradient(145deg,#252a30eb,#151a20e8);box-shadow:inset 0 0 0 3px #11151a,inset 0 0 0 4px #71634a,0 22px 70px #0009;backdrop-filter:blur(4px);text-align:center}
+.opening-kicker{margin:0 0 11px;color:#b5d4e5;font-size:clamp(11px,2vw,14px);letter-spacing:.22em;text-transform:uppercase}
+.opening-title{margin:0;color:#f3dfab;font-size:clamp(32px,5.8vw,56px);line-height:1.12;letter-spacing:.04em;text-shadow:0 3px #30271a,0 6px #080a0d,0 0 24px #f8d88e55}
+.opening-title-sub{margin:9px 0 0;color:#f5f0e7;font-size:clamp(14px,2.2vw,19px);letter-spacing:.08em;text-shadow:0 2px 6px #000}
+.opening-rule{display:flex;align-items:center;gap:12px;margin:23px 0 17px;color:#dfc887;font-size:12px;letter-spacing:.2em}
+.opening-rule:before,.opening-rule:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#b59b61)}
+.opening-rule:after{transform:scaleX(-1)}
+.opening-menu{display:grid;gap:10px;width:min(360px,100%);margin:auto}
+.opening-menu button{min-height:52px;border:1px solid #8d9292;border-radius:4px;background:linear-gradient(#555b60,#32383e 50%,#252a30);box-shadow:inset 0 1px #ffffff30,inset 0 -3px #11151a,0 3px #0b0e12;color:#f1eee5;font:inherit;font-size:16px;letter-spacing:.13em;text-shadow:0 2px #111;transition:filter .15s,transform .15s,border-color .15s}
+.opening-menu button:hover{filter:brightness(1.2);border-color:#d8c184;transform:translateY(-1px)}
+.opening-menu button:active{transform:translateY(1px)}
+.opening-menu .opening-start{border-color:#cfb66e;background:linear-gradient(#8a794e,#5b5137 50%,#393427);color:#fff2c7;font-weight:900;box-shadow:inset 0 1px #fff7d44d,inset 0 -3px #292317,0 3px #0b0e12,0 0 18px #e2c47840}
+.opening-menu .opening-option{font-size:14px}
+.opening-save-hint{margin:17px 0 0;color:#d0d2d1;font-size:12px;text-shadow:0 1px 4px #000;line-height:1.7}
+.opening-status{min-height:1.5em;margin:11px 0 0;color:#ffe3a0;font-size:12px;line-height:1.6}
+.opening-copyright{position:absolute;left:12px;right:12px;bottom:12px;text-align:center;color:#e6e5e1b3;font-size:10px;letter-spacing:.12em;text-shadow:0 2px 5px #000}
+.ui-v2 #uiSettings{width:min(650px,calc(100vw - 24px))}
+.ui-v2 .ui-option-row{display:grid;grid-template-columns:minmax(130px,190px) minmax(100px,1fr) auto;gap:12px;align-items:center;margin:14px 0;padding:12px;border:1px solid #626a6c;background:#20252b;border-radius:4px}
+.ui-v2 .ui-option-row label{margin:0;color:#e3dfd3}
+.ui-v2 .ui-option-row input[type=range]{width:100%;accent-color:#d4bd7a}
+.ui-v2 .ui-option-row output{min-width:42px;text-align:right;color:#f1dc9e;font-variant-numeric:tabular-nums}
+.ui-v2 .ui-motion-row{display:flex;align-items:center;gap:10px;margin:14px 0;padding:12px;border:1px solid #626a6c;background:#20252b;border-radius:4px}
+.ui-v2 .ui-motion-row input{width:20px;height:20px;accent-color:#a7c681}
+.ui-v2 .ui-reset-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding:13px;border:1px solid #805859;background:#302326;border-radius:4px}
+.ui-v2 .ui-reset-row .small{flex:1}
+.ui-v2 #uiResetGame{border-color:#c17d78;background:linear-gradient(#804c4b,#513034);white-space:nowrap}
+.ui-v2.user-reduced-motion *,.ui-v2.user-reduced-motion *::before,.ui-v2.user-reduced-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+@keyframes opening-drift{from{transform:scale(1)}to{transform:scale(1.045)}}
+@media(max-width:700px){#openingScreen{padding:16px}.opening-art img{object-position:42% center}.opening-shade{background:linear-gradient(0deg,#0b0e13e8,#11151b4a 58%,#11151b80)}.opening-frame{width:min(460px,100%);margin:auto;padding:22px 18px}.opening-menu{gap:8px}.opening-menu button{min-height:48px}.opening-copyright{bottom:7px}.ui-v2 .ui-option-row{grid-template-columns:1fr auto;gap:7px}.ui-v2 .ui-option-row label{grid-column:1/-1}.ui-v2 .ui-option-row input[type=range]{grid-column:1}.ui-v2 .ui-option-row output{grid-column:2;grid-row:2}.ui-v2 .ui-reset-row{align-items:stretch;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.opening-art img{animation:none}.opening-menu button{transition:none}}
+</style>
+<div id="openingScreen" role="dialog" aria-modal="true" aria-labelledby="openingTitle">
+ <div class="opening-art" aria-hidden="true"><img id="openingArtwork" src="assets/title-screen.png" data-fallback="https://spf33yk.github.io/SlimeRanch/assets/title-screen.png" alt=""></div>
+ <div class="opening-shade" aria-hidden="true"></div>
+ <section class="opening-frame">
+  <p class="opening-kicker">A PIXEL FANTASY ADVENTURE</p>
+  <h1 class="opening-title" id="openingTitle">スライム牧場</h1>
+  <p class="opening-title-sub">魔素を集めて、君だけの牧場を育てよう</p>
+  <div class="opening-rule" aria-hidden="true">MAIN MENU</div>
+  <div class="opening-menu">
+   <button id="gameStart" class="opening-start" type="button">GAME START</button>
+   <button id="gameOption" class="opening-option" type="button">OPTION</button>
+   <button id="gameEnd" class="opening-option" type="button">GAME END</button>
+  </div>
+  <p class="opening-save-hint">セーブデータはこのブラウザーに自動保存されます。<br>保存データがあれば、続きから再開します。</p>
+  <p class="opening-status" id="openingStatus" role="status" aria-live="polite"></p>
+ </section>
+ <div class="opening-copyright">SLIME RANCH · GROW YOUR OWN MONSTER RANCH</div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const screen=document.getElementById('openingScreen'),status=document.getElementById('openingStatus');
+ const artwork=document.getElementById('openingArtwork');
+ artwork.addEventListener('error',()=>{if(artwork.dataset.fallback&&artwork.src!==artwork.dataset.fallback)artwork.src=artwork.dataset.fallback},{once:true});
+ if(window.__SLIME_E2E__){screen.hidden=true;return}
+ document.body.classList.add('opening-active');
+ document.getElementById('gameStart').addEventListener('click',()=>{
+  screen.hidden=true;document.body.classList.remove('opening-active');
+  if(typeof showTab==='function')showTab('field');
+  window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+ });
+ document.getElementById('gameOption').addEventListener('click',()=>{
+  const gear=document.getElementById('uiSettingsButton');
+  if(gear){gear.click();screen.setAttribute('aria-modal','false');const settings=document.getElementById('uiSettings');settings?.addEventListener('close',()=>screen.setAttribute('aria-modal','true'),{once:true})}else status.textContent='設定を読み込み中です。少し待ってもう一度お試しください。';
+ });
+ document.getElementById('gameEnd').addEventListener('click',()=>{
+  if(typeof save==='function')save();
+  status.textContent='ゲームを終了しました。ブラウザーの仕様により閉じられない場合は、このタブを閉じてください。';
+  window.setTimeout(()=>window.close(),250);
+ });
+});
+</script>

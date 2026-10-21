@@ -1,6 +1,39 @@
 const {test,expect}=require('@playwright/test');
 test.beforeEach(async({page})=>{
- await page.addInitScript(()=>localStorage.setItem('slimeRanchBgmSettings',JSON.stringify({track:0,volume:3,playing:false})));
+ await page.addInitScript(()=>{window.__SLIME_E2E__=true;localStorage.setItem('slimeRanchBgmSettings',JSON.stringify({track:0,volume:3,playing:false}));});
+});
+test('opening screen loads the game art and offers start, options and end actions',async({page})=>{
+ await page.addInitScript(()=>{window.__SLIME_E2E__=false;});
+ await page.goto('./');
+ await expect(page.locator('#openingScreen')).toBeVisible();
+ await expect(page.locator('#openingTitle')).toHaveText('スライム牧場');
+ await expect(page.locator('#gameStart')).toHaveText('GAME START');
+ await expect(page.locator('#gameOption')).toHaveText('OPTION');
+ await expect(page.locator('#gameEnd')).toHaveText('GAME END');
+ await page.waitForFunction(()=>{const image=document.getElementById('openingArtwork');return image.complete&&image.naturalWidth>0;});
+ await page.screenshot({path:test.info().outputPath('opening-screen.png'),fullPage:true});
+ await page.evaluate(()=>{g.maso=9876;save();});
+ await page.click('#gameOption');
+ await expect(page.locator('#uiSettings')).toBeVisible();
+ await page.screenshot({path:test.info().outputPath('opening-options.png'),fullPage:true});
+ await expect(page.locator('#uiSfxVolume')).toBeVisible();
+ await expect(page.locator('#uiReducedMotion')).toBeVisible();
+ await expect(page.locator('#uiResetGame')).toBeVisible();
+ await page.locator('#uiSfxVolume').fill('24');
+ expect(await page.evaluate(()=>localStorage.getItem('slimeRanchSfxVolume'))).toBe('24');
+ await page.locator('#soundToggle').uncheck();
+ expect(await page.evaluate(()=>localStorage.getItem('slimeRanchSoundEnabled'))).toBe('false');
+ await page.locator('#uiReducedMotion').check();
+ expect(await page.evaluate(()=>localStorage.getItem('slimeRanchReducedMotion'))).toBe('true');
+ page.once('dialog',dialog=>dialog.accept());
+ await page.click('#uiResetGame');
+ expect(await page.evaluate(()=>g.maso)).toBe(80);
+ await page.locator('#uiSettings').getByRole('button',{name:'閉じる ×'}).click();
+ await page.click('#gameEnd');
+ await expect(page.locator('#openingStatus')).toContainText('このタブを閉じてください');
+ await page.click('#gameStart');
+ await expect(page.locator('#openingScreen')).toBeHidden();
+ await expect(page.locator('#field')).toBeVisible();
 });
 test('starts under the Pages subpath; all tabs and responsive layouts work',async({page})=>{
  const errors=[],failed=[];

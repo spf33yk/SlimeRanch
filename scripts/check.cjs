@@ -4,6 +4,8 @@ assert(!html.includes('<?'),'Unresolved GAS include');
 assert(!/data:(?:image|audio|video|font)\/[^;]+;base64,[A-Za-z0-9+/]{100}/.test(html),'Media still embedded');
 for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new vm.Script(m[1]);
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'dist/asset-manifest.json')));
+assert(fs.existsSync(path.join(root,'dist/assets/title-screen.png')),'Opening screen art was not copied');
+assert(html.includes('assets/title-screen.png'),'Opening screen art is not referenced');
 for(const [name,data] of Object.entries(manifest))assert.equal(fs.statSync(path.join(root,'dist',name)).size,data.bytes);
 assert(Object.values(manifest).some(x=>x.type==='audio/mpeg'));
 assert(Object.values(manifest).some(x=>x.type==='video/mp4'));

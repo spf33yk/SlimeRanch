@@ -236,9 +236,20 @@ document.addEventListener('DOMContentLoaded',()=>{
  const settings=make('dialog');settings.id='uiSettings';settings.setAttribute('aria-labelledby','uiSettingsTitle');
  const head=make('div','ui-dialog-head'),title=make('h2','','音と設定');title.id='uiSettingsTitle';
  head.append(title,button('閉じる ×',()=>settings.close()));settings.append(head,document.querySelector('.audio-topbar'));
+ const sfxRow=make('div','ui-option-row'),sfxLabel=make('label','','効果音の音量');sfxLabel.htmlFor='uiSfxVolume';
+ const sfxRange=make('input');sfxRange.id='uiSfxVolume';sfxRange.type='range';sfxRange.min='0';sfxRange.max='100';sfxRange.step='1';sfxRange.value=String(sfxVolume);
+ const sfxOutput=make('output','',''+sfxVolume+'%');sfxOutput.htmlFor='uiSfxVolume';sfxRow.append(sfxLabel,sfxRange,sfxOutput);
+ sfxRange.addEventListener('input',()=>{sfxVolume=Number(sfxRange.value);sfxOutput.value=sfxVolume+'%';sfxOutput.textContent=sfxOutput.value;try{localStorage.setItem('slimeRanchSfxVolume',String(sfxVolume))}catch{}});
+ const motionRow=make('label','ui-motion-row'),motionToggle=make('input');motionToggle.type='checkbox';motionToggle.id='uiReducedMotion';
+ const motionText=make('span','','画面演出を控えめにする');motionRow.append(motionToggle,motionText);
+ try{motionToggle.checked=localStorage.getItem('slimeRanchReducedMotion')==='true'}catch{}
+ document.body.classList.toggle('user-reduced-motion',motionToggle.checked);
+ motionToggle.addEventListener('change',()=>{document.body.classList.toggle('user-reduced-motion',motionToggle.checked);try{localStorage.setItem('slimeRanchReducedMotion',String(motionToggle.checked))}catch{}});
+ const resetRow=make('div','ui-reset-row'),resetNote=make('p','small','ゲームの進行状況と所持データを消去し、最初からやり直します。セーブのバックアップを書き出してから実行できます。');
+ const resetGame=button('データ初期化',()=>byId('resetBtn').click());resetGame.id='uiResetGame';resetRow.append(resetNote,resetGame);
  const save=button('手動セーブ',()=>{byId('saveBtn').click();status.textContent='セーブしました。';});
  const status=make('p','ui-status','進行状況は自動保存されます。');status.setAttribute('role','status');
- settings.append(save,status);document.body.append(settings);
+ settings.append(sfxRow,motionRow,resetRow,save,status);document.body.append(settings);
  settings.addEventListener('click',e=>{if(e.target===settings){const r=settings.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)settings.close();}});
  const gear=button('⚙',()=>settings.showModal());gear.id='uiSettingsButton';gear.setAttribute('aria-label','音と設定を開く');gear.title='音量・効果音・手動セーブ';document.querySelector('header').append(gear);
 
