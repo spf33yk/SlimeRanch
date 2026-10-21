@@ -401,7 +401,8 @@ test('opening screen fits phone portrait and landscape viewports',async({page})=
   expect(layout.frame.right).toBeLessThanOrEqual(viewport.width+1);
   expect(layout.frame.bottom).toBeLessThanOrEqual(viewport.height+1);
   const artwork=await page.locator('#openingArtwork').evaluate(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{x:r.x,y:r.y,width:r.width,height:r.height,fit:s.objectFit,duration:s.animationDuration}});
-  expect(artwork.x).toBeLessThanOrEqual(0);expect(artwork.y).toBeLessThanOrEqual(0);expect(artwork.width).toBeGreaterThanOrEqual(viewport.width);expect(artwork.height).toBeGreaterThanOrEqual(viewport.height);expect(artwork.fit).toBe('cover');expect(artwork.duration).toBe('20s');
+  expect(artwork.x).toBeLessThanOrEqual(0);expect(artwork.y).toBeLessThanOrEqual(0);expect(artwork.width).toBeGreaterThanOrEqual(viewport.width);expect(artwork.height).toBeGreaterThanOrEqual(viewport.height);expect(artwork.fit).toBe('cover');expect(artwork.duration).toBe('18s');
+  expect(await page.locator('.opening-shade').evaluate(el=>getComputedStyle(el,'::after').animationName)).toBe('opening-sunlight');
   for(const button of layout.buttons){expect(button.x).toBeGreaterThanOrEqual(0);expect(button.right).toBeLessThanOrEqual(viewport.width+1);expect(button.y).toBeGreaterThanOrEqual(0);expect(button.bottom).toBeLessThanOrEqual(viewport.height+1);}
   await expect(page.locator('#gameStart')).toBeVisible();
   await expect(page.locator('#gameOption')).toBeVisible();
@@ -413,22 +414,30 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await page.addInitScript(()=>{window.__SLIME_E2E__=false;['slimeRanchCodex1','slimeRanchFinal','slimeRanchGAS_v3','slimeRanchGAS_v2','slimeRanchGAS_v1','slimeRanchPixel_v4','slimeRanchTutorialV1'].forEach(key=>localStorage.removeItem(key))});
  await page.goto('./');
  await expect(page.locator('#openingScreen')).toBeVisible();
- await page.evaluate(()=>{g.tiles=['magic','spawn:森スライム','empty','empty'];g.maso=80;render();save()});
+ await page.evaluate(()=>{g.maso=80;render();save()});
  await page.click('#gameStart');
  await expect(page.locator('#openingScreen')).toBeHidden();
  await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
+ const firstTiles=await page.evaluate(()=>({magic:g.tiles.indexOf('magic'),spawn:g.tiles.findIndex(t=>t==='spawn'||t.startsWith('spawn:'))}));
+ expect(firstTiles.magic).toBeGreaterThanOrEqual(0);expect(firstTiles.spawn).toBeGreaterThanOrEqual(0);expect(firstTiles.magic).not.toBe(firstTiles.spawn);
+ expect(await page.locator('#tutorialDimTop').evaluate(el=>parseFloat(el.style.height))).toBeLessThan(await page.locator('#fieldCanvas').evaluate(el=>el.closest('.panel').getBoundingClientRect().top));
  await page.screenshot({path:test.info().outputPath('tutorial-first-step.png')});
  const clickFieldCell=async index=>{
   const point=await page.locator('#fieldCanvas').evaluate((canvas,index)=>{const r=canvas.getBoundingClientRect(),cell=82,off=(720-2*cell)/2;return{x:r.x+(off+(index%2)*cell+cell/2)/720*r.width,y:r.y+(off+Math.floor(index/2)*cell+cell/2)/720*r.height}},index);
   await page.mouse.click(point.x,point.y);
  };
- await clickFieldCell(0);
+ await clickFieldCell(firstTiles.magic);
  await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
- await clickFieldCell(1);
+ await clickFieldCell(firstTiles.spawn);
  await expect(page.locator('#tutorialTitle')).toHaveText('フィールドを強化しよう');
  await page.click('#yieldUp');
  await expect(page.locator('#tutorialTitle')).toHaveText('モンスターを合成しよう');
  await page.click('[data-tab="ranch"]');
+ await expect(page.locator('.ui-ranch-actions button').first()).toHaveClass(/tutorial-focus/);
+ await expect(page.locator('#uiFusion')).not.toHaveJSProperty('open',true);
+ await page.locator('.ui-ranch-actions button').first().click();
+ await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
+ await expect(page.locator('#fuse')).toHaveClass(/tutorial-focus/);
  await page.click('#fuse');
  await expect(page.locator('#tutorialTitle')).toHaveText('バトルに挑戦しよう');
  await page.click('[data-tab="battle"]');
@@ -437,10 +446,21 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
   await page.evaluate(stage=>{setStage(stage);g.enemyHP=1;render();save()},stage);
   await page.click('#attack');
  }
- await expect(page.locator('#tutorialTitle')).toHaveText('サブモンスター枠が解放！');
+ await expect(page.locator('#tutorialTitle')).toHaveText('仲間をもう1体迎えよう');
  await expect(page.locator('#subCard')).toContainText('仲間にするとサブ枠に編成できます');
  expect(await page.evaluate(()=>g.kills)).toBe(3);
- await page.click('#tutorialSkip');
+ await page.click('[data-tab="field"]');
+ await expect(page.locator('#fieldCanvas')).toHaveClass(/tutorial-focus/);
+ await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='spawn:森スライム';render();save()});
+ await clickFieldCell(0);
+ await expect(page.locator('#tutorialTitle')).toHaveText('サブモンスターを編成しよう');
+ await page.click('[data-tab="ranch"]');
+ await expect(page.locator('#subSelect')).toBeEnabled();
+ const subId=await page.evaluate(()=>g.slimes.find(m=>m.id!==+g.main).id);
+ await page.locator('#subSelect').selectOption(String(subId));
+ await expect(page.locator('#tutorialTitle')).toHaveText('チュートリアル完了');
+ await expect(page.locator('#tutorialContinue')).toBeVisible();
+ await page.click('#tutorialContinue');
  await page.click('[data-tab="guide"]');
  await page.click('#tutorialReplay');
  await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');

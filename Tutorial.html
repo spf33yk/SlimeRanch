@@ -1,8 +1,9 @@
 <style id="first-run-tutorial-style">
 #tutorialOverlay[hidden]{display:none!important}
 #tutorialOverlay{position:fixed;inset:0;z-index:90000;pointer-events:none}
-#tutorialOverlay:before{content:"";position:absolute;inset:0;background:#070b12a8}
-.tutorial-card{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(500px,calc(100vw - 24px));padding:18px 20px;border:2px solid #c5a968;border-radius:8px;background:linear-gradient(145deg,#252b32f5,#14191ff5);box-shadow:inset 0 0 0 3px #10151b,0 14px 50px #000b;color:#f5f0e3;pointer-events:auto}
+#tutorialOverlay:before{display:none}
+.tutorial-dimmer{position:fixed;z-index:0;background:#070b12a8;pointer-events:none}
+.tutorial-card{position:fixed;z-index:2;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(500px,calc(100vw - 24px));padding:18px 20px;border:2px solid #c5a968;border-radius:8px;background:linear-gradient(145deg,#252b32f5,#14191ff5);box-shadow:inset 0 0 0 3px #10151b,0 14px 50px #000b;color:#f5f0e3;pointer-events:auto}
 .tutorial-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;color:#f3d996;font-size:12px;letter-spacing:.1em}
 .tutorial-card h2{margin:0;color:#ffe5a7;font-size:20px}
 .tutorial-card p{margin:9px 0 14px;font-size:14px;line-height:1.65}
@@ -17,6 +18,7 @@
 @media(prefers-reduced-motion:reduce){.tutorial-progress span{transition:none}}
 </style>
 <div id="tutorialOverlay" hidden aria-live="polite">
+ <div class="tutorial-dimmer" id="tutorialDimTop"></div><div class="tutorial-dimmer" id="tutorialDimBottom"></div><div class="tutorial-dimmer" id="tutorialDimLeft"></div><div class="tutorial-dimmer" id="tutorialDimRight"></div>
  <section class="tutorial-card" role="dialog" aria-modal="false" aria-labelledby="tutorialTitle" aria-describedby="tutorialText">
   <div class="tutorial-card-head"><span id="tutorialCounter">はじめての冒険</span><span>GUIDE</span></div>
   <h2 id="tutorialTitle"></h2><div class="tutorial-progress" aria-hidden="true"><span id="tutorialProgress"></span></div>
@@ -30,20 +32,23 @@
  let hadSave=false,state={step:0,magic:false,monster:false,inProgress:false},running=false,focus=[];
  try{hadSave=saveKeys.some(key=>!!localStorage.getItem(key));const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved&&typeof saved==='object')state={...state,...saved}}catch{}
  const steps=[
-  {title:'魔素と仲間を集めよう',text:'青い結晶をタップして魔素を集め、スライムのマスから仲間を1体迎えよう。2つのマスを回収すると次へ進みます。'},
+  {title:'魔素と仲間を集めよう',text:'青い結晶とスライムのマスを両方タップして、魔素と仲間を集めよう。2つのマスを回収すると次へ進みます。'},
   {title:'フィールドを強化しよう',text:'魔素取得量・湧き速度・採集範囲の強化か、領域拡張を1回購入しよう。最初は魔素取得量アップが手軽です。'},
   {title:'モンスターを合成しよう',text:'牧場へ移動して2体を選び、合成を試そう。失敗しても素材は残るので、気軽に挑戦できます。'},
   {title:'バトルに挑戦しよう',text:'バトルへ移動し、STAGE 3まで勝ち進もう。最初のスライムは序盤の敵と戦いやすいHPに調整されています。'},
-  {title:'サブモンスター枠が解放！',text:'STAGE 3突破で討伐数3体に到達し、サブ枠が使えるようになります。フィールドでもう1体仲間にして、牧場で編成してみよう。'}
+  {title:'仲間をもう1体迎えよう',text:'サブ枠が解放されました。フィールドに戻り、スライムをもう1体タップして仲間にしよう。'},
+  {title:'サブモンスターを編成しよう',text:'牧場へ移動し、サブモンスターを選んでチームに編成しよう。'}
  ];
  const el=id=>document.getElementById(id);
  function saveState(){try{localStorage.setItem(storageKey,JSON.stringify(state))}catch{}}
  function clearFocus(){for(const target of focus)target.classList.remove('tutorial-focus');focus=[]}
  function findTargets(){
   if(state.step===0)return [el('fieldCanvas')];
-  if(state.step===1)return ['yieldUp','spawnUp','rangeUp','expand'].map(el).filter(Boolean);
-  if(state.step===2){if(document.getElementById('ranch')?.classList.contains('active')){const fusion=el('uiFusion');if(fusion)fusion.open=true;return [el('fuse')]}return [document.querySelector('[data-tab="ranch"]')]}
+  if(state.step===1)return [el('yieldUp')];
+  if(state.step===2){if(!document.getElementById('ranch')?.classList.contains('active'))return [document.querySelector('[data-tab="ranch"]')];return [el('uiFusion')?.open?el('fuse'):document.querySelector('.ui-ranch-actions button')]}
   if(state.step===3)return document.getElementById('battle')?.classList.contains('active')?[el('attack')]:[document.querySelector('[data-tab="battle"]')];
+  if(state.step===4)return document.getElementById('field')?.classList.contains('active')?[el('fieldCanvas')]:[document.querySelector('[data-tab="field"]')];
+  if(state.step===5)return document.getElementById('ranch')?.classList.contains('active')?[el('subSelect')]:[document.querySelector('[data-tab="ranch"]')];
   return [];
  }
  function paint(){
@@ -57,7 +62,9 @@
   el('tutorialContinue').hidden=!done;
   clearFocus();focus=findTargets().filter(Boolean);
   const target=focus.find(node=>!node.disabled)||focus[0];
-  if(target){target.classList.add('tutorial-focus');if(!overlay.hidden)target.scrollIntoView({block:'nearest',behavior:'auto'})}
+  const dimmers=['tutorialDimTop','tutorialDimBottom','tutorialDimLeft','tutorialDimRight'].map(el);
+  const setRect=(node,left,top,width,height)=>Object.assign(node.style,{left:left+'px',top:top+'px',width:Math.max(0,width)+'px',height:Math.max(0,height)+'px'});
+  if(target){target.classList.add('tutorial-focus');if(!overlay.hidden)target.scrollIntoView({block:'nearest',behavior:'auto'});const scope=target.closest('.panel')||target.closest('.ui-ranch-actions')||target;const r=scope.getBoundingClientRect(),left=Math.max(0,r.left-8),top=Math.max(0,r.top-8),right=Math.min(innerWidth,r.right+8),bottom=Math.min(innerHeight,r.bottom+8);setRect(dimmers[0],0,0,innerWidth,top);setRect(dimmers[1],0,bottom,innerWidth,innerHeight-bottom);setRect(dimmers[2],0,top,left,bottom-top);setRect(dimmers[3],right,top,innerWidth-right,bottom-top)}else dimmers.forEach(node=>setRect(node,0,0,innerWidth,innerHeight));
  }
  function begin(replay=false){
   if(running)return;
@@ -85,8 +92,11 @@
   }else if(state.step===1&&detail.action==='field-upgrade')advance();
   else if(state.step===2&&detail.action==='fusion')advance();
   else if(state.step===3&&detail.action==='battle-win'&&detail.kills>=3&&detail.maxStage>=4)advance();
+  else if(state.step===4&&detail.action==='collect'&&detail.monsters>0)advance();
+  else if(state.step===5&&detail.action==='sub-select'&&detail.sub>0)advance();
  });
  window.addEventListener('slime:tutorial-tab',()=>{if(running)paint()});
+ document.addEventListener('click',event=>{if(event.target.closest('.ui-ranch-actions button:first-child'))requestAnimationFrame(paint)});
  document.addEventListener('DOMContentLoaded',()=>{
   el('tutorialSkip').addEventListener('click',()=>close(true));
   el('tutorialContinue').addEventListener('click',()=>close(true));
