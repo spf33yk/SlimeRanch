@@ -11,6 +11,7 @@ test('starts under the Pages subpath; all tabs and responsive layouts work',asyn
  expect(await page.evaluate(()=>g.slimes.length)).toBeGreaterThan(0);
  for(const width of [1280,390]){
   await page.setViewportSize({width,height:900});
+  if(width===390){const positions=await page.evaluate(()=>[document.getElementById('headerMonsterCount'),document.getElementById('hearts')].map(e=>e.closest('.resource').getBoundingClientRect().y));expect(Math.abs(positions[0]-positions[1])).toBeLessThan(1);}
   for(const tab of ['field','ranch','battle','guide']){
    await page.click(`[data-tab="${tab}"]`);
    await expect(page.locator('#'+tab)).toBeVisible();
@@ -57,9 +58,10 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await actions.getByRole('button',{name:'装備・宝箱',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
  await page.click('#treasureClose');
- await page.evaluate(()=>{treasureDebugGive('normal');treasureOpenChest(g.treasureChests.at(-1).id);treasureEquipCharm('main',g.treasureCharms.at(-1).id);});
+ await page.evaluate(()=>{treasureEnsure();g.treasureCharms.push({id:999,name:'Test Charm',rarity:'normal',effects:[{key:'atk',label:'攻撃力',mult:1.1}]});treasureEquipCharm('main',999);});
  expect(await page.evaluate(()=>!!g.treasureEquip.main)).toBe(true);
  await page.click('[data-tab=battle]');
+ await page.evaluate(()=>{g.won=false;g.autoNext=true;g.autoFight=false;g.enemyHP=enemyMax(g.stage)*10;render();});
  const before=await page.evaluate(()=>g.enemyHP);
  await page.click('#attack');
  expect(await page.evaluate(()=>g.enemyHP)).toBeLessThan(before);
@@ -170,8 +172,10 @@ test('ranch header, capacity upgrades, companion layout and sub charm stats work
  await page.goto('./');
  await page.click('[data-tab=ranch]');
  expect(await page.locator('#headerMonsterCount').textContent()).toBe('1 / 100');
- const layout=await page.evaluate(()=>({main:document.getElementById('mainCard').getBoundingClientRect().top,stats:document.getElementById('ranchTeamStats').getBoundingClientRect().top,sub:document.getElementById('uiSubCompanion').getBoundingClientRect().top,statsBottom:document.getElementById('ranchTeamStats').getBoundingClientRect().bottom}));
- expect(layout.stats).toBeLessThan(layout.sub);expect(layout.main).toBeLessThan(layout.sub);expect(layout.statsBottom).toBeLessThanOrEqual(layout.sub);
+ expect(await page.locator('#kills').count()).toBe(0);
+ const resourceLabels=await page.locator('header .resource small').allTextContents();expect(resourceLabels).toEqual(['✨ 魔素','🐾 モンスター','💗 ハート']);
+ const layout=await page.evaluate(()=>{const main=document.getElementById('mainCard').getBoundingClientRect(),stats=document.getElementById('ranchTeamStats').getBoundingClientRect(),sub=document.getElementById('uiSubCompanion').getBoundingClientRect();return {mainX:main.x,statsX:stats.x,statsY:stats.y,statsBottom:stats.bottom,subX:sub.x,subY:sub.y}});
+ expect(layout.mainX).toBeLessThan(layout.statsX);expect(layout.subX).toBe(layout.statsX);expect(layout.subY).toBeGreaterThanOrEqual(layout.statsBottom);
  await page.getByRole('button',{name:'相棒一覧',exact:true}).click();
  await page.evaluate(()=>{g.maso=1000;render();});
  await page.click('#capacityUp');
@@ -184,6 +188,8 @@ test('ranch header, capacity upgrades, companion layout and sub charm stats work
  expect(charmStats.sub).toBe(charmStats.base*2);expect(charmStats.team).toBe(charmStats.sub+charmStats.main);
  expect(await page.locator('#headerMonsterCount').textContent()).toBe('2 / 110');
  await expect(page.locator('#uiSubCompanion #subCard')).toContainText('装備確認用サブ');
+ expect(await page.locator('#uiSubCompanion .sprite').evaluate(e=>getComputedStyle(e).animationName)).toBe('slime-idle');
+ expect(await page.locator('#mainCard .mhead').evaluate(e=>getComputedStyle(e).backgroundPositionY)).toContain('56%');
 });
 test('bulk fusion tries each selected material once, even when every attempt fails',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
@@ -219,4 +225,47 @@ test('field and battle epic chests skip freeze and guaranteed freeze can be skip
   }finally{treasureFreezePrompt=oldPrompt;Math.random=oldRandom;}
  });
  expect(result).toEqual({awarded:1,fieldEpic:true,fieldFreezeCalls:1,battleEpic:true,battleFreezeCalls:1,visible:true,hidden:true,busy:false,callbackValue:true});
+});
+test('equipped charms cannot be shared, and the charm selection can be cleared',async({page})=>{
+ await page.goto('./');
+ const charmId=await page.evaluate(()=>{
+  const id=g.treasureNextId++;g.treasureCharms.push({id,rarity:'normal',name:'専用装備',effects:[{key:'atk',label:'攻撃力',mult:1.5}]});
+  treasureEquipCharm('main',id);treasureDialog('sub');return id;
+ });
+ const equipButton=page.locator(`#treasureCharmList button[data-tequip="${charmId}"]`);
+ await expect(equipButton).toBeDisabled();await expect(equipButton).toContainText('メイン装備中');
+ expect(await page.evaluate(id=>treasureEquipCharm('sub',id),charmId)).toBe(false);
+ expect(await page.evaluate(()=>g.treasureEquip.sub)).toBeNull();
+ await page.evaluate(()=>{
+  for(let i=0;i<2;i++)g.treasureCharms.push({id:g.treasureNextId++,rarity:'normal',name:'未装備'+i,effects:[{key:'hp',label:'HP',mult:1.2}]});
+  renderTreasure();
+ });
+ await page.locator('#treasureCharmSection summary').click();
+ const boxes=page.locator('#treasureCharmList input[data-tselect]:not(:disabled)');
+ await boxes.evaluateAll(xs=>xs.forEach(x=>{x.checked=true;}));
+ await page.click('#treasureClearSelected');
+ expect(await boxes.evaluateAll(xs=>xs.some(x=>x.checked))).toBe(false);
+});
+test('heart drop reaches 100 percent and the field grid fills its backdrop',async({page})=>{
+ await page.goto('./');
+ const chances=await page.evaluate(()=>{
+  const original=teamFarmStats;teamFarmStats=()=>({heart:98.99});const below=heartDropChance();teamFarmStats=()=>({heart:99});const max=heartDropChance();teamFarmStats=original;return {below,max};
+ });
+ expect(chances.below).toBeCloseTo(0.9999,4);expect(chances.max).toBe(1);
+ await page.click('[data-tab=field]');
+ for(const n of [2,24]){
+  const grid=await page.evaluate(n=>{g.lv=SIZES.indexOf(n);g.tiles=Array(n*n).fill('empty');drawField();const z=fieldGeom(),wrap=document.querySelector('.field-wrap'),canvas=document.getElementById('fieldCanvas');return {n:z.n,cell:z.cell,off:z.off,total:z.cell*z.n,canvas:canvas.width,padding:getComputedStyle(wrap).padding};},n);
+  expect(grid).toEqual({n,cell:720/n,off:0,total:720,canvas:720,padding:'0px'});
+ }
+});
+test('header, navigation and content keep a stable horizontal position across tabs',async({page})=>{
+ await page.goto('./');
+ const positions=[];
+ for(const tab of ['field','ranch','battle','guide']){
+  await page.click(`[data-tab="${tab}"]`);
+  positions.push(await page.evaluate(()=>({header:document.querySelector('header').getBoundingClientRect().x,nav:document.querySelector('nav').getBoundingClientRect().x,main:document.querySelector('main').getBoundingClientRect().x,scrollbar:getComputedStyle(document.documentElement).scrollbarGutter,width:document.documentElement.scrollWidth})));
+ }
+ expect(positions.map(p=>p.header)).toEqual([positions[0].header,positions[0].header,positions[0].header,positions[0].header]);
+ expect(positions.map(p=>p.main)).toEqual([positions[0].main,positions[0].main,positions[0].main,positions[0].main]);
+ expect(positions.every(p=>p.scrollbar.includes('stable')&&p.width<=1280)).toBe(true);
 });

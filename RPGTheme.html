@@ -1,4 +1,5 @@
 <style id="slime-rpg-ui-v2">
+html{scrollbar-gutter:stable}
 /* v0.2 UI: original game IDs and save schema are preserved. */
 
 body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d78b;--y:#e8cf97;background:radial-gradient(ellipse at top,#3b4149,#191c22 65%);color:var(--t);font-family:"PixelMplus10",system-ui,sans-serif;min-height:100vh}
@@ -135,8 +136,7 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .screen .panel:before,.ui-v2 .screen .panel:after{content:"";position:absolute;top:6px;width:5px;height:5px;border:1px solid #a8a9a8;background:#555b63;transform:rotate(45deg);pointer-events:none}
 .ui-v2 .screen .panel:before{left:6px}.ui-v2 .screen .panel:after{right:6px}
 .ui-v2 .ui-ranch-actions{margin-top:0}
- .ui-v2 #uiSubCompanion{grid-column:1/-1}
- .ui-v2 #uiSubCompanion #subCard{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px}
+ .ui-v2 .ranch-side-stack{display:grid;align-content:start;gap:10px;min-width:0}
  .ui-v2 #uiSubCompanion #subCard>.mcard{margin:0}
 .ui-v2 .ui-stat-details{margin-top:14px;font-size:13px;color:#c4ccd3}
 .ui-v2 summary{cursor:pointer;line-height:1.6}
@@ -154,12 +154,13 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
  .ui-v2 #monsterList{grid-template-columns:1fr}
 }
 @media(max-width:760px){
- .ui-v2 header{padding:12px;gap:10px}.ui-v2 .brand{font-size:22px;flex:1}.ui-v2 .resources{order:3;width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0;gap:6px}
+ .ui-v2 header{padding:12px;gap:10px}.ui-v2 .brand{font-size:22px;flex:1}.ui-v2 .resources{order:3;width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0;gap:6px}.ui-v2 .resources>.resource:first-child{grid-column:1/-1}
  .ui-v2 .resource{min-width:0;gap:7px;justify-content:space-between}.ui-v2 .resource small{font-size:11px}.ui-v2 .resource b{font-size:17px}
  .ui-v2 nav{padding:8px 10px 10px;gap:5px;grid-template-columns:repeat(4,minmax(0,1fr))}
  .ui-v2 nav button{padding:9px 3px;font-size:12px;min-height:48px;letter-spacing:0}.ui-v2 nav button.active:after{display:none}
  .ui-v2 main{padding:2px 10px 20px}.ui-v2 .screen .panel{padding:14px}
  .ui-v2 #field.active,.ui-v2 .ranch-layout,.ui-v2 #battle.active,.ui-v2 #guide.active{grid-template-columns:1fr}
+ .ui-v2 .ranch-side-stack{grid-column:1;grid-row:auto}
  .ui-v2 .field-wrap{max-width:560px!important;margin:auto}.ui-v2 .field-upgrades .row{grid-template-columns:minmax(0,1fr) 140px}
  .ui-v2 .ui-ranch-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.ui-v2 .ui-ranch-actions button{padding:10px 4px;font-size:13px}
  .ui-v2 .battle-control{grid-column:1;grid-row:2}.ui-v2 .fight{grid-row:1;min-height:320px}.ui-v2 #battle>.panel:last-child{grid-row:3}
@@ -170,8 +171,20 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
  .ui-v2 .guide-btn{font-size:12px}.ui-v2 .codex-grid{grid-template-columns:1fr}
  .ui-v2 #mainCard .mhead{min-height:260px}.ui-v2 .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media(prefers-reduced-motion:reduce){.ui-v2 *{scroll-behavior:auto!important;transition:none!important}}
+@keyframes slime-idle{0%,100%{transform:translateY(2px) rotate(-1deg)}50%{transform:translateY(-4px) rotate(1deg)}}
+.ui-v2 #mainCard .mhead{background-position:center 56%}
+.ui-v2 #mainCard .mhead .sprite,.ui-v2 #uiSubCompanion #subCard .sprite{animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom}
+.ui-v2 .resource{background:linear-gradient(180deg,#34383e,#20242a);border-color:#81868c;box-shadow:inset 0 1px #ffffff15,0 3px #101216}
+.ui-v2 .screen .panel{border-color:#858a8e;box-shadow:inset 0 0 0 1px #111418,0 4px 0 #111418,0 10px 22px #0004}
+.ui-v2 nav button{border-color:#73787d;background:linear-gradient(180deg,#363a3f,#24272b);box-shadow:inset 0 1px #ffffff18,0 3px 0 #111418}
+.ui-v2 nav button.active{border-color:#d7bf84;box-shadow:inset 0 0 0 1px #f5e1ac55,0 3px 0 #111418;color:#fff2c6}
+.ui-v2 .mcard{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.ui-v2 .mcard:hover{transform:translateY(-2px);border-color:#bda76f;box-shadow:0 5px 14px #0005}
+.ui-v2 button:focus-visible,.ui-v2 select:focus-visible{outline:2px solid #efd99d;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.ui-v2 *{scroll-behavior:auto!important;transition:none!important}.ui-v2 #mainCard .mhead .sprite,.ui-v2 #uiSubCompanion #subCard .sprite{animation:none!important}}
 
+
+.ui-v2 .field-wrap{padding:0!important}
 </style>
 <script>
 /* DOM presentation only: reuse game controls, handlers and state. */
@@ -205,7 +218,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const odds=byId('treasureOdds'),oddsDetails=make('details','ui-odds');
  oddsDetails.append(make('summary','small','宝箱の出現確率'),odds);fieldPanels[1].append(oddsDetails);
  // Avoid a tiny initial 2×2 board while retaining the same 720px coordinate system.
- fieldGeom=function(){const n=size(),cell=n<=5?Math.min(156,540/n):600/n;return {n,cell,off:(720-n*cell)/2}};
+ fieldGeom=function(){const n=size(),cell=720/n;return {n,cell,off:0}};
  byId('fieldCanvas').setAttribute('aria-label','魔素フィールド。結晶やモンスターのマスをタップして採集');
  const keyboardCollect=button('採集する',()=>{const i=g.tiles.findIndex(t=>t!=='empty');if(i<0){byId('fieldMsg').textContent='出現を待っています。';return;}harvestMagicAround(i%size(),Math.floor(i/size()));});
  keyboardCollect.id='uiCollect';keyboardCollect.title='最初の資源マスを中心に、現在の採集範囲で回収';fieldPanels[0].querySelector('.grid2').prepend(keyboardCollect);
@@ -221,9 +234,11 @@ document.addEventListener('DOMContentLoaded',()=>{
  actions.append(button('合成',()=>reveal(fusion)),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('装備・宝箱',()=>treasureDialog('main')),button('相棒一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
  ranch.querySelector('.ranch-layout').before(actions);
  const ranchIntro=ranch.querySelector('.ranch-layout>.panel>p');ranchIntro.textContent='メインとサブの能力が冒険を支えます。大切な個体は一覧からロックして保護できます。';
+ const sideStack=make('div','ranch-side-stack');
+ sideStack.append(byId('ranchTeamStats'));
  const subPanel=make('div','panel');subPanel.id='uiSubCompanion';subPanel.append(make('h2','','サブ相棒'));
  ['subSelect','subCard'].forEach(id=>{const el=byId(id),label=id==='subSelect'?ranch.querySelector('label[for="subSelect"]'):null;if(label)subPanel.append(label);subPanel.append(el);});
- ranch.querySelector('.ranch-layout').after(subPanel);
+ sideStack.append(subPanel);ranch.querySelector('.ranch-layout').append(sideStack);
 
  // Battle: stage and automation in a side panel, combatants share one scene.
  const battlePanel=byId('battle').querySelector(':scope > .panel');battlePanel.classList.add('battle-control');
