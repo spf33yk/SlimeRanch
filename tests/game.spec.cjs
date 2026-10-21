@@ -293,8 +293,12 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await expect(page.locator('#heartInventory')).toBeVisible();
  await actions.getByRole('button',{name:'モンスター一覧',exact:true}).click();
  await expect(page.locator('#monsterInventory')).toBeVisible();
- await actions.getByRole('button',{name:'装備・宝箱',exact:true}).click();
+ await page.locator('.ui-monster-select-row--main').getByRole('button',{name:'装備・宝箱',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
+ await page.click('#treasureClose');
+ await page.locator('.ui-monster-select-row--sub').getByRole('button',{name:'お守り装備',exact:true}).click();
+ await expect(page.locator('#treasureModal')).toBeVisible();
+ await expect(page.locator('#treasureSlot')).toHaveValue('sub');
  await page.click('#treasureClose');
  await page.evaluate(()=>{treasureEnsure();g.treasureCharms.push({id:999,name:'Test Charm',rarity:'normal',effects:[{key:'atk',label:'攻撃力',mult:1.1}]});treasureEquipCharm('main',999);});
  expect(await page.evaluate(()=>!!g.treasureEquip.main)).toBe(true);
@@ -492,6 +496,26 @@ test('ranch header, capacity upgrades, monster layout and sub charm stats work',
  await expect(page.locator('#uiSubCompanion #subCard')).toContainText('装備確認用サブ');
  expect(await page.locator('#uiSubCompanion .ui-monster-idle-motion').evaluate(e=>getComputedStyle(e).animationName)).toBe('ranch-idle-bob');
  expect(await page.locator('#mainCard .mhead').evaluate(e=>getComputedStyle(e).backgroundPositionY)).toContain('56%');
+});
+test('ranch selection rows fit the name limit, place equipment actions beside them and expand the main display',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ const desktop=await page.evaluate(()=>({
+  intro:document.querySelector('#ranch .ranch-layout>.panel>p')?.textContent||'',
+  rows:[...document.querySelectorAll('.ui-monster-select-row')].map(row=>({
+   width:row.getBoundingClientRect().width,selectWidth:row.querySelector('select').getBoundingClientRect().width,
+   button:row.querySelector('button')?.textContent.trim(),selectRight:row.querySelector('select').getBoundingClientRect().right,
+   buttonLeft:row.querySelector('button')?.getBoundingClientRect().left
+  })),
+  mainMinHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight
+ }));
+ expect(desktop.intro).toBe('');expect(desktop.rows).toHaveLength(2);
+ for(const row of desktop.rows){expect(row.selectWidth).toBeLessThan(row.width);expect(row.buttonLeft).toBeGreaterThanOrEqual(row.selectRight)}
+ expect(desktop.rows.map(row=>row.button)).toEqual(['装備・宝箱','お守り装備']);
+ expect(desktop.mainMinHeight).toBe('310px');
+ await page.setViewportSize({width:390,height:844});
+ const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,rows:[...document.querySelectorAll('.ui-monster-select-row')].map(row=>({row:row.getBoundingClientRect().width,select:row.querySelector('select').getBoundingClientRect().width}))}));
+ expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.viewport);expect(mobile.rows).toHaveLength(2);
+ for(const row of mobile.rows)expect(row.select).toBeLessThanOrEqual(row.row);
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
  await page.goto('./');

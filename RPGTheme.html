@@ -71,7 +71,11 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .stats{gap:8px}
 .ui-v2 .stat{padding:10px;min-width:0}
 .ui-v2 .stat b{font-size:16px;overflow-wrap:anywhere;color:#e1e5d4}
-.ui-v2 .ui-ranch-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0}
+.ui-v2 .ui-ranch-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.ui-v2 .ui-monster-select-row{display:flex;align-items:stretch;gap:8px;max-width:100%;margin:0 0 4px}
+.ui-v2 .ui-monster-select-row select{width:min(100%,29em);max-width:100%;flex:0 1 29em;min-width:0}
+.ui-v2 .ui-monster-select-row button{flex:0 0 auto;white-space:nowrap}
+.ui-v2 #mainCard>.mcard{margin-top:4px}
 .ui-v2 #monsterList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .ui-v2 #monsterList .mcard{margin:0}
 .ui-v2 #monsterList .mhead{align-items:start}
@@ -170,13 +174,16 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
  .ui-v2 .ranch-side-stack{grid-column:1;grid-row:auto}
  .ui-v2 .field-wrap{max-width:560px!important;margin:auto}.ui-v2 .field-upgrades .row{grid-template-columns:minmax(0,1fr) 140px}
  .ui-v2 .ui-ranch-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.ui-v2 .ui-ranch-actions button{padding:10px 4px;font-size:13px}
+ .ui-v2 .ui-monster-select-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+ .ui-v2 .ui-monster-select-row select{width:100%;max-width:none}
+ .ui-v2 .ui-monster-select-row button{justify-self:start}
  .ui-v2 .battle-control{grid-column:1;grid-row:2}.ui-v2 .fight{grid-row:1;min-height:320px}.ui-v2 #battle>.panel:last-child{grid-row:3}
  .ui-v2 .battle-control>.row{grid-template-columns:1fr 1fr}.ui-v2 .battle-control .stage-select{grid-template-columns:1fr 1fr}
  .ui-v2 #battle .combat{padding:14px 10px}.ui-v2 #teamSprites .sprite{width:70px!important;height:100px!important}.ui-v2 #enemySprite{width:125px;height:145px}.ui-v2 #teamSprites{min-height:145px}
  .ui-v2 .combat .enemy-name{font-size:14px}
  .ui-v2 #guide>.panel{position:static}.ui-v2 .guide-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
  .ui-v2 .guide-btn{font-size:12px}.ui-v2 .codex-grid{grid-template-columns:1fr}
- .ui-v2 #mainCard .mhead{min-height:260px}.ui-v2 .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ui-v2 #mainCard .mhead{min-height:300px}.ui-v2 .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @keyframes slime-idle{0%,100%{transform:translateY(2px) rotate(-1deg)}50%{transform:translateY(-4px) rotate(1deg)}}
 .ui-v2 #mainCard .mhead{background-position:center 56%}
@@ -214,7 +221,8 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .treasure-bulk-actions button{min-height:38px;font-size:12px;padding:8px 10px}
 .ui-v2 #treasureClearSelected{order:1}.ui-v2 #treasureDeleteSelected{order:2}
 .ui-v2 .treasure-panel button{font-size:13px}
-.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{width:150px;height:130px;margin:20px auto 10px;align-self:start}
+.ui-v2 #mainCard .mhead{min-height:310px}
+.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{width:166px;height:148px;margin:20px auto 10px;align-self:start}
 .ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main .sprite{width:100%!important;height:100%!important;max-width:none;margin:0;filter:drop-shadow(0 9px 5px #0009)!important}
 @keyframes ranch-idle-bob{0%,100%{transform:translateY(0)}25%{transform:translateY(-1px)}50%{transform:translateY(-2px)}75%{transform:translateY(-1px)}}
 @keyframes scene-enter{0%{opacity:0;transform:translateY(9px)}100%{opacity:1;transform:translateY(0)}}
@@ -304,16 +312,20 @@ document.addEventListener('DOMContentLoaded',()=>{
  const fusion=fold(ranchPanels[0],'合成','uiFusion'),inventory=fold(ranchPanels[1],'モンスター・ハート一覧','uiInventory');
  const reveal=(details,target=details)=>{details.open=true;const align=()=>{const behavior=matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';if(target===details)details.scrollIntoView({behavior,block:'start'});else{const r=target.getBoundingClientRect(),top=scrollY+r.top+r.height/2-innerHeight/2;if(details.id==='uiFusion'&&target.id==='fuse'){const max= document.scrollingElement.scrollHeight-innerHeight,space=Math.max(0,Math.ceil(top-max+12));document.body.style.setProperty('--ui-fusion-center-space',space+'px');document.body.classList.add('ui-fusion-center-scroll')}window.scrollTo({top:Math.max(0,top),behavior})}};requestAnimationFrame(()=>{align();requestAnimationFrame(align);setTimeout(align,120)})};
  const actions=make('div','ui-ranch-actions');
- actions.append(button('合成',()=>reveal(fusion,byId('fuse'))),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('装備・宝箱',()=>treasureDialog('main')),button('モンスター一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
+ actions.append(button('合成',()=>reveal(fusion,byId('fuse'))),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('モンスター一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
  actions.addEventListener('click',()=>nav.querySelectorAll('button').forEach(tab=>tab.blur()),true);
  ranch.querySelector('.ranch-layout').before(actions);
  byId('fuse').addEventListener('click',()=>document.body.classList.remove('ui-fusion-center-scroll'));
  document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',()=>{if(tab.dataset.tab!=='ranch')document.body.classList.remove('ui-fusion-center-scroll')}));
- const ranchIntro=ranch.querySelector('.ranch-layout>.panel>p');ranchIntro.textContent='メインとサブの能力が冒険を支えます。大切な個体は一覧からロックして保護できます。';
+ const ranchIntro=ranch.querySelector('.ranch-layout>.panel>p');if(ranchIntro)ranchIntro.remove();
+ function addMonsterSelectRow(selectId,slot,label){const select=byId(selectId),row=make('div','ui-monster-select-row ui-monster-select-row--'+slot);select.before(row);row.append(select,button(label,()=>treasureDialog(slot)));}
+ addMonsterSelectRow('mainSelect','main','装備・宝箱');
+ addMonsterSelectRow('subSelect','sub','お守り装備');
  const sideStack=make('div','ranch-side-stack');
  sideStack.append(byId('ranchTeamStats'));
  const subPanel=make('div','panel');subPanel.id='uiSubCompanion';subPanel.append(make('h2','','サブモンスター'));
- ['subSelect','subCard'].forEach(id=>{const el=byId(id),label=id==='subSelect'?ranch.querySelector('label[for="subSelect"]'):null;if(label)subPanel.append(label);subPanel.append(el);});
+ const subSelectLabel=ranch.querySelector('label[for="subSelect"]');if(subSelectLabel)subPanel.append(subSelectLabel);
+ subPanel.append(byId('subSelect').parentElement,byId('subCard'));
  sideStack.append(subPanel);ranch.querySelector('.ranch-layout').append(sideStack);
  const wrapIdleSprite=(root,kind)=>root.querySelectorAll('.mhead>.sprite').forEach(img=>{
   if(img.parentElement.classList.contains('ui-monster-idle-motion'))return;
