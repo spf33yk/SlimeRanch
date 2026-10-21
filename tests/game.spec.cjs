@@ -480,6 +480,14 @@ test('ranch team stats keep the requested order after fusion adds stats in rever
  });
  expect(labels).toEqual(['HP','攻撃力','守備力','素早さ','クリティカル率','クリティカルダメージ','魔素湧き速度','魔素取得量','ハートドロップ率','モンスタードロップ率','合成成功率']);
 });
+test('monster ranch cards sort added status badges in the fixed order',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ const labels=await page.evaluate(()=>{
+  const m=main();m.uniq=[...RANCH_STAT_RULES].reverse().map(([type,name])=>({type,name,value:1}));render();
+  return [...document.querySelectorAll('#mainCard .trait.unique')].map(el=>el.textContent.replace(/\s+\+\d+%$/,''));
+ });
+ expect(labels).toEqual(['HP','攻撃力','守備力','素早さ','クリティカル率','クリティカルダメージ','魔素湧き速度','魔素取得量','ハートドロップ率','モンスタードロップ率','合成成功率']);
+});
 test('main monster changes keep the idle animation attached to the new sprite',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
  const id=await page.evaluate(()=>{const m=monster('森スライム');m.name='切替テスト';g.slimes.push(m);render();return m.id;});
