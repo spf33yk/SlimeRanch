@@ -59,6 +59,8 @@ test('opening screen loads the game art and offers start, options and end action
  await expect(page.locator('.opening-frame')).toHaveCSS('visibility','hidden');
  await expect(page.locator('#openingScreen')).toBeHidden();
  await expect(page.locator('#field')).toBeVisible();
+ await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
+ await expect(page.locator('#tutorialOverlay')).toBeVisible();
 });
 test('fresh browser uses an audible default and resumes Web Audio on the first game click',async({page})=>{
  await page.goto('./');

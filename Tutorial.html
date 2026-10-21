@@ -82,7 +82,11 @@
   state.inProgress=false;if(markDone)state.done=true;saveState();
  }
  function advance(){state.step++;if(state.step>=steps.length)state.step=steps.length;saveState();paint()}
- window.startFirstRunTutorial=()=>begin(false);
+  window.resetFirstRunTutorial=()=>{
+   hadSave=false;state={step:0,magic:false,monster:false,inProgress:false,done:false};running=false;clearFocus();
+   el('tutorialOverlay').hidden=true;document.body.classList.remove('tutorial-active');saveState();
+  };
+  window.startFirstRunTutorial=()=>begin(false);
  window.replaySlimeTutorial=()=>begin(true);
  window.addEventListener('slime:tutorial-action',event=>{
   if(!running)return;const detail=event.detail||{};
