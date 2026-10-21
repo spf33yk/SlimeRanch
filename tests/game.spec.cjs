@@ -604,9 +604,11 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
   expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
  await page.click('[data-tab="ranch"]');
  await expect(page.locator('.ui-ranch-actions button').first()).toHaveClass(/tutorial-focus/);
+ await expect(page.locator('#tutorialText')).toContainText('画面上部の「合成」ボタンを押そう');
  await expect(page.locator('#uiFusion')).not.toHaveJSProperty('open',true);
  await page.locator('.ui-ranch-actions button').first().click();
  await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
+ await expect(page.locator('#tutorialText')).toContainText('合成画面が開きました');
   await expect(page.locator('#fuseA')).toHaveClass(/tutorial-focus/);
   await expect(page.locator('#fuseB')).toHaveClass(/tutorial-focus/);
   await expect(page.locator('#fuse')).toHaveClass(/tutorial-focus/);
