@@ -2,14 +2,14 @@
 body.opening-active{height:100dvh;min-height:0;overflow:hidden}
 body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 #openingScreen[hidden]{display:none!important}
-#openingScreen{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;overflow:auto;padding:clamp(16px,4vw,48px);isolation:isolate;background:#10131a;color:#f7f0de;opacity:1;transition:opacity .38s ease}
+#openingScreen{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;overflow:auto;padding:clamp(16px,4vw,48px);isolation:isolate;background:#10131a;color:#f7f0de;opacity:1;transition:opacity .5s ease}
 .opening-art,.opening-shade{position:absolute;inset:0;z-index:-1;pointer-events:none}
 .opening-art{overflow:hidden;background:#10131a}
 .opening-art img{position:absolute;inset:0;width:100%;height:100%}
 .opening-art .opening-art-fill{object-fit:cover;filter:blur(18px) brightness(.48) saturate(.8);transform:scale(1.04)}
 .opening-art .opening-art-main{object-fit:contain;object-position:center;filter:saturate(.92);animation:opening-drift 24s ease-in-out infinite alternate}
-.opening-shade{background:linear-gradient(90deg,#0a0e13b8 0%,#10141b70 35%,#11172130 68%,#10141b55 100%),linear-gradient(0deg,#0a0d12d9 0%,#0a0d1266 20%,transparent 55%,#10131a70 100%)}
-.opening-frame{box-sizing:border-box;width:min(360px,100%);margin:0 0 0 auto;padding:clamp(18px,3vw,24px);border:2px solid #b49a60;border-radius:8px;background:linear-gradient(145deg,#252a30eb,#151a20e8);box-shadow:inset 0 0 0 3px #11151a,inset 0 0 0 4px #71634a,0 22px 70px #0009;backdrop-filter:blur(4px);text-align:center;transform:translateX(clamp(0px,3vw,32px));transition:opacity .3s ease,transform .38s cubic-bezier(.2,.8,.2,1)}
+.opening-shade{background:linear-gradient(90deg,#0a0e13b8 0%,#10141b70 35%,#11172130 68%,#10141b55 100%),linear-gradient(0deg,#0a0d12d9 0%,#0a0d1266 20%,transparent 55%,#10131a70 100%);animation:opening-light 12s ease-in-out infinite alternate}
+.opening-frame{box-sizing:border-box;width:min(360px,100%);margin:0 0 0 auto;padding:clamp(18px,3vw,24px);border:2px solid #b49a60;border-radius:8px;background:linear-gradient(145deg,#252a30eb,#151a20e8);box-shadow:inset 0 0 0 3px #11151a,inset 0 0 0 4px #71634a,0 22px 70px #0009;backdrop-filter:blur(4px);text-align:center;transform:translateX(clamp(0px,3vw,32px));animation:opening-frame-enter .68s cubic-bezier(.18,.76,.22,1) both;transition:opacity .16s ease,transform .2s cubic-bezier(.2,.8,.2,1),visibility 0s linear .16s}
 .opening-kicker{margin:0 0 11px;color:#b5d4e5;font-size:clamp(11px,2vw,14px);letter-spacing:.22em;text-transform:uppercase}
 .opening-title{margin:0;color:#f3dfab;font-size:clamp(32px,4vw,48px);line-height:1.12;letter-spacing:.04em;text-shadow:0 3px #30271a,0 6px #080a0d,0 0 24px #f8d88e55}
 .opening-title-sub{margin:9px 0 0;color:#f5f0e7;font-size:clamp(13px,1.2vw,16px);letter-spacing:.04em;text-shadow:0 2px 6px #000}
@@ -26,8 +26,16 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 .opening-status{min-height:1.5em;margin:11px 0 0;color:#ffe3a0;font-size:12px;line-height:1.6}
 .opening-copyright{position:absolute;left:12px;right:12px;bottom:12px;text-align:center;color:#e6e5e1b3;font-size:10px;letter-spacing:.12em;text-shadow:0 2px 5px #000}
 #openingScreen.is-starting{opacity:0;pointer-events:none}
-#openingScreen.is-starting .opening-frame{opacity:0;transform:translateY(-20px) scale(.97)}
+#openingScreen.is-starting .opening-frame{opacity:0;visibility:hidden;transform:translateY(-16px) scale(.98)}
 #openingScreen.is-starting .opening-art-main{animation:none;transform:scale(1.045);filter:brightness(1.16) saturate(1.08);transition:transform .38s ease,filter .38s ease}
+.ui-v2 dialog.opening-confirm{width:min(440px,calc(100vw - 32px));max-width:440px;padding:26px;border-color:#b49a60;background:linear-gradient(145deg,#292e34,#171c22);color:#f7f0de;text-align:center}
+.ui-v2 dialog.opening-confirm::backdrop{background:#080c13d9;backdrop-filter:blur(4px)}
+.opening-confirm h2{margin:0 0 12px;color:#ffe2a1;font-size:22px}
+.opening-confirm p{margin:0;color:#e2e0d9;line-height:1.8}
+.opening-confirm-actions{display:flex;justify-content:center;gap:12px;margin-top:22px}
+.opening-confirm-actions button{min-width:128px;min-height:44px;border:2px solid #7a8992;border-radius:4px;background:linear-gradient(#4a535c,#28313a);color:#f7f0de;font:inherit;cursor:pointer}
+.opening-confirm-actions button:hover{filter:brightness(1.15)}
+.opening-confirm-actions #confirmGameEnd{border-color:#c17d78;background:linear-gradient(#804c4b,#513034)}
 .ui-v2 #uiSettings{width:min(650px,calc(100vw - 24px))}
 .ui-v2 .ui-option-row{display:grid;grid-template-columns:minmax(130px,190px) minmax(100px,1fr) auto;gap:12px;align-items:center;margin:14px 0;padding:12px;border:1px solid #626a6c;background:#20252b;border-radius:4px}
 .ui-v2 .ui-option-row label{margin:0;color:#e3dfd3}
@@ -40,8 +48,11 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 .ui-v2 #uiResetGame{border-color:#c17d78;background:linear-gradient(#804c4b,#513034);white-space:nowrap}
 .ui-v2.user-reduced-motion *,.ui-v2.user-reduced-motion *::before,.ui-v2.user-reduced-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @keyframes opening-drift{from{transform:scale(1)}to{transform:scale(1.045)}}
-@media(max-width:700px){#openingScreen{padding:16px}.opening-art .opening-art-main{object-position:center 42%}.opening-shade{background:linear-gradient(0deg,#0b0e13e8,#11151b4a 58%,#11151b80)}.opening-frame{width:min(460px,100%);margin:auto;padding:22px 18px;transform:none}.opening-menu{gap:8px}.opening-menu button{min-height:48px}.opening-copyright{bottom:7px}.ui-v2 .ui-option-row{grid-template-columns:1fr auto;gap:7px}.ui-v2 .ui-option-row label{grid-column:1/-1}.ui-v2 .ui-option-row input[type=range]{grid-column:1}.ui-v2 .ui-option-row output{grid-column:2;grid-row:2}.ui-v2 .ui-reset-row{align-items:stretch;flex-direction:column}}
-@media(prefers-reduced-motion:reduce){.opening-art .opening-art-main{animation:none}#openingScreen,#openingScreen .opening-frame,#openingScreen .opening-art-main{transition:none!important}.opening-menu button{transition:none}}
+@keyframes opening-light{from{opacity:.88}to{opacity:1}}
+@keyframes opening-frame-enter{from{opacity:0;transform:translate(clamp(0px,3vw,32px),14px) scale(.985)}to{opacity:1;transform:translateX(clamp(0px,3vw,32px)) scale(1)}}
+@media(min-width:1500px){.opening-frame{margin-right:clamp(128px,9vw,170px)}}
+@media(max-width:700px){#openingScreen{padding:16px}.opening-art .opening-art-main{object-position:center 42%}.opening-shade{background:linear-gradient(0deg,#0b0e13e8,#11151b4a 58%,#11151b80)}.opening-frame{width:min(460px,100%);margin:auto;padding:22px 18px;transform:none}.opening-menu{gap:8px}.opening-menu button{min-height:48px}.opening-copyright{bottom:7px}.opening-confirm-actions{gap:8px}.opening-confirm-actions button{min-width:0;flex:1}.ui-v2 .ui-option-row{grid-template-columns:1fr auto;gap:7px}.ui-v2 .ui-option-row label{grid-column:1/-1}.ui-v2 .ui-option-row input[type=range]{grid-column:1}.ui-v2 .ui-option-row output{grid-column:2;grid-row:2}.ui-v2 .ui-reset-row{align-items:stretch;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.opening-art .opening-art-main{animation:none}.opening-shade{animation:none}#openingScreen,#openingScreen .opening-frame,#openingScreen .opening-art-main{transition:none!important;animation:none!important}.opening-menu button{transition:none}}
 </style>
 <div id="openingScreen" role="dialog" aria-modal="true" aria-labelledby="openingTitle">
  <div class="opening-art" aria-hidden="true"><img class="opening-art-fill" src="assets/title-screen.png" alt=""><img id="openingArtwork" class="opening-art-main" src="assets/title-screen.png" data-fallback="https://spf33yk.github.io/SlimeRanch/assets/title-screen.png" alt=""></div>
@@ -61,9 +72,18 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
  </section>
  <div class="opening-copyright">SLIME RANCH · GROW YOUR OWN MONSTER RANCH</div>
 </div>
+<dialog id="gameEndDialog" class="opening-confirm" aria-labelledby="gameEndTitle" aria-describedby="gameEndDescription">
+ <h2 id="gameEndTitle">ゲームを終了しますか？</h2>
+ <p id="gameEndDescription">現在の進行をセーブして終了します。<br>ブラウザーの仕様により、タブが自動で閉じない場合があります。</p>
+ <div class="opening-confirm-actions">
+  <button id="cancelGameEnd" type="button">ゲームに戻る</button>
+  <button id="confirmGameEnd" type="button">終了する</button>
+ </div>
+</dialog>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
  const screen=document.getElementById('openingScreen'),status=document.getElementById('openingStatus');
+ const endDialog=document.getElementById('gameEndDialog');
  const artwork=document.getElementById('openingArtwork');
  artwork.addEventListener('error',()=>{if(artwork.dataset.fallback&&artwork.src!==artwork.dataset.fallback)artwork.src=artwork.dataset.fallback},{once:true});
  if(window.__SLIME_E2E__){screen.hidden=true;return}
@@ -77,15 +97,24 @@ document.addEventListener('DOMContentLoaded',()=>{
    screen.hidden=true;document.body.classList.remove('opening-active');
    if(typeof showTab==='function')showTab('field');
    window.scrollTo({top:0,behavior:motionOff?'auto':'smooth'});
-  },motionOff?0:400);
+  },motionOff?0:520);
  });
  document.getElementById('gameOption').addEventListener('click',()=>{
+  if(typeof sfx==='function')sfx('tab');
   const gear=document.getElementById('uiSettingsButton');
   if(gear){gear.click();screen.setAttribute('aria-modal','false');const settings=document.getElementById('uiSettings');settings?.addEventListener('close',()=>screen.setAttribute('aria-modal','true'),{once:true})}else status.textContent='設定を読み込み中です。少し待ってもう一度お試しください。';
  });
  document.getElementById('gameEnd').addEventListener('click',()=>{
+  if(typeof sfx==='function')sfx('tab');
+  endDialog.showModal();
+  document.getElementById('cancelGameEnd').focus();
+ });
+ document.getElementById('cancelGameEnd').addEventListener('click',()=>{if(typeof sfx==='function')sfx('tap');endDialog.close()});
+ document.getElementById('confirmGameEnd').addEventListener('click',()=>{
+  if(typeof sfx==='function')sfx('fail');
   if(typeof save==='function')save();
-  status.textContent='ゲームを終了しました。ブラウザーの仕様により閉じられない場合は、このタブを閉じてください。';
+  endDialog.close();
+  status.textContent='セーブしました。ゲームを終了しました。ブラウザーの仕様により閉じられない場合は、このタブを閉じてください。';
   window.setTimeout(()=>window.close(),250);
  });
 });
