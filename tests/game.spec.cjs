@@ -293,10 +293,10 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await expect(page.locator('#heartInventory')).toBeVisible();
  await actions.getByRole('button',{name:'モンスター一覧',exact:true}).click();
  await expect(page.locator('#monsterInventory')).toBeVisible();
- await page.locator('.ui-monster-select-row--main').getByRole('button',{name:'装備・宝箱',exact:true}).click();
+ await page.locator('.ui-monster-select-row--main').getByRole('button',{name:'宝箱/装備',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
  await page.click('#treasureClose');
- await page.locator('.ui-monster-select-row--sub').getByRole('button',{name:'装備・宝箱',exact:true}).click();
+ await page.locator('.ui-monster-select-row--sub').getByRole('button',{name:'宝箱/装備',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
  await expect(page.locator('#treasureSlot')).toHaveValue('sub');
  await page.click('#treasureClose');
@@ -510,13 +510,24 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
  }));
  expect(desktop.intro).toBe('');expect(desktop.rows).toHaveLength(2);
  for(const row of desktop.rows){expect(row.selectWidth).toBeLessThan(row.width);expect(row.buttonLeft).toBeGreaterThanOrEqual(row.selectRight)}
- expect(desktop.rows.map(row=>row.button)).toEqual(['装備・宝箱','装備・宝箱']);
+ expect(desktop.rows.map(row=>row.button)).toEqual(['宝箱/装備','宝箱/装備']);
  expect(desktop.rows[0].buttonWidth).toBe(desktop.rows[1].buttonWidth);
- expect(desktop.mainMinHeight).toBe('350px');
+ expect(desktop.mainMinHeight).toBe('400px');
  await page.evaluate(()=>{const partner=monster('森スライム');g.slimes.push(partner);g.sub=partner.id;g.kills=3;render()});
  const optionLabels=await page.evaluate(()=>['mainSelect','subSelect','fuseA','fuseB'].flatMap(id=>[...document.getElementById(id).options].map(option=>option.textContent)));
  expect(optionLabels.every(text=>!/\s\/\s.*系$/.test(text))).toBe(true);
  await expect(page.locator('.treasure-equip-action')).toHaveCount(0);
+ const maxSkillCard=await page.evaluate(()=>{
+  const partner=g.slimes.find(m=>m.id===Number(g.sub));partner.name='あ'.repeat(16);partner.uniq=Array.from({length:16},(_,i)=>({name:'スキル'+(i+1),value:i+1}));render();
+  const card=document.querySelector('#subCard>.mcard'),select=document.getElementById('subSelect'),row=select.parentElement;
+  const fullHeight=card.getBoundingClientRect().height;partner.uniq=partner.uniq.slice(0,2);render();
+  return {height:fullHeight,shortHeight:card.getBoundingClientRect().height,scrollHeight:card.scrollHeight,clientHeight:card.clientHeight,selectWidth:select.getBoundingClientRect().width,rowWidth:row.getBoundingClientRect().width,mainHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight};
+ });
+ expect(maxSkillCard.height).toBe(420);expect(maxSkillCard.shortHeight).toBe(maxSkillCard.height);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
+ expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('400px');
+ await page.click('[data-tab="field"]');
+ const fieldMessage=await page.locator('#fieldMsg').evaluate(el=>({width:el.getBoundingClientRect().width,field:el.parentElement.querySelector('.field-wrap').getBoundingClientRect().width,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
+ expect(Math.abs(fieldMessage.width-fieldMessage.field)).toBeLessThan(2);expect(fieldMessage.height).toBeLessThan(45);expect(fieldMessage.height).toBeGreaterThanOrEqual(fieldMessage.lineHeight);
  await page.setViewportSize({width:390,height:844});
  const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,rows:[...document.querySelectorAll('.ui-monster-select-row')].map(row=>({row:row.getBoundingClientRect().width,select:row.querySelector('select').getBoundingClientRect().width}))}));
  expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.viewport);expect(mobile.rows).toHaveLength(2);

@@ -256,6 +256,12 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .ui-header-icon{flex:none;width:46px;height:46px;min-width:46px;padding:4px;font-size:21px;line-height:1}
 @media(max-width:1000px){.ui-v2 #field.active{grid-template-columns:minmax(0,1.35fr) minmax(270px,.9fr)}}
 @media(max-width:760px){.ui-v2 #field.active{grid-template-columns:minmax(0,1fr)}.ui-v2 #field .field-wrap{max-width:min(100%,calc(100dvh - 120px))!important}}
+.ui-v2 #fieldMsg{width:100%;max-width:none;min-height:0;height:auto;margin:8px 0 4px;padding:6px 10px;line-height:1.4;box-sizing:border-box}
+.ui-v2 .ui-monster-select-row select{width:auto;max-width:none;flex:1 1 0;min-width:0;font-size:13px}
+.ui-v2 .ui-monster-select-row button{flex:0 0 6.5em;width:6.5em;padding-inline:4px}
+.ui-v2 #mainCard .mhead{min-height:400px}
+.ui-v2 #uiSubCompanion #subCard>.mcard{height:420px;overflow:auto;overscroll-behavior:contain}
+@media(max-width:760px){.ui-v2 .ui-monster-select-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}.ui-v2 .ui-monster-select-row select{width:100%;font-size:13px;padding-inline:7px}.ui-v2 .ui-monster-select-row button{justify-self:start}}
 </style>
 <script>
 /* DOM presentation only: reuse game controls, handlers and state. */
@@ -319,8 +325,8 @@ document.addEventListener('DOMContentLoaded',()=>{
  document.querySelectorAll('[data-tab]').forEach(tab=>tab.addEventListener('click',()=>{if(tab.dataset.tab!=='ranch')document.body.classList.remove('ui-fusion-center-scroll')}));
  const ranchIntro=ranch.querySelector('.ranch-layout>.panel>p');if(ranchIntro)ranchIntro.remove();
  function addMonsterSelectRow(selectId,slot,label){const select=byId(selectId),row=make('div','ui-monster-select-row ui-monster-select-row--'+slot);select.before(row);row.append(select,button(label,()=>treasureDialog(slot)));}
- addMonsterSelectRow('mainSelect','main','装備・宝箱');
- addMonsterSelectRow('subSelect','sub','装備・宝箱');
+ addMonsterSelectRow('mainSelect','main','宝箱/装備');
+ addMonsterSelectRow('subSelect','sub','宝箱/装備');
  const sideStack=make('div','ranch-side-stack');
  sideStack.append(byId('ranchTeamStats'));
  const subPanel=make('div','panel');subPanel.id='uiSubCompanion';subPanel.append(make('h2','','サブモンスター'));
