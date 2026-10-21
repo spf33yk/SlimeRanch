@@ -175,7 +175,7 @@ function treasurePlaySound(name){
   if(typeof TREASURE_SOUNDS==='undefined'||!TREASURE_SOUNDS[name])return;
   try{
     if(treasureSoundPlayer){treasureSoundPlayer.pause();treasureSoundPlayer.currentTime=0;}
-    const audio=new Audio(TREASURE_SOUNDS[name]);audio.volume=name==='freeze'?0.16:0.2;
+    const audio=new Audio(TREASURE_SOUNDS[name]);audio.volume=(name==='freeze'?0.32:0.4)*(Math.max(0,Math.min(100,Number(sfxVolume)||0))/100);
     treasureSoundPlayer=audio;
     const pending=audio.play();if(pending&&pending.catch)pending.catch(()=>{});
   }catch(e){console.warn('宝箱効果音の再生に失敗:',e)}

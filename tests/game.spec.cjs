@@ -86,23 +86,44 @@ test('fresh browser uses an audible default and resumes Web Audio on the first g
  await page.click('#attack');
  await expect.poll(oscillatorCount).toBeGreaterThan(before);
 });
+test('freeze effect audio follows the shared sound effect volume setting',async({page})=>{
+ await page.goto('./');
+ await page.click('#uiSettingsButton');
+ await page.locator('#uiSfxVolume').fill('25');
+ await page.evaluate(()=>{
+  const NativeAudio=window.Audio;window.__mediaVolumes=[];
+  window.Audio=function(src){const audio=new NativeAudio(src);let volume=1;Object.defineProperty(audio,'volume',{get(){return volume},set(value){volume=value;window.__mediaVolumes.push(value)}});audio.play=()=>Promise.resolve();audio.pause=()=>{};return audio;};
+  treasurePlaySound('freeze');treasurePlaySound('beep');
+ });
+ const volumes=await page.evaluate(()=>window.__mediaVolumes);
+ expect(volumes).toHaveLength(2);expect(volumes[0]).toBeCloseTo(.08);expect(volumes[1]).toBeCloseTo(.1);
+});
 test('starts under the Pages subpath; all tabs and responsive layouts work',async({page})=>{
  const errors=[],failed=[];
  page.on('pageerror',e=>errors.push(e.message));
  page.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
  await page.goto('./');
  await expect(page.locator('#uiSettingsButton')).toBeVisible();
+ await expect(page.locator('#uiCodexButton')).toBeVisible();
+ expect((await page.locator('#uiCodexButton').boundingBox()).x).toBeLessThan((await page.locator('#uiSettingsButton').boundingBox()).x);
  expect(await page.evaluate(()=>g.slimes.length)).toBeGreaterThan(0);
  for(const width of [1280,390]){
   await page.setViewportSize({width,height:900});
   if(width===390){const positions=await page.evaluate(()=>[document.getElementById('headerMonsterCount'),document.getElementById('hearts')].map(e=>e.closest('.resource').getBoundingClientRect().y));expect(Math.abs(positions[0]-positions[1])).toBeLessThan(1);}
-  for(const tab of ['field','ranch','battle','guide']){
+  for(const tab of ['field','ranch','battle','worldtree']){
    await page.click(`[data-tab="${tab}"]`);
    await expect(page.locator('#'+tab)).toBeVisible();
    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
    await page.screenshot({path:test.info().outputPath(`${tab}-${width}.png`),fullPage:true});
   }
+  await page.click('#uiCodexButton');
+  await expect(page.locator('#guide')).toBeVisible();
+  await expect(page.locator('#uiCodexButton')).toHaveAttribute('aria-current','page');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  await page.click('[data-tab="worldtree"]');
+  await expect(page.locator('#uiCodexButton')).toHaveAttribute('aria-current','false');
  }
+ await page.click('#uiCodexButton');
  for(const name of ['how','codex','skills','research','debug']){
   await page.click(`[data-guide="${name}"]`);
   await expect(page.locator('#guide'+name[0].toUpperCase()+name.slice(1))).toBeVisible();
@@ -139,10 +160,11 @@ test('field starts with click collection and unlocks mouseover collection',async
  await page.mouse.move(hoverPoints[0].x,hoverPoints[0].y);await page.mouse.move(hoverPoints[1].x,hoverPoints[1].y,{steps:4});
  expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(beforeHover);
  expect(await page.evaluate(()=>g.tiles.slice(0,2))).toEqual(['empty','empty']);
- await page.evaluate(()=>{g.lv=SIZES.indexOf(24);g.tiles=Array(24*24).fill('empty');g.tiles[0]='magic';drawField();});
- const point=await page.evaluate(()=>{const r=document.getElementById('fieldCanvas').getBoundingClientRect(),z=fieldGeom();return{x:r.left+(z.off+z.cell/2)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}});
- await page.mouse.click(point.x,point.y);
- expect(await page.evaluate(()=>g.tiles[0])).toBe('empty');
+ await page.evaluate(()=>{g.lv=SIZES.indexOf(24);g.tiles=Array(24*24).fill('empty');g.tiles[100]='magic';lastHoverCellIndex=null;fieldHoverCell=null;drawField();});
+ await page.locator('#fieldCanvas').scrollIntoViewIfNeeded();
+ const point=await page.evaluate(()=>{const r=document.getElementById('fieldCanvas').getBoundingClientRect(),z=fieldGeom(),x=4,y=4;return{x:r.left+(z.off+(x+.5)*z.cell)/720*r.width,y:r.top+(z.off+(y+.5)*z.cell)/720*r.height}});
+ await page.mouse.move(point.x,point.y);
+ expect(await page.evaluate(()=>g.tiles[100])).toBe('empty');
  expect(errors).toEqual([]);
 });
 test('field spawn meter is removed',async({page})=>{
@@ -534,20 +556,30 @@ test('heart drop reaches 100 percent and the field grid fills its backdrop',asyn
  });
  expect(chances.below).toBeCloseTo(0.9999,4);expect(chances.max).toBe(1);
  await page.click('[data-tab=field]');
+ await expect(page.locator('#fieldInputHint')).toHaveCount(0);
+ await expect(page.locator('#field')).not.toContainText('魔素マスをクリックして採集。ホバー採集を解放すると');
  for(const n of [2,24]){
   const grid=await page.evaluate(n=>{g.lv=SIZES.indexOf(n);g.tiles=Array(n*n).fill('empty');drawField();const z=fieldGeom(),wrap=document.querySelector('.field-wrap'),canvas=document.getElementById('fieldCanvas');return {n:z.n,cell:z.cell,off:z.off,total:z.cell*z.n,canvas:canvas.width,padding:getComputedStyle(wrap).padding};},n);
   expect(grid).toEqual({n,cell:720/n,off:0,total:720,canvas:720,padding:'0px'});
  }
+ await page.setViewportSize({width:1280,height:900});
+ const desktopFieldWidth=await page.locator('.field-wrap').evaluate(el=>el.getBoundingClientRect().width);
+ expect(desktopFieldWidth).toBeGreaterThan(600);
+ await page.setViewportSize({width:390,height:844});
+ const mobileLayout=await page.evaluate(()=>({field:document.querySelector('.field-wrap').getBoundingClientRect().width,scroll:document.documentElement.scrollWidth}));
+ expect(mobileLayout.field).toBeGreaterThan(300);expect(mobileLayout.scroll).toBeLessThanOrEqual(390);
 });
 test('header, navigation and content keep a stable horizontal position across tabs',async({page})=>{
  await page.goto('./');
  const positions=[];
- for(const tab of ['field','ranch','battle','guide']){
+ for(const tab of ['field','ranch','battle','worldtree']){
   await page.click(`[data-tab="${tab}"]`);
   positions.push(await page.evaluate(()=>({header:document.querySelector('header').getBoundingClientRect().x,nav:document.querySelector('nav').getBoundingClientRect().x,main:document.querySelector('main').getBoundingClientRect().x,scrollbar:getComputedStyle(document.documentElement).scrollbarGutter,width:document.documentElement.scrollWidth})));
  }
- expect(positions.map(p=>p.header)).toEqual([positions[0].header,positions[0].header,positions[0].header,positions[0].header]);
- expect(positions.map(p=>p.main)).toEqual([positions[0].main,positions[0].main,positions[0].main,positions[0].main]);
+ await page.click('#uiCodexButton');
+ positions.push(await page.evaluate(()=>({header:document.querySelector('header').getBoundingClientRect().x,nav:document.querySelector('nav').getBoundingClientRect().x,main:document.querySelector('main').getBoundingClientRect().x,scrollbar:getComputedStyle(document.documentElement).scrollbarGutter,width:document.documentElement.scrollWidth})));
+ expect(positions.every(p=>p.header===positions[0].header)).toBe(true);
+ expect(positions.every(p=>p.main===positions[0].main)).toBe(true);
  expect(positions.every(p=>p.scrollbar.includes('stable')&&p.width<=1280)).toBe(true);
 });
 test('opening screen fits phone portrait and landscape viewports',async({page})=>{
@@ -588,7 +620,7 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await expect(page.locator('#tutorialSkip')).toHaveText('スキップ');
  const firstTiles=await page.evaluate(()=>({magic:g.tiles.indexOf('magic'),spawn:g.tiles.findIndex(t=>t==='spawn'||t.startsWith('spawn:'))}));
  expect(firstTiles.magic).toBeGreaterThanOrEqual(0);expect(firstTiles.spawn).toBeGreaterThanOrEqual(0);expect(firstTiles.magic).not.toBe(firstTiles.spawn);
- expect(await page.locator('#tutorialDimTop').evaluate(el=>parseFloat(el.style.height))).toBeLessThan(await page.locator('#fieldCanvas').evaluate(el=>el.closest('.panel').getBoundingClientRect().top));
+ expect(await page.locator('#tutorialDimTop').evaluate(el=>parseFloat(el.style.height))).toBeLessThan(await page.locator('#fieldCanvas').evaluate(el=>el.getBoundingClientRect().top));
  await page.screenshot({path:test.info().outputPath('tutorial-first-step.png')});
  const clickFieldCell=async index=>{
   const point=await page.locator('#fieldCanvas').evaluate((canvas,index)=>{const r=canvas.getBoundingClientRect(),cell=82,off=(720-2*cell)/2;return{x:r.x+(off+(index%2)*cell+cell/2)/720*r.width,y:r.y+(off+Math.floor(index/2)*cell+cell/2)/720*r.height}},index);
@@ -651,7 +683,7 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await expect(page.locator('#tutorialContinue')).toBeVisible();
  await expect(page.locator('#tutorialSkip')).toBeHidden();
  await page.click('#tutorialContinue');
- await page.click('[data-tab="guide"]');
+ await page.click('#uiCodexButton');
  await page.click('#tutorialReplay');
  await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
  await page.click('#tutorialSkip');

@@ -240,6 +240,12 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 #teamSprites .sprite.attacking{animation:slimeAttackLunge .32s cubic-bezier(.22,.7,.3,1) both;transform-origin:bottom center}
 @media(prefers-reduced-motion:reduce){.ui-v2 #teamSprites .sprite,.ui-v2 #enemySprite{animation:none!important}}
 @media(prefers-reduced-motion:reduce){.ui-v2 button{transition:none!important}}
+.ui-v2 #field.active{grid-template-columns:minmax(0,1.8fr) minmax(270px,.85fr)}
+.ui-v2 #field .field-wrap{max-width:min(100%,calc(100dvh - 120px))!important}
+.ui-v2 #fieldCanvas{scroll-margin-top:90px}
+.ui-v2 .ui-header-icon{flex:none;width:46px;height:46px;min-width:46px;padding:4px;font-size:21px;line-height:1}
+@media(max-width:1000px){.ui-v2 #field.active{grid-template-columns:minmax(0,1.35fr) minmax(270px,.9fr)}}
+@media(max-width:760px){.ui-v2 #field.active{grid-template-columns:minmax(0,1fr)}.ui-v2 #field .field-wrap{max-width:min(100%,calc(100dvh - 120px))!important}}
 </style>
 <script>
 /* DOM presentation only: reuse game controls, handlers and state. */
@@ -249,7 +255,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const make=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e};
  const button=(text,action)=>{const b=make('button','',text);b.type='button';b.addEventListener('click',action);return b};
  const nav=document.querySelector('body>nav');
- ['魔素フィールド','モンスター牧場','バトル','冒険の書'].forEach((text,i)=>nav.children[i].textContent=text);
+ ['魔素フィールド','モンスター牧場','バトル','世界樹'].forEach((text,i)=>nav.children[i].textContent=text);
  nav.setAttribute('aria-label','メインメニュー');
  const syncNav=()=>nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-current',b.classList.contains('active')?'page':'false'));
  new MutationObserver(syncNav).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});syncNav();
@@ -273,14 +279,17 @@ document.addEventListener('DOMContentLoaded',()=>{
  const status=make('p','ui-status','進行状況は自動保存されます。');status.setAttribute('role','status');
  settings.append(sfxRow,motionRow,resetRow,save,status);document.body.append(settings);
  settings.addEventListener('click',e=>{if(e.target===settings){const r=settings.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)settings.close();}});
- const gear=button('⚙',()=>settings.showModal());gear.id='uiSettingsButton';gear.setAttribute('aria-label','音と設定を開く');gear.title='音量・効果音・手動セーブ';document.querySelector('header').append(gear);
+ const header=document.querySelector('header');
+ const gear=button('⚙',()=>settings.showModal());gear.id='uiSettingsButton';gear.className='ui-header-icon';gear.setAttribute('aria-label','音と設定を開く');gear.title='音量・効果音・手動セーブ';header.append(gear);
+ const codex=button('📖',()=>showTab('guide'));codex.id='uiCodexButton';codex.className='ui-header-icon';codex.setAttribute('aria-label','冒険の書を開く');codex.title='冒険の書';header.insertBefore(codex,gear);
+ const syncCodex=()=>{const active=byId('guide').classList.contains('active');codex.classList.toggle('active',active);codex.setAttribute('aria-current',active?'page':'false')};
+ new MutationObserver(syncCodex).observe(byId('guide'),{attributes:true,attributeFilter:['class']});syncCodex();
 
  // Field: keep the real canvas and collect controls; add read-only statistics.
  const fieldPanels=byId('field').querySelectorAll(':scope > .panel');
  fieldPanels[1].classList.add('field-upgrades');
  const facts=make('div','ui-field-facts');facts.innerHTML='<h2>フィールド情報</h2><div class="ui-fact"><span>採集量 / 1マス</span><b id="uiYield"></b></div><div class="ui-fact"><span>自然湧き間隔</span><b id="uiSpawn"></b></div><div class="ui-fact"><span>採集範囲</span><b id="uiRange"></b></div>';
  fieldPanels[1].prepend(facts);
-   const help=fieldPanels[0].querySelector(':scope > p');help.classList.add('field-help');help.textContent='魔素マスをクリックして採集。ホバー採集を解放すると、マウスカーソルを重ねて連続採集できます。';
  const odds=byId('treasureOdds'),oddsText=odds.textContent.replace(/^宝箱出現確率：?\s*/, '');odds.className='ui-fact';odds.innerHTML='<span>宝箱出現確率</span><b>'+oddsText+'</b>';facts.append(odds);
  // Avoid a tiny initial 2×2 board while retaining the same 720px coordinate system.
  fieldGeom=function(){const n=size(),cell=720/n;return {n,cell,off:0}};
