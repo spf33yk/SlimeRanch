@@ -229,6 +229,7 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await expect(page.locator('#uiFusion > summary')).toHaveText('合成');
  await page.evaluate(()=>document.querySelector('[data-tab="battle"]').focus());
  await actions.getByRole('button',{name:'合成',exact:true}).click();
+ await expect(page.locator('body')).toHaveClass(/ui-ranch-shortcut-active/);
  expect(await page.locator('[data-tab=battle]').evaluate(el=>el.matches(':focus-visible'))).toBe(false);
  await expect.poll(()=>page.locator('[data-tab]').evaluateAll(tabs=>tabs.filter(el=>el.classList.contains('active')).map(el=>el.dataset.tab))).toEqual(['ranch']);
  await page.waitForTimeout(300);
