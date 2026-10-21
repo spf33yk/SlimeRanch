@@ -64,15 +64,21 @@
   const target=focus.find(node=>!node.disabled)||focus[0];
   const dimmers=['tutorialDimTop','tutorialDimBottom','tutorialDimLeft','tutorialDimRight'].map(el);
   const setRect=(node,left,top,width,height)=>Object.assign(node.style,{left:left+'px',top:top+'px',width:Math.max(0,width)+'px',height:Math.max(0,height)+'px'});
-  if(target){target.classList.add('tutorial-focus');if(!overlay.hidden)target.scrollIntoView({block:'nearest',behavior:'auto'});const scope=target.closest('.panel')||target.closest('.ui-ranch-actions')||target;const r=scope.getBoundingClientRect(),left=Math.max(0,r.left-8),top=Math.max(0,r.top-8),right=Math.min(innerWidth,r.right+8),bottom=Math.min(innerHeight,r.bottom+8);setRect(dimmers[0],0,0,innerWidth,top);setRect(dimmers[1],0,bottom,innerWidth,innerHeight-bottom);setRect(dimmers[2],0,top,left,bottom-top);setRect(dimmers[3],right,top,innerWidth-right,bottom-top)}else dimmers.forEach(node=>setRect(node,0,0,innerWidth,innerHeight));
+   if(target){target.classList.add('tutorial-focus');if(!overlay.hidden)target.scrollIntoView({block:'nearest',behavior:'auto'});const scope=target.id==='fuse'?target:target.closest('#battle')||target.closest('.panel')||target.closest('.ui-ranch-actions')||target;const r=scope.getBoundingClientRect(),left=Math.max(0,r.left-8),top=Math.max(0,r.top-8),right=Math.min(innerWidth,r.right+8),bottom=Math.min(innerHeight,r.bottom+8);setRect(dimmers[0],0,0,innerWidth,top);setRect(dimmers[1],0,bottom,innerWidth,innerHeight-bottom);setRect(dimmers[2],0,top,left,bottom-top);setRect(dimmers[3],right,top,innerWidth-right,bottom-top)}else dimmers.forEach(node=>setRect(node,0,0,innerWidth,innerHeight));
  }
+  function ensureTutorialSlime(){
+   if(state.step!==4||typeof g==='undefined'||!Array.isArray(g.tiles)||g.tiles.some(t=>typeof t==='string'&&t.startsWith('spawn:')))return;
+   let index=g.tiles.indexOf('empty');if(index<0)index=g.tiles.findIndex(t=>t==='magic');if(index<0)index=g.tiles.findIndex(t=>typeof t==='string'&&t.startsWith('treasure:'));
+   if(index>=0){g.tiles[index]='spawn:森スライム';drawField();updateFieldCounts();save()}
+  }
  function begin(replay=false){
   if(running)return;
   if(!replay&&!hadSave&&!state.inProgress&&state.done)return;
   if(!replay&&hadSave&&!state.inProgress)return;
   running=true;
   if(replay)state={step:0,magic:false,monster:false,inProgress:true,done:false};
-  else{state.inProgress=true;state.step=Math.max(0,Math.min(steps.length-1,Number(state.step)||0))}
+   else{state.inProgress=true;state.step=Math.max(0,Math.min(steps.length-1,Number(state.step)||0))}
+   ensureTutorialSlime();
   saveState();
   if(typeof showTab==='function')showTab('field');
   el('tutorialOverlay').hidden=false;document.body.classList.add('tutorial-active');paint();
@@ -81,7 +87,7 @@
   clearFocus();running=false;el('tutorialOverlay').hidden=true;document.body.classList.remove('tutorial-active');
   state.inProgress=false;if(markDone)state.done=true;saveState();
  }
- function advance(){state.step++;if(state.step>=steps.length)state.step=steps.length;saveState();paint()}
+  function advance(){state.step++;if(state.step>=steps.length)state.step=steps.length;ensureTutorialSlime();saveState();paint()}
   window.resetFirstRunTutorial=()=>{
    hadSave=false;state={step:0,magic:false,monster:false,inProgress:false,done:false};running=false;clearFocus();
    el('tutorialOverlay').hidden=true;document.body.classList.remove('tutorial-active');saveState();
@@ -99,8 +105,9 @@
   else if(state.step===4&&detail.action==='collect'&&detail.monsters>0)advance();
   else if(state.step===5&&detail.action==='sub-select'&&detail.sub>0)advance();
  });
- window.addEventListener('slime:tutorial-tab',()=>{if(running)paint()});
+  window.addEventListener('slime:tutorial-tab',()=>{if(!running)return;paint();requestAnimationFrame(()=>{if(running)paint()});setTimeout(()=>{if(running)paint()},300)});
  document.addEventListener('click',event=>{if(event.target.closest('.ui-ranch-actions button:first-child'))requestAnimationFrame(paint)});
+  let scrollPaintPending=false;window.addEventListener('scroll',()=>{if(!running||el('tutorialOverlay')?.hidden||scrollPaintPending)return;scrollPaintPending=true;requestAnimationFrame(()=>{scrollPaintPending=false;if(running)paint()})},{passive:true});
  document.addEventListener('DOMContentLoaded',()=>{
   el('tutorialSkip').addEventListener('click',()=>close(true));
   el('tutorialContinue').addEventListener('click',()=>close(true));

@@ -108,22 +108,41 @@ test('starts under the Pages subpath; all tabs and responsive layouts work',asyn
  }
  expect(errors).toEqual([]);expect(failed).toEqual([]);
 });
-test('field collection works for pointer and button after expansion',async({page})=>{
+test('field starts with click collection and unlocks drag collection after an upgrade',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('./');
- await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='magic';g.maso=100;drawField();});
- await page.click('#uiCollect');
+ await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';g.maso=100;drawField();});
+ const firstPoint=await page.locator('#fieldCanvas').evaluate(canvas=>{const r=canvas.getBoundingClientRect(),z=fieldGeom();return{x:r.left+(z.off+z.cell/2)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}});
+ await page.mouse.move(firstPoint.x,firstPoint.y);
+ expect(await page.evaluate(()=>g.maso)).toBe(100);
+ expect(await page.evaluate(()=>g.tiles[0])).toBe('magic');
+ await page.mouse.click(firstPoint.x,firstPoint.y);
  expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(100);
+ expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
+ await page.click('#uiCollect');
  await page.click('#expand');
  expect(await page.evaluate(()=>size())).toBe(3);
- for(const n of [3,24]){
-  await page.evaluate(n=>{g.lv=SIZES.indexOf(n);g.tiles=Array(n*n).fill('empty');g.tiles[0]='magic';drawField();},n);
-  const point=await page.evaluate(()=>{const r=document.getElementById('fieldCanvas').getBoundingClientRect(),z=fieldGeom();return {x:r.left+(z.off+z.cell/2)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height};});
-  const before=await page.evaluate(()=>g.maso);
-  await page.mouse.move(point.x,point.y);
-  expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(before);
- }
+ expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
+ await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
+ const dragPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
+ const beforeDrag=await page.evaluate(()=>g.maso);
+ await page.mouse.move(dragPoints[0].x,dragPoints[0].y);await page.mouse.down();await page.mouse.move(dragPoints[1].x,dragPoints[1].y,{steps:4});await page.mouse.up();
+ expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(beforeDrag);
+ expect(await page.evaluate(()=>g.tiles.slice(0,2))).toEqual(['empty','empty']);
+ await page.evaluate(()=>{g.lv=SIZES.indexOf(24);g.tiles=Array(24*24).fill('empty');g.tiles[0]='magic';drawField();});
+ const point=await page.evaluate(()=>{const r=document.getElementById('fieldCanvas').getBoundingClientRect(),z=fieldGeom();return{x:r.left+(z.off+z.cell/2)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}});
+ await page.mouse.click(point.x,point.y);
+ expect(await page.evaluate(()=>g.tiles[0])).toBe('empty');
  expect(errors).toEqual([]);
+});
+test('field spawn meter stays slim and batches fast spawn intervals',async({page})=>{
+ await page.goto('./');
+ const initial=await page.evaluate(()=>{g.tiles=Array(4).fill('empty');g.spawnUpgradeLv=0;g.spawnProgress=spawnIntervalMs()/2;updateFieldSpawnMeter();const track=document.querySelector('.field-spawn-track');return{batch:track.dataset.batch,width:parseFloat(document.getElementById('fieldSpawnBar').style.width),height:track.getBoundingClientRect().height,label:document.getElementById('fieldSpawnLabel').textContent}});
+ expect(initial.batch).toBe('1');expect(initial.width).toBeGreaterThan(49);expect(initial.width).toBeLessThan(51);expect(initial.height).toBe(4);expect(initial.label).toBe('探索中...');
+ const ten=await page.evaluate(()=>{g.spawnUpgradeLv=50;g.spawnProgress=spawnIntervalMs()*5;updateFieldSpawnMeter();const track=document.querySelector('.field-spawn-track');return{batch:track.dataset.batch,label:document.getElementById('fieldSpawnBatch').textContent}});
+ expect(ten).toEqual({batch:'10',label:'10回おき'});
+ const hundred=await page.evaluate(()=>{g.spawnUpgradeLv=1000;g.spawnProgress=spawnIntervalMs()*50;updateFieldSpawnMeter();const track=document.querySelector('.field-spawn-track');return{batch:track.dataset.batch,label:document.getElementById('fieldSpawnBatch').textContent}});
+ expect(hundred).toEqual({batch:'100',label:'100回おき'});
 });
 test('ranch shortcuts, equipment and battle controls remain connected',async({page})=>{
  await page.goto('./');
@@ -435,12 +454,17 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await expect(page.locator('#tutorialTitle')).toHaveText('フィールドを強化しよう');
  await page.click('#yieldUp');
  await expect(page.locator('#tutorialTitle')).toHaveText('モンスターを合成しよう');
+  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
  await page.click('[data-tab="ranch"]');
  await expect(page.locator('.ui-ranch-actions button').first()).toHaveClass(/tutorial-focus/);
  await expect(page.locator('#uiFusion')).not.toHaveJSProperty('open',true);
  await page.locator('.ui-ranch-actions button').first().click();
  await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
  await expect(page.locator('#fuse')).toHaveClass(/tutorial-focus/);
+  await expect(page.locator('label[for="fuseA"]')).toHaveText('合成元');
+  await expect(page.locator('label[for="fuseB"]')).toHaveText('合成元（素材側）');
+  const fusionHighlight=await page.evaluate(()=>{const r=document.getElementById('fuse').getBoundingClientRect();return{expected:Math.max(0,r.top-8),actual:parseFloat(document.getElementById('tutorialDimTop').style.height)}});
+  expect(Math.abs(fusionHighlight.expected-fusionHighlight.actual)).toBeLessThan(2);
   await expect(page.locator('#fuseCost')).toHaveText('初回無料');
   await expect(page.locator('#fuseChance')).toHaveText('100%（初回保証）');
  await expect.poll(()=>page.locator('#fuse').evaluate(el=>{const r=el.getBoundingClientRect();return Math.abs((r.top+r.bottom)/2-innerHeight/2)})).toBeLessThan(80);
@@ -451,6 +475,9 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
   expect(await page.evaluate(()=>({used:g.firstFusionUsed,wins:g.wins,fails:g.fails,maso:g.maso}))).toEqual({used:true,wins:1,fails:0,maso:masoBeforeFirstFusion});
  await expect(page.locator('#tutorialTitle')).toHaveText('バトルに挑戦しよう');
  await page.click('[data-tab="battle"]');
+  await expect(page.locator('#attack')).toHaveClass(/tutorial-focus/);
+  const battleHighlight=await page.evaluate(()=>{const r=document.getElementById('battle').getBoundingClientRect();return{expected:Math.max(0,r.top-8),actual:parseFloat(document.getElementById('tutorialDimTop').style.height)}});
+  expect(Math.abs(battleHighlight.expected-battleHighlight.actual)).toBeLessThan(2);
  await page.evaluate(()=>{g.autoNext=false;g.autoFight=false;save()});
  for(const stage of [1,2,3]){
   await page.evaluate(stage=>{setStage(stage);g.enemyHP=1;render();save()},stage);
@@ -461,8 +488,9 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  expect(await page.evaluate(()=>g.kills)).toBe(3);
  await page.click('[data-tab="field"]');
  await expect(page.locator('#fieldCanvas')).toHaveClass(/tutorial-focus/);
- await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='spawn:森スライム';render();save()});
- await clickFieldCell(0);
+  const tutorialSpawn=await page.evaluate(()=>g.tiles.findIndex(t=>typeof t==='string'&&t.startsWith('spawn:')));
+  expect(tutorialSpawn).toBeGreaterThanOrEqual(0);
+  await clickFieldCell(tutorialSpawn);
  await expect(page.locator('#tutorialTitle')).toHaveText('サブモンスターを編成しよう');
  await page.click('[data-tab="ranch"]');
  await expect(page.locator('#subSelect')).toBeEnabled();
