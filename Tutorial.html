@@ -34,7 +34,7 @@
  const steps=[
   {title:'魔素と仲間を集めよう',text:'青い結晶とスライムのマスを両方タップして、魔素と仲間を集めよう。2つのマスを回収すると次へ進みます。'},
   {title:'フィールドを強化しよう',text:'魔素取得量・湧き速度・採集範囲の強化か、領域拡張を1回購入しよう。最初は魔素取得量アップが手軽です。'},
-  {title:'モンスターを合成しよう',text:'牧場へ移動して2体を選び、合成を試そう。失敗しても素材は残るので、気軽に挑戦できます。'},
+  {title:'モンスターを合成しよう',text:'牧場へ移動し、画面上部の「合成」ボタンを押そう。合成画面が開いたら合成元と素材を選んで合成を実行します。失敗しても素材は残ります。'},
   {title:'バトルに挑戦しよう',text:'バトルへ移動し、STAGE 3まで勝ち進もう。最初のスライムは序盤の敵と戦いやすいHPに調整されています。'},
   {title:'仲間をもう1体迎えよう',text:'サブ枠が解放されました。フィールドに戻り、スライムをもう1体タップして仲間にしよう。'},
   {title:'サブモンスターを編成しよう',text:'牧場へ移動し、サブモンスターを選んでチームに編成しよう。'}
@@ -52,6 +52,7 @@
   return [];
  }
   function paint(){
+   if(!running)return;
    const overlay=el('tutorialOverlay');if(!overlay)return;
    const done=state.step>=steps.length;
    const step=steps[Math.min(state.step,steps.length-1)];
@@ -120,7 +121,7 @@
   else if(state.step===5&&detail.action==='sub-select'&&detail.sub>0)advance();
  });
   window.addEventListener('slime:tutorial-tab',()=>{if(!running)return;paint();requestAnimationFrame(()=>{if(running)paint()});setTimeout(()=>{if(running)paint()},300)});
- document.addEventListener('click',event=>{if(event.target.closest('.ui-ranch-actions button:first-child'))requestAnimationFrame(paint)});
+ document.addEventListener('click',event=>{if(running&&event.target.closest('.ui-ranch-actions button:first-child'))requestAnimationFrame(paint)});
   let scrollPaintPending=false;window.addEventListener('scroll',()=>{if(!running||el('tutorialOverlay')?.hidden||scrollPaintPending)return;scrollPaintPending=true;requestAnimationFrame(()=>{scrollPaintPending=false;if(running)paint()})},{passive:true});
  document.addEventListener('DOMContentLoaded',()=>{
   el('tutorialSkip').addEventListener('click',()=>close(true));

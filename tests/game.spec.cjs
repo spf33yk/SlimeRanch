@@ -603,6 +603,7 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await expect(page.locator('#tutorialTitle')).toHaveText('フィールドを強化しよう');
  await page.click('#yieldUp');
  await expect(page.locator('#tutorialTitle')).toHaveText('モンスターを合成しよう');
+ await expect(page.locator('#tutorialText')).toContainText('画面上部の「合成」ボタン');
   expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
  await page.click('[data-tab="ranch"]');
  await expect(page.locator('.ui-ranch-actions button').first()).toHaveClass(/tutorial-focus/);
@@ -656,6 +657,19 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
  await page.click('#tutorialSkip');
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('slimeRanchTutorialV1')).done)).toBe(true);
+});
+test('tutorial highlights never run outside the active tutorial',async({page})=>{
+ await page.addInitScript(()=>{window.__SLIME_E2E__=false});
+ await page.addInitScript(()=>localStorage.setItem('slimeRanchTutorialV1',JSON.stringify({step:3,magic:true,monster:true,inProgress:false,done:true})));
+ await page.goto('./');
+ await page.click('#gameStart');
+ await expect(page.locator('#tutorialOverlay')).toBeHidden();
+ await page.click('[data-tab="ranch"]');
+ await page.locator('.ui-ranch-actions button').first().click();
+ await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
+ await expect(page.locator('body')).not.toHaveClass(/tutorial-active/);
+ await expect(page.locator('[data-tab="battle"]')).not.toHaveClass(/tutorial-focus/);
+ await expect(page.locator('.ui-ranch-actions button').first()).not.toHaveClass(/tutorial-focus/);
 });
 test('new starter slime can win the first three stages',async({page})=>{
  await page.goto('./');
