@@ -258,7 +258,7 @@ function renderCapacity(){const c=capCost();$('monsterCapacity').textContent='�
 function renderHearts(){$('inventoryHearts').textContent='💗 所持ハート ('+g.heartItems.length+')';$('inventoryMonsters').textContent='🐾 所持モンスター ('+g.slimes.length+'/'+cap()+')';$('heartList').innerHTML=g.heartItems.length?sortedHearts().map(({h,i})=>'<div class="mcard"><b>'+heartDisplayName(h)+' #'+(i+1)+'</b><div class="trait unique">'+h.name+' +'+h.value+(h.farm||['crit','heart','drop','maso','masoGain','success'].includes(h.type)?'%':'')+'</div><p class="small">タイプスキル：'+(heartType(h)||'不明')+' ／ 固有スキル：'+(h.fixedSkill?.name||'旧ハート：情報なし')+' ／ '+(h.farm?'ファーム系（低確率）':'バトル系')+'</p></div>').join(''):'<div class="small">ハートはまだないよ。バトルでドロップを狙おう。</div>';showInventory(inventoryTab)}
 function fixedLevel(m){return Math.max(1,Number(m&&m.fixedLv)||1)}
 function validFixedPair(a,b){return !!(a&&b&&a.id!==b.id&&a.kind===b.kind&&a.species===b.species&&info(a).type===info(b).type&&a.level===b.level&&fixedLevel(a)===fixedLevel(b))}
-const fresh=()=>({batchUnlocked:false,batchLast:0,rangeLv:0,spawnUpgradeLv:0,spawnProgress:0,heartItems:[],clearedStages:{},maso:80,hearts:0,kills:0,lv:0,tiles:[],yield:0,slimes:[],monsterCapacity:100,nextId:1,main:1,sub:null,stage:1,maxStage:1,enemyHP:30,teamHP:100,won:false,mode:'pair',wins:0,fails:0,logs:[],bLogs:[],autoFight:false,autoNext:true,lastTime:Date.now(),seenSpecies:{'森スライム':true},seenEnemies:{}});let g=fresh();
+const fresh=()=>({batchUnlocked:false,batchLast:0,rangeLv:0,spawnUpgradeLv:0,spawnProgress:0,heartItems:[],clearedStages:{},maso:80,hearts:0,kills:0,lv:0,tiles:[],yield:0,slimes:[],monsterCapacity:100,nextId:1,main:1,sub:null,stage:1,maxStage:1,enemyHP:30,teamHP:100,won:false,mode:'pair',wins:0,fails:0,firstFusionUsed:false,logs:[],bLogs:[],autoFight:false,autoNext:true,lastTime:Date.now(),seenSpecies:{'森スライム':true},seenEnemies:{}});let g=fresh();
 const r=(a,b)=>Math.floor(Math.random()*(b-a+1))+a, pick=a=>a[r(0,a.length-1)], clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), fmt=n=>{n=Number(n);if(!Number.isFinite(n))return n===Infinity?'∞':'0';if(Math.abs(n)>=1e6)return n.toExponential(2).replace('e+','e+');return Math.floor(n).toLocaleString('ja-JP')}, size=()=>SIZES[g.lv]||2, main=()=>g.slimes.find(m=>m.id===+g.main)||g.slimes[0]||null, sub=()=>g.slimes.find(m=>m.id===+g.sub)||null, info=m=>m&&m.kind==='enemy'?{emoji:({'森系':'🍃','雷系':'⚡','海系':'🌊','炎系':'🔥','影系':'🌑'})[String(m.enemyType||resolveEnemyDefinition(m)?.tag||'').replace(/系$/,'')+'系']||'👾',type:m.enemyType||'敵',bonus:'固有：'+speciesRule(m)[0]+' ×'+fixedMult(m).toFixed(1),maso:0,atk:0}:SPEC[m.species]||SPEC['森スライム'], trait=(m,t)=>m?(m.uniq||[]).filter(a=>a.type===t).reduce((v,a)=>v+a.value,0):0;
 function log(t){g.logs.unshift(t);g.logs=g.logs.slice(0,30)}function blog(t){g.bLogs.unshift(t);g.bLogs=g.bLogs.slice(0,10)}function tutorialAction(action,detail={}){window.dispatchEvent(new CustomEvent('slime:tutorial-action',{detail:{action,...detail}}))}
 function newAff(ex=[]){const a=pick(AFFIX.filter(x=>!ex.includes(x[0])));return {type:a[0],name:a[1],value:a[0]==='crit'?Number((r(1,5)/10).toFixed(1)):['maso','masoGain'].includes(a[0])?r(1,5):['heart','drop','success'].includes(a[0])?Number((r(1,5)/100).toFixed(2)):r(a[2],a[3])}}
@@ -268,7 +268,7 @@ function makeTiles(n){const a=Array.from({length:n*n},randTile);if(!a.includes('
 
 function normalizeNewData(){if(g.mode!=='heart')g.mode='pair';g.rangeLv=Math.max(0,Math.min(4,Number(g.rangeLv)||0));g.batchLast=Number(g.batchLast)||0;g.spawnProgress=Math.min(4499,Math.max(0,Number(g.spawnProgress)||0));if(typeof g.batchUnlocked!=='boolean')g.batchUnlocked=false;if(Array.isArray(g.tiles))g.tiles=g.tiles.map(t=>t==='spawn'?'spawn:'+pick(Object.keys(SPEC)):t);if(!Array.isArray(g.heartItems))g.heartItems=[];g.heartItems.forEach(normalizeUniqueSkill);if(!g.clearedStages||typeof g.clearedStages!=='object')g.clearedStages={};if(g.hearts>g.heartItems.length){while(g.heartItems.length<g.hearts)g.heartItems.push(newAff())}g.hearts=g.heartItems.length;for(const m of g.slimes){m.fixedLv=fixedLevel(m);m.typeLv=Math.max(1,Number(m.typeLv)||1);m.xp=Math.max(0,Number(m.xp)||0);m.fixedSkills=Array.isArray(m.fixedSkills)?m.fixedSkills:[];if(!m.kind)m.kind='slime';if(m.kind==='enemy'){const def=resolveEnemyDefinition(m);if(def){m.enemyKey=def.key;m.enemyImg=m.enemyImg||def.img;}}if(!Array.isArray(m.uniq))m.uniq=[];m.uniq.forEach(normalizeUniqueSkill)}if(main()&&main().kind!=='slime'){const v=g.slimes.find(m=>m.kind==='slime');if(v)g.main=v.id;else{const n=monster('森スライム');g.slimes.push(n);g.main=n.id}}}
 function save(){g.lastTime=Date.now();try{localStorage.setItem('slimeRanchCodex1',JSON.stringify(g))}catch(e){console.warn('Save failed',e)}}
-function load(){let oldTime=Date.now();try{const raw=['slimeRanchCodex1','slimeRanchFinal','slimeRanchGAS_v3','slimeRanchGAS_v2','slimeRanchGAS_v1','slimeRanchPixel_v4'].map(k=>localStorage.getItem(k)).find(Boolean);if(raw){const d=JSON.parse(raw);oldTime=d.lastTime||d.lastSave||Date.now();Object.assign(g,fresh(),d);g.maso=Number.isFinite(Number(d.maso))?Number(d.maso):80;g.hearts=Number(d.hearts)||0;g.kills=Number(d.kills)||0;g.lv=Number(d.lv??d.fieldLv)||0;g.yield=Number(d.yield??d.yieldLv)||0;g.spawnUpgradeLv=Math.max(0,Number(d.spawnUpgradeLv)||0);g.main=d.main??d.mainId??1;g.sub=d.sub??d.subId??null;g.stage=Number(d.stage)||1;g.maxStage=Number(d.maxStage)||1;g.enemyHP=Number(d.enemyHP??d.enemyHp)||enemyMax(g.stage);g.teamHP=Number(d.teamHP??d.teamHp)||100;g.won=!!(d.won??d.stageWon);g.mode=d.mode||d.fusionMode||'pair';g.wins=Number(d.wins??d.fusionWins)||0;g.fails=Number(d.fails??d.fusionFails)||0;g.bLogs=d.bLogs||d.battleLogs||[];g.seenSpecies=d.seenSpecies||{};g.seenEnemies=d.seenEnemies||{};g.slimes=Array.isArray(d.slimes)?d.slimes:[];g.monsterCapacity=Math.max(100,Number(d.monsterCapacity)||100,g.slimes.length);g.tiles=Array.isArray(d.tiles)?d.tiles:[];g.slimes.forEach(m=>{m.locked=!!m.locked;m.uniq=(m.uniq||[]).map(a=>normalizeUniqueSkill({type:a.type,name:a.name||a.label||a.type,value:Number(a.value??5)}));if(!SPEC[m.species])m.species='森スライム';g.seenSpecies[m.species]=true});const ix=SIZES.findIndex(n=>n*n===g.tiles.length);if(ix>=0)g.lv=ix;}}catch(e){console.warn('データ読み込み',e)}g.lv=clamp(+g.lv||0,0,SIZES.length-1);if(!Array.isArray(g.tiles)||g.tiles.length!==size()**2)g.tiles=makeTiles(size());if(!Array.isArray(g.slimes))g.slimes=[];if(!Array.isArray(g.logs))g.logs=[];if(!Array.isArray(g.bLogs))g.bLogs=[];g.slimes.forEach(m=>{m.uniq=Array.isArray(m.uniq)?m.uniq:[];m.locked=!!m.locked;if(!SPEC[m.species])m.species='森スライム';g.seenSpecies[m.species]=true});if(!g.slimes.length){const m=monster('森スライム');m.hp=120;g.slimes=[m];g.main=m.id;log('最初のモンスターと牧場を始めた。')}if(!g.tiles.some(t=>typeof t==='string'&&t.startsWith('spawn:'))){const empty=g.tiles.findIndex(t=>t==='empty');g.tiles[empty>=0?empty:1]='spawn:森スライム'}if(!g.slimes.some(m=>m.id===+g.main))g.main=g.slimes[0].id;if(!g.slimes.some(m=>m.id===+g.sub)||+g.sub===+g.main)g.sub=null;g.nextId=Math.max(+g.nextId||1,...g.slimes.map(m=>m.id+1));g.stage=Math.max(1,+g.stage||1);g.maxStage=Math.max(g.stage,+g.maxStage||1);if(!Number.isFinite(g.enemyHP)||(g.enemyHP<=0&&!g.won))g.enemyHP=enemyMax(g.stage);if(!Number.isFinite(g.teamHP)||g.teamHP<=0)g.teamHP=teamMax();const offlineMs=Math.min(28800000,Math.max(0,Date.now()-oldTime));if(offlineMs>1000){const count=simulateOfflineSpawns(offlineMs);if(count)log('💤 オフライン中にフィールドへ'+count+'マス出現（魔素・スライム）')}g.lastTime=Date.now()}
+function load(){let oldTime=Date.now();try{const raw=['slimeRanchCodex1','slimeRanchFinal','slimeRanchGAS_v3','slimeRanchGAS_v2','slimeRanchGAS_v1','slimeRanchPixel_v4'].map(k=>localStorage.getItem(k)).find(Boolean);if(raw){const d=JSON.parse(raw);oldTime=d.lastTime||d.lastSave||Date.now();Object.assign(g,fresh(),d);g.maso=Number.isFinite(Number(d.maso))?Number(d.maso):80;g.hearts=Number(d.hearts)||0;g.kills=Number(d.kills)||0;g.lv=Number(d.lv??d.fieldLv)||0;g.yield=Number(d.yield??d.yieldLv)||0;g.spawnUpgradeLv=Math.max(0,Number(d.spawnUpgradeLv)||0);g.main=d.main??d.mainId??1;g.sub=d.sub??d.subId??null;g.stage=Number(d.stage)||1;g.maxStage=Number(d.maxStage)||1;g.enemyHP=Number(d.enemyHP??d.enemyHp)||enemyMax(g.stage);g.teamHP=Number(d.teamHP??d.teamHp)||100;g.won=!!(d.won??d.stageWon);g.mode=d.mode||d.fusionMode||'pair';g.wins=Number(d.wins??d.fusionWins)||0;g.fails=Number(d.fails??d.fusionFails)||0;g.firstFusionUsed=typeof d.firstFusionUsed==='boolean'?d.firstFusionUsed:g.wins>0;g.bLogs=d.bLogs||d.battleLogs||[];g.seenSpecies=d.seenSpecies||{};g.seenEnemies=d.seenEnemies||{};g.slimes=Array.isArray(d.slimes)?d.slimes:[];g.monsterCapacity=Math.max(100,Number(d.monsterCapacity)||100,g.slimes.length);g.tiles=Array.isArray(d.tiles)?d.tiles:[];g.slimes.forEach(m=>{m.locked=!!m.locked;m.uniq=(m.uniq||[]).map(a=>normalizeUniqueSkill({type:a.type,name:a.name||a.label||a.type,value:Number(a.value??5)}));if(!SPEC[m.species])m.species='森スライム';g.seenSpecies[m.species]=true});const ix=SIZES.findIndex(n=>n*n===g.tiles.length);if(ix>=0)g.lv=ix;}}catch(e){console.warn('データ読み込み',e)}g.lv=clamp(+g.lv||0,0,SIZES.length-1);if(!Array.isArray(g.tiles)||g.tiles.length!==size()**2)g.tiles=makeTiles(size());if(!Array.isArray(g.slimes))g.slimes=[];if(!Array.isArray(g.logs))g.logs=[];if(!Array.isArray(g.bLogs))g.bLogs=[];g.slimes.forEach(m=>{m.uniq=Array.isArray(m.uniq)?m.uniq:[];m.locked=!!m.locked;if(!SPEC[m.species])m.species='森スライム';g.seenSpecies[m.species]=true});if(!g.slimes.length){const m=monster('森スライム');m.hp=120;g.slimes=[m];g.main=m.id;log('最初のモンスターと牧場を始めた。')}if(!g.tiles.some(t=>typeof t==='string'&&t.startsWith('spawn:'))){const empty=g.tiles.findIndex(t=>t==='empty');g.tiles[empty>=0?empty:1]='spawn:森スライム'}if(!g.slimes.some(m=>m.id===+g.main))g.main=g.slimes[0].id;if(!g.slimes.some(m=>m.id===+g.sub)||+g.sub===+g.main)g.sub=null;g.nextId=Math.max(+g.nextId||1,...g.slimes.map(m=>m.id+1));g.stage=Math.max(1,+g.stage||1);g.maxStage=Math.max(g.stage,+g.maxStage||1);if(!Number.isFinite(g.enemyHP)||(g.enemyHP<=0&&!g.won))g.enemyHP=enemyMax(g.stage);if(!Number.isFinite(g.teamHP)||g.teamHP<=0)g.teamHP=teamMax();const offlineMs=Math.min(28800000,Math.max(0,Date.now()-oldTime));if(offlineMs>1000){const count=simulateOfflineSpawns(offlineMs);if(count)log('💤 オフライン中にフィールドへ'+count+'マス出現（魔素・スライム）')}g.lastTime=Date.now()}
 function family(stage){const base=ENEMIES[Math.floor((stage-1)/5)%ENEMIES.length],tag=TYPES[(stage-1)%TYPES.length];return {...base,tag,emoji:({'森系':'🍃','炎系':'🔥','海系':'🌊','影系':'🌑','雷系':'⚡'})[tag]}}// Stage 100+: soft growth curve and team-stat based upper bound.
 // The cap targets a finite number of attacks, including the team's expected critical output.
 function enemyMax(n){
@@ -382,7 +382,7 @@ function updateSecondFusionChoices(){
  if(eligible.some(m=>String(m.id)===prev))sel.value=prev;
  sel.disabled=!eligible.length;
 }
-function failRate(a,b){return clamp(.28-teamFarmStats().success/100,0,.95)}
+function failRate(a,b){return g.firstFusionUsed?clamp(.28-teamFarmStats().success/100,0,.95):0}
 function fuseCost(){return 30+g.slimes.length*4}
 function matchingHeartSkill(a){return !!(a&&g.heartItems.length)}
 function drawFusion(){
@@ -395,9 +395,10 @@ function drawFusion(){
  hs.innerHTML=g.heartItems.map((h,i)=>'<option value="'+i+'">'+heartDisplayName(h)+' · '+h.name+' +'+h.value+(h.farm?'%':'')+'</option>').join('');
  if(prev&&+prev<g.heartItems.length)hs.value=prev;
  const b=g.slimes.find(m=>m.id===+$('fuseB').value);
- $('fuseCost').textContent=fmt(fuseCost())+' 魔素';$('fuseChance').textContent=Math.round((1-failRate(a,b))*100)+'%';
+  const firstFusion=!g.firstFusionUsed;
+  $('fuseCost').textContent=firstFusion?'初回無料':fmt(fuseCost())+' 魔素';$('fuseChance').textContent=firstFusion?'100%（初回保証）':Math.round((1-failRate(a,b))*100)+'%';
  $('fuseMsg').textContent=pair?'素材の経験値・バトル能力を合成元へ加算。同タイプならタイプLv+1、同固有スキルなら固有Lv+1。':'ハートの能力を追加・加算。タイプ・固有が一致すると対応Lv+1。低確率で異なる固有スキルを継承。';
- $('fuse').disabled=!a||(pair?!newPairValid(a,b):!g.heartItems.length)||g.maso<fuseCost();
+  $('fuse').disabled=!a||(pair?!newPairValid(a,b):!g.heartItems.length)||(!firstFusion&&g.maso<fuseCost());
 }
 function inherit(a,b){const out=[];for(const t of [...(a.uniq||[]),...(b?(b.uniq||[]):[])]){const old=out.find(x=>x.type===t.type);if(old)old.value=Math.max(old.value,t.value);else out.push({...t})}out.forEach(t=>t.value=Math.max(t.value,Math.round(t.value*r(100,120)/100)));out.sort((x,y)=>y.value-x.value);if(out.length>4)out.length=4;if(out.length<4&&Math.random()<.6)out.push(newAff(out.map(t=>t.type)));return out}
 
@@ -542,7 +543,7 @@ function fusionCheck(a,b,mode,heartIndex,allowLocked=false){
 }
 function performFusion(a,b,mode,heartIndex,allowLocked=false){
  if(!fusionCheck(a,b,mode,heartIndex,allowLocked))return false;
- const cost=fuseCost();if(g.maso<cost)return false;g.maso-=cost;
+  const firstFusion=!g.firstFusionUsed,cost=firstFusion?0:fuseCost();if(g.maso<cost)return false;g.maso-=cost;
  if(Math.random()<failRate(a,b)){g.fails++;return 'fail'}
  const oldMax=teamMax();
  if(mode==='heart'){
@@ -571,7 +572,7 @@ function performFusion(a,b,mode,heartIndex,allowLocked=false){
   if(+g.sub===b.id)g.sub=null;
   if(+g.main===b.id)g.main=isSlimeMonster(a)?a.id:(g.slimes.find(isSlimeMonster)?.id||null);
  }
- $('fuseA').dataset.nextSelection=String(a.id);g.wins++;
+  $('fuseA').dataset.nextSelection=String(a.id);g.firstFusionUsed=true;g.wins++;
  g.teamHP=Math.min(teamMax(),Math.max(1,g.teamHP+teamMax()-oldMax));
  return 'success';
 }
@@ -592,10 +593,11 @@ function updateBulkCostStatus(){
  // モンスター合成では成功時に所持数が減るため、次の合成単価も変動する。
  // 失敗時の再挑戦分は予測不能なので、成功を各1回と仮定した最低必要額を表示。
  const mode=$('bulkModeSelect').value;
- let minimum=0;
- for(let i=0;i<count;i++)minimum+=mode==='pair'?Math.max(0,30+(g.slimes.length-i)*4):cost;
+  let minimum=0;
+  for(let i=0;i<count;i++)minimum+=mode==='pair'?Math.max(0,30+(g.slimes.length-i)*4):cost;
+  if(!g.firstFusionUsed&&count>0)minimum=Math.max(0,minimum-(mode==='pair'?30+g.slimes.length*4:cost));
  const enough=count>0&&funds>=minimum;
- const initialOK=count>0&&funds>=cost;
+  const initialOK=count>0&&(!g.firstFusionUsed||funds>=cost);
  el.className='bulk-cost-status '+(count===0?'':enough?'is-ready':'is-short');
  el.textContent=count===0?'素材を選択してください（所持魔素：'+fmt(funds)+'）':
   '選択素材：'+count+'個 ／ 最低必要魔素：'+fmt(minimum)+' ／ 所持魔素：'+fmt(funds)+' ／ '+
@@ -614,7 +616,7 @@ function bulkFuse(){
  const targets=boxes.map(box=>mode==='heart'?g.heartItems[+box.value]:g.slimes.find(m=>m.id===+box.value));
  for(const item of targets){
   if(!item){skipped++;continue}
-  if(g.maso<fuseCost())break;
+   if(g.maso<(g.firstFusionUsed?fuseCost():0))break;
   const index=mode==='heart'?g.heartItems.indexOf(item):-1;
   if(mode==='heart'&&index<0){skipped++;continue;}
   if(mode==='pair'&&!g.slimes.some(m=>m.id===item.id)){skipped++;continue;}

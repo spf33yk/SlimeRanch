@@ -219,6 +219,16 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .ui-monster-idle-motion--sub .sprite{width:100%;height:100%;filter:drop-shadow(0 3px 4px #0008)!important}
 @media(max-width:760px){.ui-v2 nav button{padding:9px 16px}.ui-v2 nav button.active:before{left:7px}.ui-v2 nav button.active:after{right:7px}}
 @media(prefers-reduced-motion:reduce){.ui-v2 .screen.scene-enter{animation:none!important}.ui-v2 .ui-monster-idle-motion{animation:none!important}}
+.ui-v2 button{cursor:pointer;position:relative;border:1px solid #a0a9b1;background:linear-gradient(180deg,#626c75 0%,#48525b 45%,#343b43 100%);box-shadow:inset 0 2px #ffffff30,inset 0 -3px #171b20,0 4px 0 #111418,0 6px 10px #0005;text-shadow:1px 2px #111418;transition:filter .14s,transform .14s,box-shadow .14s,border-color .14s}
+.ui-v2 button:not(:disabled):hover{filter:brightness(1.16);transform:translateY(-1px);border-color:#e1cf9e;box-shadow:inset 0 2px #ffffff45,inset 0 -3px #171b20,0 5px 0 #111418,0 8px 14px #0007}
+.ui-v2 button:not(:disabled):active{filter:brightness(1.05);transform:translateY(2px);box-shadow:inset 0 2px #0003,0 1px 0 #111418,0 2px 4px #0006}
+.ui-v2 button:disabled{cursor:not-allowed;filter:saturate(.35);box-shadow:inset 0 1px #ffffff10,0 2px 0 #111418}
+.ui-v2 button.primary,.ui-v2 .screen button.primary{background:linear-gradient(180deg,#5b9a73,#34734d 52%,#27553b);border-color:#a5d4a8;box-shadow:inset 0 2px #ffffff38,inset 0 -3px #183b2c,0 4px 0 #111418,0 6px 10px #0005}
+.ui-v2 button.gold,.ui-v2 .screen button.gold{background:linear-gradient(180deg,#b89b5c,#8e713b 52%,#6a512d);border-color:#e3cf91;box-shadow:inset 0 2px #ffffff40,inset 0 -3px #49381f,0 4px 0 #111418,0 6px 10px #0005}
+.ui-v2 button.danger,.ui-v2 .screen button.danger{background:linear-gradient(180deg,#a56d72,#76494e 52%,#593439);border-color:#d7a3a2;box-shadow:inset 0 2px #ffffff30,inset 0 -3px #3a2026,0 4px 0 #111418,0 6px 10px #0005}
+.ui-v2 select,.ui-v2 input:not([type=checkbox]):not([type=range]){box-shadow:inset 0 2px 5px #0008,0 1px #ffffff12}
+.ui-v2 summary{cursor:pointer}
+@media(prefers-reduced-motion:reduce){.ui-v2 button{transition:none!important}}
 </style>
 <script>
 /* DOM presentation only: reuse game controls, handlers and state. */

@@ -439,8 +439,14 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await page.locator('.ui-ranch-actions button').first().click();
  await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
  await expect(page.locator('#fuse')).toHaveClass(/tutorial-focus/);
+  await expect(page.locator('#fuseCost')).toHaveText('初回無料');
+  await expect(page.locator('#fuseChance')).toHaveText('100%（初回保証）');
  await expect.poll(()=>page.locator('#fuse').evaluate(el=>{const r=el.getBoundingClientRect();return Math.abs((r.top+r.bottom)/2-innerHeight/2)})).toBeLessThan(80);
+  const masoBeforeFirstFusion=await page.evaluate(()=>g.maso);
+  await page.evaluate(()=>{window.__beforeFusionRandom=Math.random;Math.random=()=>.999999;});
  await page.click('#fuse');
+  await page.evaluate(()=>{Math.random=window.__beforeFusionRandom;});
+  expect(await page.evaluate(()=>({used:g.firstFusionUsed,wins:g.wins,fails:g.fails,maso:g.maso}))).toEqual({used:true,wins:1,fails:0,maso:masoBeforeFirstFusion});
  await expect(page.locator('#tutorialTitle')).toHaveText('バトルに挑戦しよう');
  await page.click('[data-tab="battle"]');
  await page.evaluate(()=>{g.autoNext=false;g.autoFight=false;save()});
@@ -474,6 +480,8 @@ test('new starter slime can win the first three stages',async({page})=>{
  await page.goto('./');
  await expect.poll(()=>page.evaluate(()=>g.slimes.length)).toBe(1);
  expect(await page.evaluate(()=>g.slimes[0].hp)).toBe(120);
+  expect(await page.evaluate(()=>g.slimes[0].level)).toBe(1);
+  expect(await page.evaluate(()=>g.sub)).toBeNull();
  await page.evaluate(()=>{g.autoNext=false;g.autoFight=false;showTab('battle');});
  for(const stage of [1,2,3]){
   await page.evaluate(stage=>setStage(stage),stage);
@@ -482,4 +490,16 @@ test('new starter slime can win the first three stages',async({page})=>{
   expect(await page.evaluate(()=>g.won),`stage ${stage} should be clearable`).toBe(true);
  }
  expect(await page.evaluate(()=>g.maxStage)).toBe(4);
+});
+
+test('game controls read as raised actions beside the quieter display panels',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>showTab('battle'));
+ const affordance=await page.evaluate(()=>{
+  const button=document.querySelector('#attack'),panel=document.querySelector('#battle>.panel');
+  return{cursor:getComputedStyle(button).cursor,buttonBorder:getComputedStyle(button).borderTopColor,panelBorder:getComputedStyle(panel).borderTopColor,shadow:getComputedStyle(button).boxShadow};
+ });
+ expect(affordance.cursor).toBe('pointer');
+ expect(affordance.buttonBorder).not.toBe(affordance.panelBorder);
+ expect(affordance.shadow).toContain('rgb(17, 20, 24)');
 });
