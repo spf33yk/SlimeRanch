@@ -400,10 +400,63 @@ test('opening screen fits phone portrait and landscape viewports',async({page})=
   expect(layout.frame.y).toBeGreaterThanOrEqual(0);
   expect(layout.frame.right).toBeLessThanOrEqual(viewport.width+1);
   expect(layout.frame.bottom).toBeLessThanOrEqual(viewport.height+1);
+  const artwork=await page.locator('#openingArtwork').evaluate(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{x:r.x,y:r.y,width:r.width,height:r.height,fit:s.objectFit,duration:s.animationDuration}});
+  expect(artwork.x).toBeLessThanOrEqual(0);expect(artwork.y).toBeLessThanOrEqual(0);expect(artwork.width).toBeGreaterThanOrEqual(viewport.width);expect(artwork.height).toBeGreaterThanOrEqual(viewport.height);expect(artwork.fit).toBe('cover');expect(artwork.duration).toBe('20s');
   for(const button of layout.buttons){expect(button.x).toBeGreaterThanOrEqual(0);expect(button.right).toBeLessThanOrEqual(viewport.width+1);expect(button.y).toBeGreaterThanOrEqual(0);expect(button.bottom).toBeLessThanOrEqual(viewport.height+1);}
   await expect(page.locator('#gameStart')).toBeVisible();
   await expect(page.locator('#gameOption')).toBeVisible();
   await expect(page.locator('#gameEnd')).toBeVisible();
   await page.screenshot({path:test.info().outputPath(`opening-${viewport.width}x${viewport.height}.png`),fullPage:true});
  }
+});
+test('first-run tutorial follows collection, upgrades, fusion, battle and sub-slot unlock',async({page})=>{
+ await page.addInitScript(()=>{window.__SLIME_E2E__=false;['slimeRanchCodex1','slimeRanchFinal','slimeRanchGAS_v3','slimeRanchGAS_v2','slimeRanchGAS_v1','slimeRanchPixel_v4','slimeRanchTutorialV1'].forEach(key=>localStorage.removeItem(key))});
+ await page.goto('./');
+ await expect(page.locator('#openingScreen')).toBeVisible();
+ await page.evaluate(()=>{g.tiles=['magic','spawn:森スライム','empty','empty'];g.maso=80;render();save()});
+ await page.click('#gameStart');
+ await expect(page.locator('#openingScreen')).toBeHidden();
+ await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
+ await page.screenshot({path:test.info().outputPath('tutorial-first-step.png')});
+ const clickFieldCell=async index=>{
+  const point=await page.locator('#fieldCanvas').evaluate((canvas,index)=>{const r=canvas.getBoundingClientRect(),cell=82,off=(720-2*cell)/2;return{x:r.x+(off+(index%2)*cell+cell/2)/720*r.width,y:r.y+(off+Math.floor(index/2)*cell+cell/2)/720*r.height}},index);
+  await page.mouse.click(point.x,point.y);
+ };
+ await clickFieldCell(0);
+ await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
+ await clickFieldCell(1);
+ await expect(page.locator('#tutorialTitle')).toHaveText('フィールドを強化しよう');
+ await page.click('#yieldUp');
+ await expect(page.locator('#tutorialTitle')).toHaveText('モンスターを合成しよう');
+ await page.click('[data-tab="ranch"]');
+ await page.click('#fuse');
+ await expect(page.locator('#tutorialTitle')).toHaveText('バトルに挑戦しよう');
+ await page.click('[data-tab="battle"]');
+ await page.evaluate(()=>{g.autoNext=false;g.autoFight=false;save()});
+ for(const stage of [1,2,3]){
+  await page.evaluate(stage=>{setStage(stage);g.enemyHP=1;render();save()},stage);
+  await page.click('#attack');
+ }
+ await expect(page.locator('#tutorialTitle')).toHaveText('サブモンスター枠が解放！');
+ await expect(page.locator('#subCard')).toContainText('仲間にするとサブ枠に編成できます');
+ expect(await page.evaluate(()=>g.kills)).toBe(3);
+ await page.click('#tutorialSkip');
+ await page.click('[data-tab="guide"]');
+ await page.click('#tutorialReplay');
+ await expect(page.locator('#tutorialTitle')).toHaveText('魔素と仲間を集めよう');
+ await page.click('#tutorialSkip');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('slimeRanchTutorialV1')).done)).toBe(true);
+});
+test('new starter slime can win the first three stages',async({page})=>{
+ await page.goto('./');
+ await expect.poll(()=>page.evaluate(()=>g.slimes.length)).toBe(1);
+ expect(await page.evaluate(()=>g.slimes[0].hp)).toBe(120);
+ await page.evaluate(()=>{g.autoNext=false;g.autoFight=false;showTab('battle');});
+ for(const stage of [1,2,3]){
+  await page.evaluate(stage=>setStage(stage),stage);
+  let attacks=0;
+  while(!(await page.evaluate(()=>g.won))&&attacks<30){await page.click('#attack');attacks++}
+  expect(await page.evaluate(()=>g.won),`stage ${stage} should be clearable`).toBe(true);
+ }
+ expect(await page.evaluate(()=>g.maxStage)).toBe(4);
 });

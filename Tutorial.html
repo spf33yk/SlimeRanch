@@ -1,0 +1,97 @@
+<style id="first-run-tutorial-style">
+#tutorialOverlay[hidden]{display:none!important}
+#tutorialOverlay{position:fixed;inset:0;z-index:90000;pointer-events:none}
+#tutorialOverlay:before{content:"";position:absolute;inset:0;background:#070b12a8}
+.tutorial-card{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(500px,calc(100vw - 24px));padding:18px 20px;border:2px solid #c5a968;border-radius:8px;background:linear-gradient(145deg,#252b32f5,#14191ff5);box-shadow:inset 0 0 0 3px #10151b,0 14px 50px #000b;color:#f5f0e3;pointer-events:auto}
+.tutorial-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;color:#f3d996;font-size:12px;letter-spacing:.1em}
+.tutorial-card h2{margin:0;color:#ffe5a7;font-size:20px}
+.tutorial-card p{margin:9px 0 14px;font-size:14px;line-height:1.65}
+.tutorial-progress{height:6px;margin:10px 0;background:#090e14;border:1px solid #56616b;border-radius:8px;overflow:hidden}
+.tutorial-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#64c99b,#e8d18f);transition:width .25s ease}
+.tutorial-actions{display:flex;justify-content:flex-end;gap:8px}
+.tutorial-actions button{min-width:104px;min-height:40px;border:1px solid #8b949a;border-radius:4px;background:linear-gradient(#505a63,#303840);color:#f5f0e3;font:inherit;cursor:pointer}
+.tutorial-actions #tutorialSkip{margin-right:auto;border-color:#8d6d6d;background:linear-gradient(#5b4144,#34282c);font-size:12px}
+.tutorial-actions #tutorialContinue{border-color:#c6a95e;background:linear-gradient(#877448,#53482f);color:#fff0c2}
+.tutorial-focus{position:relative!important;z-index:90001!important;outline:3px solid #ffe08c!important;outline-offset:3px!important;box-shadow:0 0 0 7px #17202bd9,0 0 26px 9px #ffdc7880!important}
+@media(max-width:600px){.tutorial-card{bottom:max(10px,env(safe-area-inset-bottom));padding:14px 15px}.tutorial-card h2{font-size:17px}.tutorial-card p{font-size:13px;margin:7px 0 10px}.tutorial-card-head{font-size:10px}.tutorial-actions button{min-width:86px;min-height:42px}}
+@media(prefers-reduced-motion:reduce){.tutorial-progress span{transition:none}}
+</style>
+<div id="tutorialOverlay" hidden aria-live="polite">
+ <section class="tutorial-card" role="dialog" aria-modal="false" aria-labelledby="tutorialTitle" aria-describedby="tutorialText">
+  <div class="tutorial-card-head"><span id="tutorialCounter">はじめての冒険</span><span>GUIDE</span></div>
+  <h2 id="tutorialTitle"></h2><div class="tutorial-progress" aria-hidden="true"><span id="tutorialProgress"></span></div>
+  <p id="tutorialText"></p>
+  <div class="tutorial-actions"><button id="tutorialSkip" type="button">いつでもスキップ</button><button id="tutorialContinue" type="button" hidden>つづける</button></div>
+ </section>
+</div>
+<script>
+(()=>{
+ const storageKey='slimeRanchTutorialV1',saveKeys=['slimeRanchCodex1','slimeRanchFinal','slimeRanchGAS_v3','slimeRanchGAS_v2','slimeRanchGAS_v1','slimeRanchPixel_v4'];
+ let hadSave=false,state={step:0,magic:false,monster:false,inProgress:false},running=false,focus=[];
+ try{hadSave=saveKeys.some(key=>!!localStorage.getItem(key));const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved&&typeof saved==='object')state={...state,...saved}}catch{}
+ const steps=[
+  {title:'魔素と仲間を集めよう',text:'青い結晶をタップして魔素を集め、スライムのマスから仲間を1体迎えよう。2つのマスを回収すると次へ進みます。'},
+  {title:'フィールドを強化しよう',text:'魔素取得量・湧き速度・採集範囲の強化か、領域拡張を1回購入しよう。最初は魔素取得量アップが手軽です。'},
+  {title:'モンスターを合成しよう',text:'牧場へ移動して2体を選び、合成を試そう。失敗しても素材は残るので、気軽に挑戦できます。'},
+  {title:'バトルに挑戦しよう',text:'バトルへ移動し、STAGE 3まで勝ち進もう。最初のスライムは序盤の敵と戦いやすいHPに調整されています。'},
+  {title:'サブモンスター枠が解放！',text:'STAGE 3突破で討伐数3体に到達し、サブ枠が使えるようになります。フィールドでもう1体仲間にして、牧場で編成してみよう。'}
+ ];
+ const el=id=>document.getElementById(id);
+ function saveState(){try{localStorage.setItem(storageKey,JSON.stringify(state))}catch{}}
+ function clearFocus(){for(const target of focus)target.classList.remove('tutorial-focus');focus=[]}
+ function findTargets(){
+  if(state.step===0)return [el('fieldCanvas')];
+  if(state.step===1)return ['yieldUp','spawnUp','rangeUp','expand'].map(el).filter(Boolean);
+  if(state.step===2){if(document.getElementById('ranch')?.classList.contains('active')){const fusion=el('uiFusion');if(fusion)fusion.open=true;return [el('fuse')]}return [document.querySelector('[data-tab="ranch"]')]}
+  if(state.step===3)return document.getElementById('battle')?.classList.contains('active')?[el('attack')]:[document.querySelector('[data-tab="battle"]')];
+  return [];
+ }
+ function paint(){
+  const overlay=el('tutorialOverlay');if(!overlay)return;
+  const done=state.step>=steps.length;
+  const step=steps[Math.min(state.step,steps.length-1)];
+  el('tutorialCounter').textContent=done?'冒険ガイド 完了':(state.step+1)+' / '+steps.length+'　冒険ガイド';
+  el('tutorialTitle').textContent=done?'チュートリアル完了':step.title;
+  el('tutorialText').textContent=done?'採集・強化・合成・バトルの基本は以上です。続きは冒険の書からいつでも見直せます。':step.text;
+  el('tutorialProgress').style.width=(done?100:(state.step/steps.length)*100)+'%';
+  el('tutorialContinue').hidden=!done;
+  clearFocus();focus=findTargets().filter(Boolean);
+  const target=focus.find(node=>!node.disabled)||focus[0];
+  if(target){target.classList.add('tutorial-focus');if(!overlay.hidden)target.scrollIntoView({block:'nearest',behavior:'auto'})}
+ }
+ function begin(replay=false){
+  if(running)return;
+  if(!replay&&!hadSave&&!state.inProgress&&state.done)return;
+  if(!replay&&hadSave&&!state.inProgress)return;
+  running=true;
+  if(replay)state={step:0,magic:false,monster:false,inProgress:true,done:false};
+  else{state.inProgress=true;state.step=Math.max(0,Math.min(steps.length-1,Number(state.step)||0))}
+  saveState();
+  if(typeof showTab==='function')showTab('field');
+  el('tutorialOverlay').hidden=false;document.body.classList.add('tutorial-active');paint();
+ }
+ function close(markDone=true){
+  clearFocus();running=false;el('tutorialOverlay').hidden=true;document.body.classList.remove('tutorial-active');
+  state.inProgress=false;if(markDone)state.done=true;saveState();
+ }
+ function advance(){state.step++;if(state.step>=steps.length)state.step=steps.length;saveState();paint()}
+ window.startFirstRunTutorial=()=>begin(false);
+ window.replaySlimeTutorial=()=>begin(true);
+ window.addEventListener('slime:tutorial-action',event=>{
+  if(!running)return;const detail=event.detail||{};
+  if(state.step===0&&detail.action==='collect'){
+   state.magic=state.magic||detail.magic>0;state.monster=state.monster||detail.monsters>0;
+   if(state.magic&&state.monster)advance();else{saveState();paint()}
+  }else if(state.step===1&&detail.action==='field-upgrade')advance();
+  else if(state.step===2&&detail.action==='fusion')advance();
+  else if(state.step===3&&detail.action==='battle-win'&&detail.kills>=3&&detail.maxStage>=4)advance();
+ });
+ window.addEventListener('slime:tutorial-tab',()=>{if(running)paint()});
+ document.addEventListener('DOMContentLoaded',()=>{
+  el('tutorialSkip').addEventListener('click',()=>close(true));
+  el('tutorialContinue').addEventListener('click',()=>close(true));
+  const page=document.querySelector('#guideHow .panel');
+  if(page){const button=document.createElement('button');button.id='tutorialReplay';button.type='button';button.className='gold';button.textContent='🧭 チュートリアルを再表示';button.style.margin='12px 0';button.addEventListener('click',()=>window.replaySlimeTutorial());page.insertBefore(button,page.querySelector('h3'))}
+ });
+})();
+</script>
