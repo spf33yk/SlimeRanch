@@ -96,8 +96,8 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .combat .label{font-size:10px;letter-spacing:.12em;color:#d8e4ed}
 .ui-v2 .combat .hp{background:#171d24dd;padding:8px;margin-top:auto;font-size:12px;flex-wrap:wrap;border-radius:3px}
 .ui-v2 #teamSprites{min-height:166px;align-items:end}
-.ui-v2 #teamSprites .sprite{width:105px!important;height:120px!important;filter:drop-shadow(0 7px 4px #0008)}
-.ui-v2 #enemySprite{height:166px;width:160px;margin:8px auto;filter:drop-shadow(0 7px 4px #0008)!important}
+.ui-v2 #teamSprites .sprite{width:105px!important;height:120px!important;filter:drop-shadow(0 7px 4px #0008);animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom}
+.ui-v2 #enemySprite{height:166px;width:160px;margin:8px auto;filter:drop-shadow(0 7px 4px #0008)!important;animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom}
 .ui-v2 .combat .top{flex-wrap:wrap}
 .ui-v2 #lastHitDetail,.ui-v2 #advantage{background:#161d25df;padding:5px 8px;font-size:11px}
 .ui-v2 #battle>.panel:last-child{grid-column:1;grid-row:2}
@@ -179,8 +179,8 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .screen .panel{border-color:#858a8e;box-shadow:inset 0 0 0 1px #111418,0 4px 0 #111418,0 10px 22px #0004}
 .ui-v2 nav button{border-color:#73787d;background:linear-gradient(180deg,#363a3f,#24272b);box-shadow:inset 0 1px #ffffff18,0 3px 0 #111418}
 .ui-v2 nav button.active{border-color:#d7bf84;box-shadow:inset 0 0 0 1px #f5e1ac55,0 3px 0 #111418;color:#fff2c6}
-.ui-v2 .mcard{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-.ui-v2 .mcard:hover{transform:translateY(-2px);border-color:#bda76f;box-shadow:0 5px 14px #0005}
+.ui-v2 .mcard{transition:border-color .18s ease,box-shadow .18s ease}
+.ui-v2 .mcard:hover{border-color:#bda76f;box-shadow:0 5px 14px #0005}
 .ui-v2 button:focus-visible,.ui-v2 select:focus-visible{outline:2px solid #efd99d;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.ui-v2 *{scroll-behavior:auto!important;transition:none!important}.ui-v2 #mainCard .mhead .sprite,.ui-v2 #uiSubCompanion #subCard .sprite{animation:none!important}}
 
@@ -220,7 +220,7 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 @media(max-width:760px){.ui-v2 nav button{padding:9px 16px}.ui-v2 nav button.active:before{left:7px}.ui-v2 nav button.active:after{right:7px}}
 @media(prefers-reduced-motion:reduce){.ui-v2 .screen.scene-enter{animation:none!important}.ui-v2 .ui-monster-idle-motion{animation:none!important}}
 .ui-v2 button{cursor:pointer;position:relative;border:1px solid #a0a9b1;background:linear-gradient(180deg,#626c75 0%,#48525b 45%,#343b43 100%);box-shadow:inset 0 2px #ffffff30,inset 0 -3px #171b20,0 4px 0 #111418,0 6px 10px #0005;text-shadow:1px 2px #111418;transition:filter .14s,transform .14s,box-shadow .14s,border-color .14s}
-.ui-v2 button:not(:disabled):hover{filter:brightness(1.16);transform:translateY(-1px);border-color:#e1cf9e;box-shadow:inset 0 2px #ffffff45,inset 0 -3px #171b20,0 5px 0 #111418,0 8px 14px #0007}
+.ui-v2 button:not(:disabled):hover{filter:brightness(1.16);border-color:#e1cf9e;box-shadow:inset 0 2px #ffffff45,inset 0 -3px #171b20,0 5px 0 #111418,0 8px 14px #0007}
 .ui-v2 button:not(:disabled):active{filter:brightness(1.05);transform:translateY(2px);box-shadow:inset 0 2px #0003,0 1px 0 #111418,0 2px 4px #0006}
 .ui-v2 button:disabled{cursor:not-allowed;filter:saturate(.35);box-shadow:inset 0 1px #ffffff10,0 2px 0 #111418}
 .ui-v2 button.primary,.ui-v2 .screen button.primary{background:linear-gradient(180deg,#5b9a73,#34734d 52%,#27553b);border-color:#a5d4a8;box-shadow:inset 0 2px #ffffff38,inset 0 -3px #183b2c,0 4px 0 #111418,0 6px 10px #0005}
@@ -228,13 +228,11 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 button.danger,.ui-v2 .screen button.danger{background:linear-gradient(180deg,#a56d72,#76494e 52%,#593439);border-color:#d7a3a2;box-shadow:inset 0 2px #ffffff30,inset 0 -3px #3a2026,0 4px 0 #111418,0 6px 10px #0005}
 .ui-v2 select,.ui-v2 input:not([type=checkbox]):not([type=range]){box-shadow:inset 0 2px 5px #0008,0 1px #ffffff12}
 .ui-v2 summary{cursor:pointer}
-.ui-v2 .field-spawn-meter{width:min(100%,720px);margin:5px auto 8px;padding:4px 8px;display:grid;grid-template-columns:1fr;gap:3px;border:1px solid #626a70;border-radius:4px;background:#1b2026a6;color:#c8cbd0;font-size:10px;line-height:1.25}
-.ui-v2 .field-spawn-meter-head{display:flex;justify-content:space-between;gap:8px;color:#d8d2c1}
-.ui-v2 .field-spawn-track{height:4px;overflow:hidden;border-radius:4px;background:#0d1116;box-shadow:inset 0 1px 2px #000b}
-.ui-v2 .field-spawn-track>span{display:block;width:0;height:100%;border-radius:4px;background:linear-gradient(90deg,#7dbf8b,#d8ca83);box-shadow:0 0 6px #a8d59c80;transition:width .2s linear}
-.ui-v2 .field-input-hint{text-align:right;color:#9fa5ab;font-size:9px}
+.ui-v2 .field-input-hint{margin:5px 2px 8px;text-align:right;color:#aeb4ba;font-size:10px}
 .ui-v2.field-drag-unlocked #fieldCanvas{cursor:grab;touch-action:none}
 .ui-v2.field-drag-unlocked #fieldCanvas.is-dragging{cursor:grabbing}
+.ui-v2 #teamSprites .sprite.attacking{animation:slimeAttackLunge .32s cubic-bezier(.22,.7,.3,1) both;transform-origin:bottom center}
+@media(prefers-reduced-motion:reduce){.ui-v2 #teamSprites .sprite,.ui-v2 #enemySprite{animation:none!important}}
 @media(prefers-reduced-motion:reduce){.ui-v2 button{transition:none!important}}
 </style>
 <script>

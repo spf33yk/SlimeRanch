@@ -108,7 +108,7 @@ test('starts under the Pages subpath; all tabs and responsive layouts work',asyn
  }
  expect(errors).toEqual([]);expect(failed).toEqual([]);
 });
-test('field starts with click collection and unlocks drag collection after an upgrade',async({page})=>{
+test('field starts with click collection and unlocks drag collection through range research',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('./');
  await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';g.maso=100;drawField();});
@@ -122,6 +122,9 @@ test('field starts with click collection and unlocks drag collection after an up
  await page.click('#uiCollect');
  await page.click('#expand');
  expect(await page.evaluate(()=>size())).toBe(3);
+ expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
+ await page.evaluate(()=>{g.maso=10000;render()});
+ await page.click('#rangeUp');
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
  await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
  const dragPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
@@ -135,14 +138,10 @@ test('field starts with click collection and unlocks drag collection after an up
  expect(await page.evaluate(()=>g.tiles[0])).toBe('empty');
  expect(errors).toEqual([]);
 });
-test('field spawn meter stays slim and batches fast spawn intervals',async({page})=>{
+test('field spawn meter is removed',async({page})=>{
  await page.goto('./');
- const initial=await page.evaluate(()=>{g.tiles=Array(4).fill('empty');g.spawnUpgradeLv=0;g.spawnProgress=spawnIntervalMs()/2;updateFieldSpawnMeter();const track=document.querySelector('.field-spawn-track');return{batch:track.dataset.batch,width:parseFloat(document.getElementById('fieldSpawnBar').style.width),height:track.getBoundingClientRect().height,label:document.getElementById('fieldSpawnLabel').textContent}});
- expect(initial.batch).toBe('1');expect(initial.width).toBeGreaterThan(49);expect(initial.width).toBeLessThan(51);expect(initial.height).toBe(4);expect(initial.label).toBe('探索中...');
- const ten=await page.evaluate(()=>{g.spawnUpgradeLv=50;g.spawnProgress=spawnIntervalMs()*5;updateFieldSpawnMeter();const track=document.querySelector('.field-spawn-track');return{batch:track.dataset.batch,label:document.getElementById('fieldSpawnBatch').textContent}});
- expect(ten).toEqual({batch:'10',label:'10回おき'});
- const hundred=await page.evaluate(()=>{g.spawnUpgradeLv=1000;g.spawnProgress=spawnIntervalMs()*50;updateFieldSpawnMeter();const track=document.querySelector('.field-spawn-track');return{batch:track.dataset.batch,label:document.getElementById('fieldSpawnBatch').textContent}});
- expect(hundred).toEqual({batch:'100',label:'100回おき'});
+ await expect(page.locator('.field-spawn-meter')).toHaveCount(0);
+ expect(await page.evaluate(()=>typeof updateFieldSpawnMeter)).toBe('undefined');
 });
 test('ranch shortcuts, equipment and battle controls remain connected',async({page})=>{
  await page.goto('./');
@@ -175,6 +174,32 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','true');
  await page.locator('#autoFight').evaluate(button=>button.click());
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','false');
+});
+test('selected monsters lock themselves and hover does not shift game controls',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{const added=[monster('森スライム'),monster('森スライム')];g.slimes.push(...added);g.main=g.slimes[0].id;g.sub=added[0].id;g.kills=3;g.tiles.fill('magic');g.slimes.forEach(m=>{m.locked=false;delete m.autoLocked});render()});
+ expect(await page.evaluate(()=>g.slimes.filter(m=>m.id===+g.main||m.id===+g.sub).every(m=>m.locked))).toBe(true);
+ await expect(page.locator('#fuseB option')).toHaveCount(1);
+ await expect(page.locator('label[for="fuseB"]')).toHaveText('合成素材');
+ await page.click('[data-tab=ranch]');
+ await page.waitForTimeout(300);
+ const card=page.locator('#monsterList .mcard').first();
+ const before=await card.boundingBox();await page.mouse.move(before.x+Math.min(12,before.width/2),before.y+Math.min(12,before.height/2));await page.waitForTimeout(200);const after=await card.boundingBox();
+ expect(after.x).toBe(before.x);expect(after.y).toBe(before.y);
+ await page.click('[data-tab=battle]');
+ await page.waitForTimeout(300);
+ const auto=page.locator('#autoFight'),autoBefore=await auto.boundingBox();await page.mouse.move(autoBefore.x+autoBefore.width/2,autoBefore.y+autoBefore.height/2);await page.waitForTimeout(200);const autoAfter=await auto.boundingBox();
+ expect(autoAfter.x).toBe(autoBefore.x);expect(autoAfter.y).toBe(autoBefore.y);
+ await expect.poll(()=>page.locator('#teamSprites .sprite').first().evaluate(el=>getComputedStyle(el).animationName)).toBe('slime-idle');
+ await expect.poll(()=>page.locator('#enemySprite').evaluate(el=>getComputedStyle(el).animationName)).toBe('slime-idle');
+});
+test('auto attack setting survives a browser reload',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=battle]');
+ await page.locator('#autoFight').evaluate(button=>button.click());
+ await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','true');
+ await page.reload();
+ expect(await page.evaluate(()=>g.autoFight)).toBe(true);
+ await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','true');
 });
 test('externalized backgrounds, BGM and videos resolve',async({page})=>{
  await page.goto('./');
@@ -454,16 +479,18 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await expect(page.locator('#tutorialTitle')).toHaveText('フィールドを強化しよう');
  await page.click('#yieldUp');
  await expect(page.locator('#tutorialTitle')).toHaveText('モンスターを合成しよう');
-  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
+  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
  await page.click('[data-tab="ranch"]');
  await expect(page.locator('.ui-ranch-actions button').first()).toHaveClass(/tutorial-focus/);
  await expect(page.locator('#uiFusion')).not.toHaveJSProperty('open',true);
  await page.locator('.ui-ranch-actions button').first().click();
  await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
- await expect(page.locator('#fuse')).toHaveClass(/tutorial-focus/);
+  await expect(page.locator('#fuseA')).toHaveClass(/tutorial-focus/);
+  await expect(page.locator('#fuseB')).toHaveClass(/tutorial-focus/);
+  await expect(page.locator('#fuse')).toHaveClass(/tutorial-focus/);
   await expect(page.locator('label[for="fuseA"]')).toHaveText('合成元');
-  await expect(page.locator('label[for="fuseB"]')).toHaveText('合成元（素材側）');
-  const fusionHighlight=await page.evaluate(()=>{const r=document.getElementById('fuse').getBoundingClientRect();return{expected:Math.max(0,r.top-8),actual:parseFloat(document.getElementById('tutorialDimTop').style.height)}});
+   await expect(page.locator('label[for="fuseB"]')).toHaveText('合成素材');
+   const fusionHighlight=await page.evaluate(()=>{const nodes=['label[for="fuseA"]','#fuseA','label[for="fuseB"]','#fuseB','#fuse'].map(s=>document.querySelector(s)).filter(e=>e&&e.getClientRects().length);return{expected:Math.max(0,Math.min(...nodes.map(e=>e.getBoundingClientRect().top))-8),actual:parseFloat(document.getElementById('tutorialDimTop').style.height)}});
   expect(Math.abs(fusionHighlight.expected-fusionHighlight.actual)).toBeLessThan(2);
   await expect(page.locator('#fuseCost')).toHaveText('初回無料');
   await expect(page.locator('#fuseChance')).toHaveText('100%（初回保証）');
