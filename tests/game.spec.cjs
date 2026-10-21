@@ -296,7 +296,7 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await page.locator('.ui-monster-select-row--main').getByRole('button',{name:'装備・宝箱',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
  await page.click('#treasureClose');
- await page.locator('.ui-monster-select-row--sub').getByRole('button',{name:'お守り装備',exact:true}).click();
+ await page.locator('.ui-monster-select-row--sub').getByRole('button',{name:'装備・宝箱',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
  await expect(page.locator('#treasureSlot')).toHaveValue('sub');
  await page.click('#treasureClose');
@@ -503,15 +503,20 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
   intro:document.querySelector('#ranch .ranch-layout>.panel>p')?.textContent||'',
   rows:[...document.querySelectorAll('.ui-monster-select-row')].map(row=>({
    width:row.getBoundingClientRect().width,selectWidth:row.querySelector('select').getBoundingClientRect().width,
-   button:row.querySelector('button')?.textContent.trim(),selectRight:row.querySelector('select').getBoundingClientRect().right,
+   button:row.querySelector('button')?.textContent.trim(),buttonWidth:row.querySelector('button')?.getBoundingClientRect().width,selectRight:row.querySelector('select').getBoundingClientRect().right,
    buttonLeft:row.querySelector('button')?.getBoundingClientRect().left
   })),
   mainMinHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight
  }));
  expect(desktop.intro).toBe('');expect(desktop.rows).toHaveLength(2);
  for(const row of desktop.rows){expect(row.selectWidth).toBeLessThan(row.width);expect(row.buttonLeft).toBeGreaterThanOrEqual(row.selectRight)}
- expect(desktop.rows.map(row=>row.button)).toEqual(['装備・宝箱','お守り装備']);
- expect(desktop.mainMinHeight).toBe('310px');
+ expect(desktop.rows.map(row=>row.button)).toEqual(['装備・宝箱','装備・宝箱']);
+ expect(desktop.rows[0].buttonWidth).toBe(desktop.rows[1].buttonWidth);
+ expect(desktop.mainMinHeight).toBe('350px');
+ await page.evaluate(()=>{const partner=monster('森スライム');g.slimes.push(partner);g.sub=partner.id;g.kills=3;render()});
+ const optionLabels=await page.evaluate(()=>['mainSelect','subSelect','fuseA','fuseB'].flatMap(id=>[...document.getElementById(id).options].map(option=>option.textContent)));
+ expect(optionLabels.every(text=>!/\s\/\s.*系$/.test(text))).toBe(true);
+ await expect(page.locator('.treasure-equip-action')).toHaveCount(0);
  await page.setViewportSize({width:390,height:844});
  const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,rows:[...document.querySelectorAll('.ui-monster-select-row')].map(row=>({row:row.getBoundingClientRect().width,select:row.querySelector('select').getBoundingClientRect().width}))}));
  expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.viewport);expect(mobile.rows).toHaveLength(2);

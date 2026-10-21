@@ -74,7 +74,7 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .ui-ranch-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
 .ui-v2 .ui-monster-select-row{display:flex;align-items:stretch;gap:8px;max-width:100%;margin:0 0 4px}
 .ui-v2 .ui-monster-select-row select{width:min(100%,29em);max-width:100%;flex:0 1 29em;min-width:0}
-.ui-v2 .ui-monster-select-row button{flex:0 0 auto;white-space:nowrap}
+.ui-v2 .ui-monster-select-row button{flex:0 0 9em;width:9em;white-space:nowrap;padding-inline:8px}
 .ui-v2 #mainCard>.mcard{margin-top:4px}
 .ui-v2 #monsterList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .ui-v2 #monsterList .mcard{margin:0}
@@ -221,8 +221,8 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .treasure-bulk-actions button{min-height:38px;font-size:12px;padding:8px 10px}
 .ui-v2 #treasureClearSelected{order:1}.ui-v2 #treasureDeleteSelected{order:2}
 .ui-v2 .treasure-panel button{font-size:13px}
-.ui-v2 #mainCard .mhead{min-height:310px}
-.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{width:166px;height:148px;margin:20px auto 10px;align-self:start}
+.ui-v2 #mainCard .mhead{min-height:350px}
+.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{width:174px;height:156px;margin:24px auto 12px;align-self:start}
 .ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main .sprite{width:100%!important;height:100%!important;max-width:none;margin:0;filter:drop-shadow(0 9px 5px #0009)!important}
 @keyframes ranch-idle-bob{0%,100%{transform:translateY(0)}25%{transform:translateY(-1px)}50%{transform:translateY(-2px)}75%{transform:translateY(-1px)}}
 @keyframes scene-enter{0%{opacity:0;transform:translateY(9px)}100%{opacity:1;transform:translateY(0)}}
@@ -320,7 +320,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const ranchIntro=ranch.querySelector('.ranch-layout>.panel>p');if(ranchIntro)ranchIntro.remove();
  function addMonsterSelectRow(selectId,slot,label){const select=byId(selectId),row=make('div','ui-monster-select-row ui-monster-select-row--'+slot);select.before(row);row.append(select,button(label,()=>treasureDialog(slot)));}
  addMonsterSelectRow('mainSelect','main','装備・宝箱');
- addMonsterSelectRow('subSelect','sub','お守り装備');
+ addMonsterSelectRow('subSelect','sub','装備・宝箱');
  const sideStack=make('div','ranch-side-stack');
  sideStack.append(byId('ranchTeamStats'));
  const subPanel=make('div','panel');subPanel.id='uiSubCompanion';subPanel.append(make('h2','','サブモンスター'));

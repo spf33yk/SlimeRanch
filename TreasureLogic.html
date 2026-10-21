@@ -128,7 +128,6 @@ function treasureRenderCards(){
   if(charm){
    const caption=document.createElement('div');caption.className='treasure-bonus-caption';caption.textContent='✨ おまもり補正：'+charm.effects.map(e=>treasureEffectLabel(e)+' ×'+Number(e.mult).toFixed(2)).join(' / ');card.appendChild(caption);
   }
-  const btn=document.createElement('button');btn.className='treasure-equip-action';btn.textContent='🎁 '+(charm?'装備：'+charm.name:'装備・宝箱');btn.onclick=()=>treasureDialog(slot);card.appendChild(btn);
  }
 }
 const treasureOriginalRender=render;
