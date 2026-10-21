@@ -186,6 +186,39 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 
 .ui-v2 .field-wrap{padding:0!important}
 </style>
+<style id="slime-rpg-ui-v3">
+.ui-v2 nav button.active{position:relative;background:linear-gradient(180deg,#65717a,#3b454c 46%,#29333c);border-color:#e0c987;box-shadow:inset 0 0 0 1px #f7e9c866,inset 0 -3px #11161b,0 0 12px #b4dfff33,0 3px 0 #101216;color:#fff2c6}
+.ui-v2 nav button.active:before,.ui-v2 nav button.active:after{content:"◆";display:block;position:absolute;top:50%;transform:translateY(-50%);color:#e8cf97;font-size:10px;text-shadow:0 0 8px #ffe6a6aa}
+.ui-v2 nav button.active:before{left:12px}.ui-v2 nav button.active:after{right:12px}
+.ui-v2 nav button.active:focus-visible{outline:2px solid #e8cf97;outline-offset:2px}
+.ui-v2 dialog,.ui-v2 .treasure-panel{color:var(--t);background:linear-gradient(145deg,#3b4046,#24282e 55%,#1c2026);border:2px solid #bdab78;border-radius:5px;box-shadow:inset 0 0 0 2px #15191e,inset 0 0 0 3px #62666a,0 20px 70px #000b}
+.ui-v2 dialog{max-width:min(760px,calc(100vw - 28px));max-height:min(86dvh,860px);padding:22px}
+.ui-v2 dialog::backdrop{background:#080c13cc;backdrop-filter:blur(4px)}
+.ui-v2 .treasure-overlay{padding:14px;background:#080c13d9;backdrop-filter:blur(4px)}
+.ui-v2 .treasure-panel{width:min(760px,calc(100vw - 28px));max-height:min(86dvh,860px);overflow:auto;padding:18px}
+.ui-v2 .treasure-head{position:sticky;top:-18px;z-index:2;margin:-18px -18px 14px;padding:14px 18px;background:linear-gradient(#42474d,#2b3036);border-bottom:1px solid #817755;box-shadow:0 4px 8px #0005}
+.ui-v2 .treasure-head h2{margin:0;color:#f2e6c8;font-size:18px}
+.ui-v2 .treasure-panel label{color:#d5d4ce}
+.ui-v2 .treasure-panel select{width:100%;max-width:260px;background:#1b1f25;border:1px solid #8a8d8d;color:#f3eee4;padding:9px}
+.ui-v2 .treasure-section{margin:12px 0;border:1px solid #666d72;background:#252a30}
+.ui-v2 .treasure-section>summary{padding:10px 12px;color:#f0dfad;background:linear-gradient(#363c42,#292e34);cursor:pointer}
+.ui-v2 .treasure-entry{border:1px solid #5d666d;border-radius:3px;background:linear-gradient(110deg,#30363d,#24292f);padding:10px}
+.ui-v2 .treasure-bulk-actions{display:flex;flex-wrap:wrap;gap:7px;padding:10px}
+.ui-v2 .treasure-bulk-actions button{min-height:38px;font-size:12px;padding:8px 10px}
+.ui-v2 #treasureClearSelected{order:1}.ui-v2 #treasureDeleteSelected{order:2}
+.ui-v2 .treasure-panel button{font-size:13px}
+.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{width:150px;height:130px;margin:20px auto 10px}
+.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main .sprite{width:100%!important;height:100%!important;max-width:none;margin:0;filter:drop-shadow(0 9px 5px #0009)!important}
+@keyframes slime-idle{0%,100%{transform:translateY(1px) rotate(-1deg) scaleX(1)}50%{transform:translateY(-5px) rotate(1deg) scaleX(1.015)}}
+@keyframes scene-enter{0%{opacity:0;transform:translateY(9px)}100%{opacity:1;transform:translateY(0)}}
+.ui-v2 .screen.scene-enter{animation:scene-enter .24s cubic-bezier(.2,.75,.25,1) both}
+.ui-v2 .ui-monster-idle-motion{display:grid;place-items:center;flex:none;animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom;will-change:transform}
+.ui-v2 .ui-monster-idle-motion .sprite{animation:none!important}
+.ui-v2 .ui-monster-idle-motion--sub{width:66px;height:54px}
+.ui-v2 .ui-monster-idle-motion--sub .sprite{width:100%;height:100%;filter:drop-shadow(0 3px 4px #0008)!important}
+@media(max-width:760px){.ui-v2 nav button{padding:9px 16px}.ui-v2 nav button.active:before{left:7px}.ui-v2 nav button.active:after{right:7px}}
+@media(prefers-reduced-motion:reduce){.ui-v2 .screen.scene-enter{animation:none!important}.ui-v2 .ui-monster-idle-motion{animation:none!important}}
+</style>
 <script>
 /* DOM presentation only: reuse game controls, handlers and state. */
 document.addEventListener('DOMContentLoaded',()=>{
@@ -228,17 +261,27 @@ document.addEventListener('DOMContentLoaded',()=>{
  function fold(panel,label,id){
   const details=make('details','ui-fold');details.id=id;panel.before(details);details.append(make('summary','',label),panel);return details;
  }
- const fusion=fold(ranchPanels[0],'合成工房','uiFusion'),inventory=fold(ranchPanels[1],'相棒・ハート一覧','uiInventory');
+ const fusion=fold(ranchPanels[0],'合成工房','uiFusion'),inventory=fold(ranchPanels[1],'モンスター・ハート一覧','uiInventory');
  const reveal=details=>{details.open=true;details.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});};
  const actions=make('div','ui-ranch-actions');
- actions.append(button('合成',()=>reveal(fusion)),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('装備・宝箱',()=>treasureDialog('main')),button('相棒一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
+ actions.append(button('合成',()=>reveal(fusion)),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('装備・宝箱',()=>treasureDialog('main')),button('モンスター一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));
  ranch.querySelector('.ranch-layout').before(actions);
  const ranchIntro=ranch.querySelector('.ranch-layout>.panel>p');ranchIntro.textContent='メインとサブの能力が冒険を支えます。大切な個体は一覧からロックして保護できます。';
  const sideStack=make('div','ranch-side-stack');
  sideStack.append(byId('ranchTeamStats'));
- const subPanel=make('div','panel');subPanel.id='uiSubCompanion';subPanel.append(make('h2','','サブ相棒'));
+ const subPanel=make('div','panel');subPanel.id='uiSubCompanion';subPanel.append(make('h2','','サブモンスター'));
  ['subSelect','subCard'].forEach(id=>{const el=byId(id),label=id==='subSelect'?ranch.querySelector('label[for="subSelect"]'):null;if(label)subPanel.append(label);subPanel.append(el);});
  sideStack.append(subPanel);ranch.querySelector('.ranch-layout').append(sideStack);
+ const wrapIdleSprite=(root,kind)=>root.querySelectorAll('.mhead>.sprite').forEach(img=>{
+  if(img.parentElement.classList.contains('ui-monster-idle-motion'))return;
+  const motion=make('span','ui-monster-idle-motion ui-monster-idle-motion--'+kind);
+  img.before(motion);motion.append(img);
+ });
+ const mainSpriteObserver=new MutationObserver(()=>wrapIdleSprite(byId('mainCard'),'main'));
+ const subSpriteObserver=new MutationObserver(()=>wrapIdleSprite(byId('subCard'),'sub'));
+ mainSpriteObserver.observe(byId('mainCard'),{childList:true,subtree:true});
+ subSpriteObserver.observe(byId('subCard'),{childList:true,subtree:true});
+ wrapIdleSprite(byId('mainCard'),'main');wrapIdleSprite(byId('subCard'),'sub');
 
  // Battle: stage and automation in a side panel, combatants share one scene.
  const battlePanel=byId('battle').querySelector(':scope > .panel');battlePanel.classList.add('battle-control');

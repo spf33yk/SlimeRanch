@@ -53,7 +53,7 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await page.click('#closeBulkFusion');
  await actions.getByRole('button',{name:'ハート一覧',exact:true}).click();
  await expect(page.locator('#heartInventory')).toBeVisible();
- await actions.getByRole('button',{name:'相棒一覧',exact:true}).click();
+ await actions.getByRole('button',{name:'モンスター一覧',exact:true}).click();
  await expect(page.locator('#monsterInventory')).toBeVisible();
  await actions.getByRole('button',{name:'装備・宝箱',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
@@ -168,7 +168,7 @@ test('GAS export helper produces a compatible save without clearing the game',as
  expect(await page.evaluate(()=>g.maso)).toBe(12345);
  await legacy.close();
 });
-test('ranch header, capacity upgrades, companion layout and sub charm stats work',async({page})=>{
+test('ranch header, capacity upgrades, monster layout and sub charm stats work',async({page})=>{
  await page.goto('./');
  await page.click('[data-tab=ranch]');
  expect(await page.locator('#headerMonsterCount').textContent()).toBe('1 / 100');
@@ -176,7 +176,7 @@ test('ranch header, capacity upgrades, companion layout and sub charm stats work
  const resourceLabels=await page.locator('header .resource small').allTextContents();expect(resourceLabels).toEqual(['✨ 魔素','🐾 モンスター','💗 ハート']);
  const layout=await page.evaluate(()=>{const main=document.getElementById('mainCard').getBoundingClientRect(),stats=document.getElementById('ranchTeamStats').getBoundingClientRect(),sub=document.getElementById('uiSubCompanion').getBoundingClientRect();return {mainX:main.x,statsX:stats.x,statsY:stats.y,statsBottom:stats.bottom,subX:sub.x,subY:sub.y}});
  expect(layout.mainX).toBeLessThan(layout.statsX);expect(layout.subX).toBe(layout.statsX);expect(layout.subY).toBeGreaterThanOrEqual(layout.statsBottom);
- await page.getByRole('button',{name:'相棒一覧',exact:true}).click();
+ await page.getByRole('button',{name:'モンスター一覧',exact:true}).click();
  await page.evaluate(()=>{g.maso=1000;render();});
  await page.click('#capacityUp');
  expect(await page.evaluate(()=>({capacity:cap(),price:capCost(),header:document.getElementById('headerMonsterCount').textContent}))).toEqual({capacity:110,price:405,header:'1 / 110'});
@@ -188,8 +188,38 @@ test('ranch header, capacity upgrades, companion layout and sub charm stats work
  expect(charmStats.sub).toBe(charmStats.base*2);expect(charmStats.team).toBe(charmStats.sub+charmStats.main);
  expect(await page.locator('#headerMonsterCount').textContent()).toBe('2 / 110');
  await expect(page.locator('#uiSubCompanion #subCard')).toContainText('装備確認用サブ');
- expect(await page.locator('#uiSubCompanion .sprite').evaluate(e=>getComputedStyle(e).animationName)).toBe('slime-idle');
+ expect(await page.locator('#uiSubCompanion .ui-monster-idle-motion').evaluate(e=>getComputedStyle(e).animationName)).toBe('slime-idle');
  expect(await page.locator('#mainCard .mhead').evaluate(e=>getComputedStyle(e).backgroundPositionY)).toContain('56%');
+});
+test('main monster changes keep the idle animation attached to the new sprite',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ const id=await page.evaluate(()=>{const m=monster('森スライム');m.name='切替テスト';g.slimes.push(m);render();return m.id;});
+ await page.selectOption('#mainSelect',String(id));
+ await expect(page.locator('#mainCard')).toContainText('切替テスト');
+ const motion=page.locator('#mainCard .ui-monster-idle-motion--main');
+ await expect(motion).toHaveCount(1);
+ expect(await motion.evaluate(e=>getComputedStyle(e).animationName)).toBe('slime-idle');
+ expect(await motion.locator('.sprite').evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
+});
+test('active tabs have balanced corner marks and screens use a brief scene change',async({page})=>{
+ await page.goto('./');
+ const field=page.locator('[data-tab=field]');
+ const marks=await field.evaluate(e=>({left:getComputedStyle(e,'::before').content,right:getComputedStyle(e,'::after').content}));
+ expect(marks).toEqual({left:'"◆"',right:'"◆"'});
+ await page.click('[data-tab=ranch]');
+ expect(await page.locator('#ranch').evaluate(e=>e.classList.contains('scene-enter'))).toBe(true);
+ expect(await page.locator('#ranch').evaluate(e=>getComputedStyle(e).animationName)).toBe('scene-enter');
+});
+test('charm controls and modal windows use the shared game UI',async({page})=>{
+ await page.goto('./');await page.evaluate(()=>treasureDialog('main'));
+ const order=await page.evaluate(()=>{const ids=['treasureSelectUnused','treasureClearSelected','treasureDeleteSelected'];return ids.map(id=>[...document.querySelector('.treasure-bulk-actions').children].indexOf(document.getElementById(id)));});
+ expect(order).toEqual([0,1,2]);
+ const panel=page.locator('#treasureModal .treasure-panel');
+ expect(await panel.evaluate(e=>getComputedStyle(e).borderTopColor)).toBe('rgb(189, 171, 120)');
+ await page.locator('#treasureClose').click();
+ await page.click('[data-tab=ranch]');
+ await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
+ expect(await page.locator('#bulkFusionDialog').evaluate(e=>getComputedStyle(e).borderTopColor)).toBe('rgb(189, 171, 120)');
 });
 test('bulk fusion tries each selected material once, even when every attempt fails',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
