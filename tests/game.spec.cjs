@@ -383,3 +383,27 @@ test('header, navigation and content keep a stable horizontal position across ta
  expect(positions.map(p=>p.main)).toEqual([positions[0].main,positions[0].main,positions[0].main,positions[0].main]);
  expect(positions.every(p=>p.scrollbar.includes('stable')&&p.width<=1280)).toBe(true);
 });
+test('opening screen fits phone portrait and landscape viewports',async({page})=>{
+ await page.addInitScript(()=>{window.__SLIME_E2E__=false;});
+ for(const viewport of [{width:390,height:844},{width:360,height:640},{width:844,height:390}]){
+  await page.setViewportSize(viewport);
+  await page.goto('./');
+  await expect(page.locator('#openingScreen')).toBeVisible();
+  await expect(page.locator('.opening-frame')).toHaveCSS('opacity','1');
+  const layout=await page.evaluate(()=>{
+   const frame=document.querySelector('.opening-frame').getBoundingClientRect();
+   const buttons=[...document.querySelectorAll('.opening-menu button')].map(el=>{const r=el.getBoundingClientRect();return{x:r.x,y:r.y,right:r.right,bottom:r.bottom}});
+   return{width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,frame:{x:frame.x,y:frame.y,right:frame.right,bottom:frame.bottom},buttons};
+  });
+  expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
+  expect(layout.frame.x).toBeGreaterThanOrEqual(0);
+  expect(layout.frame.y).toBeGreaterThanOrEqual(0);
+  expect(layout.frame.right).toBeLessThanOrEqual(viewport.width+1);
+  expect(layout.frame.bottom).toBeLessThanOrEqual(viewport.height+1);
+  for(const button of layout.buttons){expect(button.x).toBeGreaterThanOrEqual(0);expect(button.right).toBeLessThanOrEqual(viewport.width+1);expect(button.y).toBeGreaterThanOrEqual(0);expect(button.bottom).toBeLessThanOrEqual(viewport.height+1);}
+  await expect(page.locator('#gameStart')).toBeVisible();
+  await expect(page.locator('#gameOption')).toBeVisible();
+  await expect(page.locator('#gameEnd')).toBeVisible();
+  await page.screenshot({path:test.info().outputPath(`opening-${viewport.width}x${viewport.height}.png`),fullPage:true});
+ }
+});

@@ -1,5 +1,6 @@
 <style id="slime-opening-screen">
 body.opening-active{height:100dvh;min-height:0;overflow:hidden}
+html.opening-active{scrollbar-gutter:auto}
 body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 #openingScreen[hidden]{display:none!important}
 #openingScreen{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;overflow:auto;padding:clamp(16px,4vw,48px);isolation:isolate;background:#10131a;color:#f7f0de;opacity:1;transition:opacity .5s ease}
@@ -7,7 +8,7 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 .opening-art{overflow:hidden;background:#10131a}
 .opening-art img{position:absolute;inset:0;width:100%;height:100%}
 .opening-art .opening-art-fill{object-fit:cover;filter:blur(18px) brightness(.48) saturate(.8);transform:scale(1.04)}
-.opening-art .opening-art-main{object-fit:contain;object-position:center;filter:saturate(.92);animation:opening-drift 24s ease-in-out infinite alternate}
+.opening-art .opening-art-main{object-fit:contain;object-position:center;transform-origin:center;filter:saturate(.92);animation:opening-drift 18s ease-in-out infinite alternate}
 .opening-shade{background:linear-gradient(90deg,#0a0e13b8 0%,#10141b70 35%,#11172130 68%,#10141b55 100%),linear-gradient(0deg,#0a0d12d9 0%,#0a0d1266 20%,transparent 55%,#10131a70 100%);animation:opening-light 12s ease-in-out infinite alternate}
 .opening-frame{box-sizing:border-box;width:min(360px,100%);margin:0 0 0 auto;padding:clamp(18px,3vw,24px);border:2px solid #b49a60;border-radius:8px;background:linear-gradient(145deg,#252a30eb,#151a20e8);box-shadow:inset 0 0 0 3px #11151a,inset 0 0 0 4px #71634a,0 22px 70px #0009;backdrop-filter:blur(4px);text-align:center;transform:translateX(clamp(0px,3vw,32px));animation:opening-frame-enter .68s cubic-bezier(.18,.76,.22,1) both;transition:opacity .16s ease,transform .2s cubic-bezier(.2,.8,.2,1),visibility 0s linear .16s}
 .opening-kicker{margin:0 0 11px;color:#b5d4e5;font-size:clamp(11px,2vw,14px);letter-spacing:.22em;text-transform:uppercase}
@@ -47,11 +48,15 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 .ui-v2 .ui-reset-row .small{flex:1}
 .ui-v2 #uiResetGame{border-color:#c17d78;background:linear-gradient(#804c4b,#513034);white-space:nowrap}
 .ui-v2.user-reduced-motion *,.ui-v2.user-reduced-motion *::before,.ui-v2.user-reduced-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-@keyframes opening-drift{from{transform:scale(1)}to{transform:scale(1.045)}}
+@keyframes opening-drift{from{transform:scale(1)}to{transform:scale(1.07)}}
 @keyframes opening-light{from{opacity:.88}to{opacity:1}}
 @keyframes opening-frame-enter{from{opacity:0;transform:translate(clamp(0px,3vw,32px),14px) scale(.985)}to{opacity:1;transform:translateX(clamp(0px,3vw,32px)) scale(1)}}
 @media(min-width:1500px){.opening-frame{margin-right:clamp(128px,9vw,170px)}}
-@media(max-width:700px){#openingScreen{padding:16px}.opening-art .opening-art-main{object-position:center 42%}.opening-shade{background:linear-gradient(0deg,#0b0e13e8,#11151b4a 58%,#11151b80)}.opening-frame{width:min(460px,100%);margin:auto;padding:22px 18px;transform:none}.opening-menu{gap:8px}.opening-menu button{min-height:48px}.opening-copyright{bottom:7px}.opening-confirm-actions{gap:8px}.opening-confirm-actions button{min-width:0;flex:1}.ui-v2 .ui-option-row{grid-template-columns:1fr auto;gap:7px}.ui-v2 .ui-option-row label{grid-column:1/-1}.ui-v2 .ui-option-row input[type=range]{grid-column:1}.ui-v2 .ui-option-row output{grid-column:2;grid-row:2}.ui-v2 .ui-reset-row{align-items:stretch;flex-direction:column}}
+@media(min-width:1800px){.opening-frame{margin-right:clamp(200px,14vw,270px)}}
+@media(max-width:700px){#openingScreen{padding:12px;overflow:hidden}.opening-art .opening-art-main{object-position:center}.opening-shade{background:linear-gradient(0deg,#0b0e13e8,#11151b4a 58%,#11151b80)}.opening-frame{width:min(460px,100%);margin:auto;padding:22px 18px;transform:none}.opening-menu{gap:8px}.opening-menu button{min-height:48px}.opening-copyright{bottom:7px}.opening-confirm-actions{gap:8px}.opening-confirm-actions button{min-width:0;flex:1}.ui-v2 .ui-option-row{grid-template-columns:1fr auto;gap:7px}.ui-v2 .ui-option-row label{grid-column:1/-1}.ui-v2 .ui-option-row input[type=range]{grid-column:1}.ui-v2 .ui-option-row output{grid-column:2;grid-row:2}.ui-v2 .ui-reset-row{align-items:stretch;flex-direction:column}}
+@media(max-width:700px) and (orientation:portrait){#openingScreen{display:block;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}.opening-art .opening-art-main{inset:auto 0 max(24px,env(safe-area-inset-bottom));width:100%;height:auto;max-height:40dvh;object-fit:contain;object-position:center bottom}.opening-frame{position:relative;width:min(380px,100%);max-height:calc(100dvh - 24px);overflow:auto;margin:0 auto;padding:clamp(12px,3.2vh,20px) 16px}.opening-kicker{margin-bottom:7px;font-size:10px}.opening-title{font-size:clamp(28px,8vw,36px)}.opening-title-sub{margin-top:6px;font-size:clamp(12px,3.5vw,14px)}.opening-rule{margin:12px 0 9px;font-size:10px}.opening-menu{gap:6px}.opening-menu button{min-height:42px;font-size:14px}.opening-menu .opening-option{font-size:12px}.opening-save-hint{margin-top:10px;font-size:10px;line-height:1.5}.opening-status{margin-top:5px;font-size:10px}.opening-copyright{bottom:5px;font-size:8px}.opening-frame{animation:opening-frame-enter-mobile .55s cubic-bezier(.18,.76,.22,1) both}}
+@media(max-width:1000px) and (orientation:landscape) and (max-height:520px){#openingScreen{display:grid;place-items:center;padding:8px;overflow:hidden}.opening-frame{width:min(44vw,360px);max-height:calc(100dvh - 16px);overflow:auto;margin:0 8px 0 auto;padding:10px 16px;animation:opening-frame-enter-mobile .45s cubic-bezier(.18,.76,.22,1) both}.opening-kicker{margin-bottom:4px;font-size:9px}.opening-title{font-size:clamp(25px,6vh,36px)}.opening-title-sub{margin-top:4px;font-size:12px}.opening-rule{margin:8px 0 6px;font-size:9px}.opening-menu{gap:5px}.opening-menu button{min-height:36px;font-size:13px}.opening-save-hint{margin-top:7px;font-size:9px;line-height:1.35}.opening-status{margin-top:4px;font-size:9px}.opening-copyright{bottom:2px;font-size:7px}}
+@keyframes opening-frame-enter-mobile{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.opening-art .opening-art-main{animation:none}.opening-shade{animation:none}#openingScreen,#openingScreen .opening-frame,#openingScreen .opening-art-main{transition:none!important;animation:none!important}.opening-menu button{transition:none}}
 </style>
 <div id="openingScreen" role="dialog" aria-modal="true" aria-labelledby="openingTitle">
@@ -87,14 +92,14 @@ document.addEventListener('DOMContentLoaded',()=>{
  const artwork=document.getElementById('openingArtwork');
  artwork.addEventListener('error',()=>{if(artwork.dataset.fallback&&artwork.src!==artwork.dataset.fallback)artwork.src=artwork.dataset.fallback},{once:true});
  if(window.__SLIME_E2E__){screen.hidden=true;return}
- document.body.classList.add('opening-active');
+ document.body.classList.add('opening-active');document.documentElement.classList.add('opening-active');
  document.getElementById('gameStart').addEventListener('click',()=>{
   if(screen.classList.contains('is-starting'))return;
   if(typeof sfx==='function')sfx('win');
   screen.classList.add('is-starting');
   const motionOff=matchMedia('(prefers-reduced-motion: reduce)').matches||document.body.classList.contains('user-reduced-motion');
   window.setTimeout(()=>{
-   screen.hidden=true;document.body.classList.remove('opening-active');
+   screen.hidden=true;document.body.classList.remove('opening-active');document.documentElement.classList.remove('opening-active');
    if(typeof showTab==='function')showTab('field');
    window.scrollTo({top:0,behavior:motionOff?'auto':'smooth'});
   },motionOff?0:520);
