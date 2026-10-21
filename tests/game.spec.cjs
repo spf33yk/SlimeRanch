@@ -98,6 +98,20 @@ test('freeze effect audio follows the shared sound effect volume setting',async(
  const volumes=await page.evaluate(()=>window.__mediaVolumes);
  expect(volumes).toHaveLength(2);expect(volumes[0]).toBeCloseTo(.08);expect(volumes[1]).toBeCloseTo(.1);
 });
+test('treasure freeze and opening videos follow the shared sound effect volume setting',async({page})=>{
+ await page.goto('./');
+ await page.click('#uiSettingsButton');
+ await page.locator('#uiSfxVolume').fill('25');
+ const volumes=await page.evaluate(()=>{
+  const video=document.getElementById('treasureFreezeVideo'),set=[];
+  Object.defineProperty(video,'volume',{configurable:true,get(){return this.__volume??1},set(value){this.__volume=value;set.push(value)}});
+  video.play=()=>Promise.resolve();video.pause=()=>{};
+  window.SLIME_FREEZE_VIDEOS={freeze1:'freeze.mp4'};window.SLIME_TREASURE_OPEN_VIDEO='opening.mp4';
+  treasureFreezePrompt(1,null,true);treasureFreezePush();treasurePlayOpeningVideo();
+  treasureFreezeEnd();return set;
+ });
+ expect(volumes).toEqual([.1,.1]);
+});
 test('starts under the Pages subpath; all tabs and responsive layouts work',async({page})=>{
  const errors=[],failed=[];
  page.on('pageerror',e=>errors.push(e.message));
@@ -539,6 +553,7 @@ test('equipped charms cannot be shared, and the charm selection can be cleared',
  await expect(equipButton).toBeDisabled();await expect(equipButton).toContainText('メイン装備中');
  expect(await page.evaluate(id=>treasureEquipCharm('sub',id),charmId)).toBe(false);
  expect(await page.evaluate(()=>g.treasureEquip.sub)).toBeNull();
+ await expect(page.locator('#mainCard')).not.toHaveClass(/treasure-equip-(active|epic|normal)/);
  await page.evaluate(()=>{
   for(let i=0;i<2;i++)g.treasureCharms.push({id:g.treasureNextId++,rarity:'normal',name:'未装備'+i,effects:[{key:'hp',label:'HP',mult:1.2}]});
   renderTreasure();
@@ -548,6 +563,21 @@ test('equipped charms cannot be shared, and the charm selection can be cleared',
  await boxes.evaluateAll(xs=>xs.forEach(x=>{x.checked=true;}));
  await page.click('#treasureClearSelected');
  expect(await boxes.evaluateAll(xs=>xs.some(x=>x.checked))).toBe(false);
+});
+test('legendary charms above a total multiplier of ten use the guaranteed freeze sequence',async({page})=>{
+ await page.goto('./');
+ const result=await page.evaluate(()=>{
+  const id=g.treasureNextId++,oldRandom=Math.random,oldPrompt=treasureFreezePrompt;let call=null;
+  try{
+   g.treasureChests.push({id,rarity:'legendary',source:'test',time:Date.now()});
+   Math.random=()=>0.999999;
+   treasureFreezePrompt=(...args)=>{call=args};
+   treasureOpenChest(id);
+   const charm=g.treasureCharms.at(-1);
+   return {call:call&&[call[0],call[1],call[2]],total:charm.effects.reduce((n,e)=>n+e.mult,0),effects:charm.effects.length};
+  }finally{Math.random=oldRandom;treasureFreezePrompt=oldPrompt;}
+ });
+ expect(result.effects).toBe(3);expect(result.total).toBeGreaterThan(10);expect(result.call).toEqual([1,null,true]);
 });
 test('heart drop reaches 100 percent and the field grid fills its backdrop',async({page})=>{
  await page.goto('./');
