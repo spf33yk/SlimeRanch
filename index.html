@@ -413,8 +413,9 @@ function inherit(a,b){const out=[];for(const t of [...(a.uniq||[]),...(b?(b.uniq
 const TYPE_RULES={'森系':['守備力','def'],'雷系':['クリティカルダメージ','critDmg'],'海系':['HP','hp'],'炎系':['攻撃力','atk'],'影系':['素早さ','spd']};
 const UNIQUE_NAMES={hp:'HP',atk:'攻撃力',def:'守備力',spd:'素早さ',crit:'クリティカル率',critDmg:'クリティカルダメージ',maso:'魔素湧き速度',masoGain:'魔素取得量',heart:'ハートドロップ率',drop:'モンスタードロップ率',success:'合成成功率'};
 function normalizeUniqueSkill(u){if(!u)return u;u.name=UNIQUE_NAMES[u.type]||u.name||u.type;return u}
-const BATTLE_RULES=[['hp','HP'],['atk','攻撃力'],['def','守備力'],['spd','素早さ'],['crit','クリティカル率'],['critDmg','クリティカルダメージ']];
-const FARM_RULES=[['maso','魔素湧き速度'],['masoGain','魔素取得量'],['heart','ハートドロップ率'],['drop','モンスタードロップ率'],['success','合成成功率']];
+const RANCH_STAT_RULES=[['hp','HP'],['atk','攻撃力'],['def','守備力'],['spd','素早さ'],['crit','クリティカル率'],['critDmg','クリティカルダメージ'],['maso','魔素湧き速度'],['masoGain','魔素取得量'],['heart','ハートドロップ率'],['drop','モンスタードロップ率'],['success','合成成功率']];
+const BATTLE_RULES=RANCH_STAT_RULES.slice(0,6);
+const FARM_RULES=RANCH_STAT_RULES.slice(6);
 const SPECIES_RULES={'スライム':['クリティカルダメージ','critDmg'],'ゴースト':['素早さ','spd'],'ジャック':['攻撃力','atk'],'吸血鬼':['HP','hp'],'メデューサ':['守備力','def'],'獣人':['攻撃力','atk'],'悪魔':['クリティカル率','crit'],'天使':['HP','hp'],'騎士':['守備力','def'],'ガーゴイル':['素早さ','spd']};
 function resolveEnemyDefinition(m){
  if(!m||m.kind!=='enemy')return null;

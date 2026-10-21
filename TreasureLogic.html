@@ -170,6 +170,7 @@ function treasureBattleResultFx(kind){
 
 let treasureSoundPlayer=null;
 function treasureSoundVolume(base){return base*(Math.max(0,Math.min(100,Number(sfxVolume)||0))/100)}
+function treasureConfigureVideoAudio(video){video.volume=treasureSoundVolume(0.4);video.muted=typeof soundOn!=='undefined'&&!soundOn}
 function treasurePlaySound(name){
   if(typeof soundOn!=='undefined'&&!soundOn)return;
   if(typeof TREASURE_SOUNDS==='undefined'||!TREASURE_SOUNDS[name])return;
@@ -204,7 +205,7 @@ function treasureFreezePush(){
  treasureFreezeSucceeded=true;
  treasurePlaySound('freeze');
  const video=document.getElementById('treasureFreezeVideo');
- video.volume=treasureSoundVolume(0.4);
+ treasureConfigureVideoAudio(video);
  video.src=window.SLIME_FREEZE_VIDEOS?.freeze1||'';
  video.hidden=false;video.currentTime=0;
  // フリーズ演出の終了後に、共通の宝箱オープン動画を続けて再生する。
@@ -219,7 +220,7 @@ function treasurePlayOpeningVideo(){
  video.onended=null;video.onerror=null;
  const opening=window.SLIME_TREASURE_OPEN_VIDEO;
  if(!opening){treasureFreezeEnd();return;}
- video.pause();video.volume=treasureSoundVolume(0.4);video.src=opening;video.hidden=false;
+ video.pause();treasureConfigureVideoAudio(video);video.src=opening;video.hidden=false;
  video.onended=treasureFreezeEnd;video.onerror=treasureFreezeEnd;
  try{video.currentTime=0;}catch(e){}
  const p=video.play();
@@ -272,7 +273,7 @@ function treasureDebugBattleOdds(){
 }
 function treasureDebugGive(rarity){treasureAwardChest(rarity,'debug');save()}
 function treasureDebugClear(){if(!confirm('宝箱・おまもり・装備をすべて削除しますか？'))return;g.treasureChests=[];g.treasureCharms=[];g.treasureEquip={main:null,sub:null};save();render()}
-function treasureSetup(){if(typeof TREASURE_FIELD_IMAGE!=='undefined'&&typeof TREASURE_ASSETS!=='undefined'&&!TREASURE_FIELD_IMAGE.src)TREASURE_FIELD_IMAGE.src=TREASURE_ASSETS.chest;treasureEnsure();const pushImage=document.querySelector('#treasurePush img');if(pushImage&&typeof TREASURE_ASSETS!=='undefined')pushImage.src=TREASURE_ASSETS.push;document.getElementById('treasureClose').onclick=treasureClose;document.getElementById('treasureSlot').onchange=e=>{treasureSlot=e.target.value;renderTreasure()};document.getElementById('treasureModal').addEventListener('click',e=>{if(e.target===e.currentTarget)treasureClose();const op=e.target.closest('[data-topen]');if(op)treasureOpenChest(Number(op.dataset.topen));const eq=e.target.closest('[data-tequip]');if(eq)treasureEquipCharm(treasureSlot,Number(eq.dataset.tequip))});document.getElementById('treasurePush').onclick=treasureFreezePush;document.getElementById('treasureFreezeSkip').onclick=treasureFreezeSkip;document.getElementById('treasureFreeze').addEventListener('click',e=>{if(e.target===e.currentTarget&&treasurePending===null)treasureFreezeEnd()});document.getElementById('treasureDebugButtons').addEventListener('click',e=>{const a=e.target.dataset.tdebug;if(a==='normal'||a==='epic'||a==='legendary')treasureDebugGive(a);if(a&&a.startsWith('field-')){const name=a.slice(6);treasureDebugPlaceField(name.replace(/-fake$/,''),name.endsWith('-fake'));}if(a&&a.startsWith('battle-')){if(a==='battle-odds')treasureDebugBattleOdds();else treasureDebugBattleChest(a.slice(7));}if(a==='freeze1')treasureFreezePrompt(1,null,true);if(a==='clear')treasureDebugClear();if(a==='open')treasureDialog('main')});}
+function treasureSetup(){if(typeof TREASURE_FIELD_IMAGE!=='undefined'&&typeof TREASURE_ASSETS!=='undefined'&&!TREASURE_FIELD_IMAGE.src)TREASURE_FIELD_IMAGE.src=TREASURE_ASSETS.chest;treasureEnsure();const pushImage=document.querySelector('#treasurePush img');if(pushImage&&typeof TREASURE_ASSETS!=='undefined')pushImage.src=TREASURE_ASSETS.push;document.getElementById('treasureClose').onclick=treasureClose;document.getElementById('treasureSlot').onchange=e=>{treasureSlot=e.target.value;renderTreasure()};document.getElementById('treasureModal').addEventListener('click',e=>{if(e.target===e.currentTarget)treasureClose();const op=e.target.closest('[data-topen]');if(op)treasureOpenChest(Number(op.dataset.topen));const eq=e.target.closest('[data-tequip]');if(eq)treasureEquipCharm(treasureSlot,Number(eq.dataset.tequip))});document.getElementById('soundToggle').addEventListener('change',()=>{const video=document.getElementById('treasureFreezeVideo');video.muted=typeof soundOn!=='undefined'&&!soundOn});document.getElementById('treasurePush').onclick=treasureFreezePush;document.getElementById('treasureFreezeSkip').onclick=treasureFreezeSkip;document.getElementById('treasureFreeze').addEventListener('click',e=>{if(e.target===e.currentTarget&&treasurePending===null)treasureFreezeEnd()});document.getElementById('treasureDebugButtons').addEventListener('click',e=>{const a=e.target.dataset.tdebug;if(a==='normal'||a==='epic'||a==='legendary')treasureDebugGive(a);if(a&&a.startsWith('field-')){const name=a.slice(6);treasureDebugPlaceField(name.replace(/-fake$/,''),name.endsWith('-fake'));}if(a&&a.startsWith('battle-')){if(a==='battle-odds')treasureDebugBattleOdds();else treasureDebugBattleChest(a.slice(7));}if(a==='freeze1')treasureFreezePrompt(1,null,true);if(a==='clear')treasureDebugClear();if(a==='open')treasureDialog('main')});}
 
 init();treasureSetup();
 const treasureDeleteButton=document.getElementById('treasureDeleteSelected');if(treasureDeleteButton)treasureDeleteButton.addEventListener('click',treasureDeleteSelected);

@@ -112,6 +112,19 @@ test('treasure freeze and opening videos follow the shared sound effect volume s
  });
  expect(volumes).toEqual([.1,.1]);
 });
+test('treasure videos are muted with the shared sound effects toggle',async({page})=>{
+ await page.goto('./');
+ await page.click('#uiSettingsButton');
+ await page.locator('#soundToggle').uncheck();
+ const muted=await page.evaluate(()=>{
+  const video=document.getElementById('treasureFreezeVideo'),values=[];
+  Object.defineProperty(video,'muted',{configurable:true,get(){return this.__muted??false},set(value){this.__muted=value;values.push(value)}});
+  video.play=()=>Promise.resolve();video.pause=()=>{};
+  window.SLIME_FREEZE_VIDEOS={freeze1:'freeze.mp4'};window.SLIME_TREASURE_OPEN_VIDEO='opening.mp4';
+  treasureFreezePrompt(1,null,true);treasureFreezePush();treasurePlayOpeningVideo();treasureFreezeEnd();return values;
+ });
+ expect(muted).toEqual([true,true]);
+});
 test('starts under the Pages subpath; all tabs and responsive layouts work',async({page})=>{
  const errors=[],failed=[];
  page.on('pageerror',e=>errors.push(e.message));
@@ -454,6 +467,18 @@ test('ranch header, capacity upgrades, monster layout and sub charm stats work',
  await expect(page.locator('#uiSubCompanion #subCard')).toContainText('装備確認用サブ');
  expect(await page.locator('#uiSubCompanion .ui-monster-idle-motion').evaluate(e=>getComputedStyle(e).animationName)).toBe('slime-idle');
  expect(await page.locator('#mainCard .mhead').evaluate(e=>getComputedStyle(e).backgroundPositionY)).toContain('56%');
+});
+test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
+ await page.goto('./');
+ const labels=await page.evaluate(()=>{
+  const a=main(),b=monster('森スライム');
+  b.uniq=[...RANCH_STAT_RULES].reverse().map(([type,name])=>({type,name,value:1}));
+  g.slimes.push(b);g.maso=100000;const originalFailRate=failRate;
+  try{failRate=()=>0;performFusion(a,b,'pair',null);renderNewRulesUI();}
+  finally{failRate=originalFailRate;}
+  return [...document.querySelectorAll('#ranchTeamStats .team-stats-grid > div small')].map(el=>el.textContent);
+ });
+ expect(labels).toEqual(['HP','攻撃力','守備力','素早さ','クリティカル率','クリティカルダメージ','魔素湧き速度','魔素取得量','ハートドロップ率','モンスタードロップ率','合成成功率']);
 });
 test('main monster changes keep the idle animation attached to the new sprite',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
