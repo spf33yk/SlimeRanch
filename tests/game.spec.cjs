@@ -131,15 +131,13 @@ test('field starts with click collection and unlocks mouseover collection',async
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
  expect(await page.evaluate(()=>g.maso)).toBe(masoBeforeUnlock-120);
  await expect(page.locator('body')).toHaveClass(/field-hover-unlocked/);
- await expect(page.locator('#dragUnlock')).toContainText('ホバー採集を再適用');
- await page.evaluate(()=>{document.body.classList.remove('field-hover-unlocked');document.getElementById('fieldCanvas').style.touchAction='auto'});
- await page.click('#dragUnlock');
- await expect(page.locator('body')).toHaveClass(/field-hover-unlocked/);
+ await expect(page.locator('#dragUnlock')).toHaveText('解放済み');
+ await expect(page.locator('#dragUnlock')).toBeDisabled();
  await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
- const dragPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
- const beforeDrag=await page.evaluate(()=>g.maso);
- await page.mouse.move(dragPoints[0].x,dragPoints[0].y);await page.mouse.move(dragPoints[1].x,dragPoints[1].y,{steps:4});
- expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(beforeDrag);
+ const hoverPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
+ const beforeHover=await page.evaluate(()=>g.maso);
+ await page.mouse.move(hoverPoints[0].x,hoverPoints[0].y);await page.mouse.move(hoverPoints[1].x,hoverPoints[1].y,{steps:4});
+ expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(beforeHover);
  expect(await page.evaluate(()=>g.tiles.slice(0,2))).toEqual(['empty','empty']);
  await page.evaluate(()=>{g.lv=SIZES.indexOf(24);g.tiles=Array(24*24).fill('empty');g.tiles[0]='magic';drawField();});
  const point=await page.evaluate(()=>{const r=document.getElementById('fieldCanvas').getBoundingClientRect(),z=fieldGeom();return{x:r.left+(z.off+z.cell/2)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}});
@@ -159,13 +157,36 @@ test('legacy field bonuses do not falsely mark drag collection as unlocked',asyn
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
  await expect(page.locator('#dragUnlock')).toBeEnabled();
 });
-test('hover collection unlock remains clickable and reports the required magic when funds are short',async({page})=>{
+test('hover collection unlock shows unavailable state when funds are short',async({page})=>{
  await page.goto('./');
  await page.evaluate(()=>{g.maso=0;render()});
- await expect(page.locator('#dragUnlock')).toBeEnabled();
- await page.click('#dragUnlock');
- await expect(page.locator('#fieldMsg')).toContainText('120');
+ await expect(page.locator('#dragUnlock')).toBeDisabled();
+ await expect(page.locator('#dragUnlockInfo')).toContainText('120');
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
+});
+test('mouseover collection applies the expanded collection radius from an empty cell',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{g.lv=1;g.tiles=Array(9).fill('empty');g.tiles[5]='magic';g.tiles[7]='magic';g.rangeLv=1;g.dragCollectUnlocked=true;g.maso=0;render()});
+ const point=await page.locator('#fieldCanvas').evaluate(c=>{const r=c.getBoundingClientRect(),z=fieldGeom();return{x:r.left+(z.off+1.5*z.cell)/720*r.width,y:r.top+(z.off+1.5*z.cell)/720*r.height}});
+ const before=await page.evaluate(()=>g.maso);
+ await page.mouse.move(point.x,point.y);
+ expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(before);
+ expect(await page.evaluate(()=>g.tiles.slice(5,8))).toEqual(['empty','empty','empty']);
+});
+test('field upgrade buttons share available and completed styles',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{g.maso=1000000;render()});
+ const ids=['expand','spawnUp','yieldUp','rangeUp','dragUnlock'];
+ const available=await page.evaluate(ids=>ids.map(id=>{const b=document.getElementById(id);return{disabled:b.disabled,gold:b.classList.contains('gold'),background:getComputedStyle(b).backgroundImage}}),ids);
+ expect(available.every(x=>!x.disabled&&!x.gold)).toBe(true);
+ expect(new Set(available.map(x=>x.background)).size).toBe(1);
+ await page.evaluate(()=>{g.lv=SIZES.length-1;g.rangeLv=4;g.dragCollectUnlocked=true;render()});
+ await expect.poll(()=>page.locator('#expand').evaluate(el=>getComputedStyle(el).filter)).toBe('saturate(0.35)');
+ const completed=await page.evaluate(()=>['expand','rangeUp','dragUnlock'].map(id=>{const b=document.getElementById(id);const s=getComputedStyle(b);return{disabled:b.disabled,background:s.backgroundImage,opacity:s.opacity,filter:s.filter}}));
+ expect(completed.every(x=>x.disabled)).toBe(true);
+ expect(new Set(completed.map(x=>[x.background,x.opacity,x.filter].join('|'))).size).toBe(1);
+ await expect(page.locator('#dragUnlock')).toHaveText('解放済み');
+ await expect(page.locator('.field-upgrades h3').filter({hasText:'魔素湧き速度強化'})).not.toContainText('🌱');
 });
 test('field has no manual collect button, batch collect spans the row and uses a 30 minute cooldown',async({page})=>{
  await page.goto('./');
