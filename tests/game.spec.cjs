@@ -314,13 +314,17 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
 });
 test('auto battle keeps ranch monster idle animations attached and smooth',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
- await page.evaluate(()=>{const m=monster('森スライム');g.slimes.push(m);g.sub=m.id;g.kills=3;g.enemyHP=1e20;g.teamHP=1e20;g.won=false;g.autoNext=false;g.autoFight=true;render()});
- const mainMotion=await page.locator('#mainCard .ui-monster-idle-motion--main').elementHandle();
- const subMotion=await page.locator('#subCard .ui-monster-idle-motion--sub').elementHandle();
- expect(mainMotion).not.toBeNull();expect(subMotion).not.toBeNull();
- await page.waitForTimeout(1900);
- expect(await mainMotion.evaluate(el=>el.isConnected)).toBe(true);
- expect(await subMotion.evaluate(el=>el.isConnected)).toBe(true);
+ await page.evaluate(()=>{const m=monster('森スライム');g.slimes.push(m);g.sub=m.id;g.kills=3;g.teamHP=1e20;g.won=false;g.autoNext=false;g.autoFight=true;g.enemyHP=1;render()});
+ await expect(page.locator('#mainCard .ui-monster-idle-motion--main')).toHaveCount(1);
+ await expect(page.locator('#subCard .ui-monster-idle-motion--sub')).toHaveCount(1);
+ const result=await page.evaluate(()=>{
+  const mainMotion=document.querySelector('#mainCard .ui-monster-idle-motion--main');
+  const subMotion=document.querySelector('#subCard .ui-monster-idle-motion--sub');
+  for(let i=0;i<4;i++){g.won=false;g.enemyHP=1;g.teamHP=1e20;battle(true)}
+  g.autoFight=false;
+  return {mainPreserved:mainMotion===document.querySelector('#mainCard .ui-monster-idle-motion--main'),subPreserved:subMotion===document.querySelector('#subCard .ui-monster-idle-motion--sub'),mainConnected:mainMotion.isConnected,subConnected:subMotion.isConnected,mainAnimation:getComputedStyle(mainMotion).animationName,subAnimation:getComputedStyle(subMotion).animationName};
+ });
+ expect(result).toEqual({mainPreserved:true,subPreserved:true,mainConnected:true,subConnected:true,mainAnimation:'slime-idle',subAnimation:'slime-idle'});
 });
 test('selected monsters lock themselves and hover does not shift game controls',async({page})=>{
  await page.goto('./');
