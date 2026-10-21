@@ -214,14 +214,16 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .treasure-bulk-actions button{min-height:38px;font-size:12px;padding:8px 10px}
 .ui-v2 #treasureClearSelected{order:1}.ui-v2 #treasureDeleteSelected{order:2}
 .ui-v2 .treasure-panel button{font-size:13px}
-.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{width:150px;height:130px;margin:20px auto 10px}
+.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{width:150px;height:130px;margin:20px auto 10px;align-self:start}
 .ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main .sprite{width:100%!important;height:100%!important;max-width:none;margin:0;filter:drop-shadow(0 9px 5px #0009)!important}
-@keyframes slime-idle{0%,100%{transform:translateY(1px) rotate(-1deg) scaleX(1)}50%{transform:translateY(-5px) rotate(1deg) scaleX(1.015)}}
+@keyframes ranch-idle-bob{0%,100%{transform:translateY(0)}25%{transform:translateY(-1px)}50%{transform:translateY(-2px)}75%{transform:translateY(-1px)}}
 @keyframes scene-enter{0%{opacity:0;transform:translateY(9px)}100%{opacity:1;transform:translateY(0)}}
 .ui-v2 .screen.scene-enter{animation:scene-enter .24s cubic-bezier(.2,.75,.25,1) both}
-.ui-v2 .ui-monster-idle-motion{display:grid;place-items:center;flex:none;animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom;will-change:transform}
+.ui-v2 .ui-monster-idle-motion{display:grid;place-items:center;flex:none;animation:ranch-idle-bob 3.6s steps(4,end) infinite;transform-origin:center bottom;will-change:transform}
 .ui-v2 .ui-monster-idle-motion .sprite{animation:none!important}
 .ui-v2 .ui-monster-idle-motion--sub{width:66px;height:54px}
+.ui-v2 #uiSubCompanion #subCard .mhead{align-items:flex-start}
+.ui-v2 #uiSubCompanion #subCard .ui-monster-idle-motion--sub{align-self:flex-start}
 .ui-v2 .ui-monster-idle-motion--sub .sprite{width:100%;height:100%;filter:drop-shadow(0 3px 4px #0008)!important}
 @media(max-width:760px){.ui-v2 nav button{padding:9px 16px}.ui-v2 nav button.active:before{left:7px}.ui-v2 nav button.active:after{right:7px}}
 @media(prefers-reduced-motion:reduce){.ui-v2 .screen.scene-enter{animation:none!important}.ui-v2 .ui-monster-idle-motion{animation:none!important}}

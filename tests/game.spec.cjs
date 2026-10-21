@@ -317,9 +317,13 @@ test('auto battle keeps ranch monster idle animations attached and smooth',async
  await page.evaluate(()=>{const m=main(),partner=monster('森スライム');m.atk=1e30;m.hp=1e30;partner.hp=1e30;g.slimes.push(partner);g.sub=partner.id;g.kills=3;g.teamHP=teamMax();g.won=false;g.autoNext=false;g.autoFight=false;Math.random=()=>.99;render()});
  await expect(page.locator('#mainCard .ui-monster-idle-motion--main')).toHaveCount(1);
  await expect(page.locator('#subCard .ui-monster-idle-motion--sub')).toHaveCount(1);
+ await page.evaluate(()=>new Promise(requestAnimationFrame));
  const initial=await page.evaluate(()=>{
   window.__ranchMainMotion=document.querySelector('#mainCard .ui-monster-idle-motion--main');
   window.__ranchSubMotion=document.querySelector('#subCard .ui-monster-idle-motion--sub');
+  window.__ranchAnimationCancels={main:0,sub:0};
+  window.__ranchMainMotion.addEventListener('animationcancel',()=>window.__ranchAnimationCancels.main++);
+  window.__ranchSubMotion.addEventListener('animationcancel',()=>window.__ranchAnimationCancels.sub++);
   return {kills:g.kills,mainTime:window.__ranchMainMotion.getAnimations()[0]?.currentTime,subTime:window.__ranchSubMotion.getAnimations()[0]?.currentTime};
  });
  await page.evaluate(()=>document.getElementById('autoFight').click());
@@ -331,15 +335,17 @@ test('auto battle keeps ranch monster idle animations attached and smooth',async
   mainConnected:window.__ranchMainMotion.isConnected,subConnected:window.__ranchSubMotion.isConnected,
   mainAnimation:getComputedStyle(window.__ranchMainMotion).animationName,subAnimation:getComputedStyle(window.__ranchSubMotion).animationName,
   mainPlayState:window.__ranchMainMotion.getAnimations()[0]?.playState,subPlayState:window.__ranchSubMotion.getAnimations()[0]?.playState,
-  mainTime:window.__ranchMainMotion.getAnimations()[0]?.currentTime,subTime:window.__ranchSubMotion.getAnimations()[0]?.currentTime
+  mainTime:window.__ranchMainMotion.getAnimations()[0]?.currentTime,subTime:window.__ranchSubMotion.getAnimations()[0]?.currentTime,
+  animationCancels:window.__ranchAnimationCancels
  }));
  await page.evaluate(()=>{g.autoFight=false;render()});
  expect(result.kills).toBeGreaterThanOrEqual(initial.kills+3);
  expect(result.mainPreserved).toBe(true);expect(result.subPreserved).toBe(true);
  expect(result.mainConnected).toBe(true);expect(result.subConnected).toBe(true);
- expect(result.mainAnimation).toBe('slime-idle');expect(result.subAnimation).toBe('slime-idle');
+ expect(result.mainAnimation).toBe('ranch-idle-bob');expect(result.subAnimation).toBe('ranch-idle-bob');
  expect(result.mainPlayState).toBe('running');expect(result.subPlayState).toBe('running');
  expect(result.mainTime).toBeGreaterThan(initial.mainTime);expect(result.subTime).toBeGreaterThan(initial.subTime);
+ expect(result.animationCancels).toEqual({main:0,sub:0});
 });
 test('selected monsters lock themselves and hover does not shift game controls',async({page})=>{
  await page.goto('./');
@@ -484,7 +490,7 @@ test('ranch header, capacity upgrades, monster layout and sub charm stats work',
  expect(charmStats.sub).toBe(charmStats.base*2);expect(charmStats.team).toBe(charmStats.sub+charmStats.main);
  expect(await page.locator('#headerMonsterCount').textContent()).toBe('2 / 110');
  await expect(page.locator('#uiSubCompanion #subCard')).toContainText('装備確認用サブ');
- expect(await page.locator('#uiSubCompanion .ui-monster-idle-motion').evaluate(e=>getComputedStyle(e).animationName)).toBe('slime-idle');
+ expect(await page.locator('#uiSubCompanion .ui-monster-idle-motion').evaluate(e=>getComputedStyle(e).animationName)).toBe('ranch-idle-bob');
  expect(await page.locator('#mainCard .mhead').evaluate(e=>getComputedStyle(e).backgroundPositionY)).toContain('56%');
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
@@ -514,7 +520,7 @@ test('main monster changes keep the idle animation attached to the new sprite',a
  await expect(page.locator('#mainCard')).toContainText('切替テスト');
  const motion=page.locator('#mainCard .ui-monster-idle-motion--main');
  await expect(motion).toHaveCount(1);
- expect(await motion.evaluate(e=>getComputedStyle(e).animationName)).toBe('slime-idle');
+ expect(await motion.evaluate(e=>getComputedStyle(e).animationName)).toBe('ranch-idle-bob');
  expect(await motion.locator('.sprite').evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
 });
 test('active tabs have balanced corner marks and screens use a brief scene change',async({page})=>{
