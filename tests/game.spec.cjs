@@ -159,11 +159,21 @@ test('legacy field bonuses do not falsely mark drag collection as unlocked',asyn
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
  await expect(page.locator('#dragUnlock')).toBeEnabled();
 });
+test('drag unlock remains clickable and reports the required magic when funds are short',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{g.maso=0;render()});
+ await expect(page.locator('#dragUnlock')).toBeEnabled();
+ await page.click('#dragUnlock');
+ await expect(page.locator('#fieldMsg')).toContainText('120');
+ expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
+});
 test('field has no manual collect button, batch collect spans the row and uses a 30 minute cooldown',async({page})=>{
  await page.goto('./');
  expect(await page.locator('#uiCollect').count()).toBe(0);
  await expect(page.locator('#treasureOdds')).toBeVisible();
  expect(await page.locator('#treasureOdds').evaluate(el=>el.parentElement.classList.contains('ui-field-facts'))).toBe(true);
+ expect(await page.locator('#treasureOdds').evaluate(el=>el.classList.contains('ui-fact'))).toBe(true);
+ expect(await page.locator('#nextSize').evaluate(el=>el.parentElement.parentElement.classList.contains('row'))).toBe(true);
  expect(await page.locator('#collectAll').evaluate(el=>getComputedStyle(el).gridColumnEnd)).toBe('-1');
  await page.evaluate(()=>{g.maso=1000;g.tiles.fill('magic');render()});
  const before=await page.evaluate(()=>g.maso);
@@ -417,6 +427,29 @@ test('bulk fusion tries each selected material once, even when every attempt fai
  await page.click('#bulkFuse');
  expect(await page.evaluate(()=>window.__fusionCalls)).toBe(2);
  await expect(page.locator('#fuseMsg')).toContainText('失敗 2個');
+});
+test('bulk fusion completes selected monster and heart materials when the full budget is available',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
+ page.on('dialog',dialog=>dialog.accept());
+ await page.evaluate(()=>{
+  g.maso=100000;g.firstFusionUsed=true;g.slimes.push(monster('森スライム'),monster('森スライム'));failRate=()=>0;render();
+  document.querySelectorAll('.bulk-material').forEach(x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));});
+ });
+ await page.click('#bulkFuse');
+ await expect(page.locator('#fuseMsg')).toContainText('成功 2個');
+ expect(await page.evaluate(()=>g.slimes.length)).toBe(1);
+
+ await page.click('#closeBulkFusion');
+ await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
+ await page.locator('#bulkModeSelect').selectOption('heart');
+ await page.evaluate(()=>{
+  g.heartItems=[{id:1,type:'attack',name:'攻撃力',value:2},{id:2,type:'hp',name:'HP',value:3}];g.hearts=g.heartItems.length;g.maso=100000;renderNewRulesUI();
+  document.querySelectorAll('.bulk-material').forEach(x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));});
+ });
+ await page.click('#bulkFuse');
+ await expect(page.locator('#fuseMsg')).toContainText('成功 2個');
+ expect(await page.evaluate(()=>g.heartItems.length)).toBe(0);
 });
 test('field and battle epic chests skip freeze and guaranteed freeze can be skipped safely',async({page})=>{
  await page.goto('./');
