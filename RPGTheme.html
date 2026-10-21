@@ -49,7 +49,7 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .field-status{font-size:12px;line-height:1.7;gap:4px 14px}
 .ui-v2 #fieldMsg{margin:10px 0;min-height:40px}
 .ui-v2 .field-help{margin:10px 0;color:#cbd0d4}
-.ui-v2 #collectAll{width:100%}
+.ui-v2 #collectAll{width:100%;grid-column:1/-1}
 .ui-v2 .field-upgrades .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(114px,.7fr);gap:12px;align-items:center}
 .ui-v2 .field-upgrades .row>button{width:100%;font-size:13px;padding:10px 8px}
 .ui-v2 .field-upgrades .big{font-size:25px;color:#d4e3b5}
@@ -229,6 +229,7 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 select,.ui-v2 input:not([type=checkbox]):not([type=range]){box-shadow:inset 0 2px 5px #0008,0 1px #ffffff12}
 .ui-v2 summary{cursor:pointer}
 .ui-v2 .field-input-hint{margin:5px 2px 8px;text-align:right;color:#aeb4ba;font-size:10px}
+.ui-v2 #treasureOdds{display:block;flex:1 1 100%;margin:7px 0 0;padding:8px;border:1px solid #555b61;background:#20242a;color:#ddd8ca;font-size:11px;line-height:1.6}
 .ui-v2.field-drag-unlocked #fieldCanvas{cursor:grab;touch-action:none}
 .ui-v2.field-drag-unlocked #fieldCanvas.is-dragging{cursor:grabbing}
 .ui-v2 #teamSprites .sprite.attacking{animation:slimeAttackLunge .32s cubic-bezier(.22,.7,.3,1) both;transform-origin:bottom center}
@@ -274,15 +275,11 @@ document.addEventListener('DOMContentLoaded',()=>{
  fieldPanels[1].classList.add('field-upgrades');
  const facts=make('div','ui-field-facts');facts.innerHTML='<h2>フィールド情報</h2><div class="ui-fact"><span>採集量 / 1マス</span><b id="uiYield"></b></div><div class="ui-fact"><span>自然湧き間隔</span><b id="uiSpawn"></b></div><div class="ui-fact"><span>採集範囲</span><b id="uiRange"></b></div>';
  fieldPanels[1].prepend(facts);
-  const help=fieldPanels[0].querySelector(':scope > p');help.classList.add('field-help');help.textContent='クリックして結晶やモンスターを採集。フィールド強化後はドラッグで連続採集できます。';
- const odds=byId('treasureOdds'),oddsDetails=make('details','ui-odds');
- oddsDetails.append(make('summary','small','宝箱の出現確率'),odds);fieldPanels[1].append(oddsDetails);
+   const help=fieldPanels[0].querySelector(':scope > p');help.classList.add('field-help');help.textContent='魔素マスをクリックして採集。ドラッグ採集を解放すると、なぞって連続採集できます。';
+  const odds=byId('treasureOdds');fieldPanels[1].append(odds);
  // Avoid a tiny initial 2×2 board while retaining the same 720px coordinate system.
  fieldGeom=function(){const n=size(),cell=720/n;return {n,cell,off:0}};
  byId('fieldCanvas').setAttribute('aria-label','魔素フィールド。結晶やモンスターのマスをタップして採集');
- const keyboardCollect=button('採集する',()=>{const i=g.tiles.findIndex(t=>t!=='empty');if(i<0){byId('fieldMsg').textContent='出現を待っています。';return;}harvestMagicAround(i%size(),Math.floor(i/size()));});
- keyboardCollect.id='uiCollect';keyboardCollect.title='最初の資源マスを中心に、現在の採集範囲で回収';fieldPanels[0].querySelector('.grid2').prepend(keyboardCollect);
-
  // Ranch: common actions stay visible, detailed workflows fold away.
  const ranch=byId('ranch'),ranchPanels=[...ranch.querySelectorAll(':scope > .panel')];
  function fold(panel,label,id){

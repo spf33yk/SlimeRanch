@@ -77,7 +77,8 @@ test('fresh browser uses an audible default and resumes Web Audio on the first g
  await page.click('[data-tab=\"field\"]');
  await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='magic';drawField()});
  let before=await oscillatorCount();
- await page.click('#uiCollect');
+  const fieldPoint=await page.locator('#fieldCanvas').evaluate(canvas=>{const r=canvas.getBoundingClientRect(),z=fieldGeom();return{x:r.left+(z.off+z.cell/2)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}});
+  await page.mouse.click(fieldPoint.x,fieldPoint.y);
  await expect.poll(oscillatorCount).toBeGreaterThan(before);
  await page.click('[data-tab=\"battle\"]');
  await page.evaluate(()=>{g.won=false;g.enemyHP=Number.MAX_SAFE_INTEGER;render()});
@@ -108,7 +109,7 @@ test('starts under the Pages subpath; all tabs and responsive layouts work',asyn
  }
  expect(errors).toEqual([]);expect(failed).toEqual([]);
 });
-test('field starts with click collection and unlocks drag collection through range research',async({page})=>{
+test('field starts with click collection and has a separate drag collection unlock',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('./');
  await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';g.maso=100;drawField();});
@@ -119,12 +120,13 @@ test('field starts with click collection and unlocks drag collection through ran
  await page.mouse.click(firstPoint.x,firstPoint.y);
  expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(100);
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
- await page.click('#uiCollect');
+ await page.evaluate(()=>{g.maso=10000;render()});
  await page.click('#expand');
  expect(await page.evaluate(()=>size())).toBe(3);
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
- await page.evaluate(()=>{g.maso=10000;render()});
  await page.click('#rangeUp');
+ expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
+ await page.click('#dragUnlock');
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
  await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
  const dragPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
@@ -142,6 +144,30 @@ test('field spawn meter is removed',async({page})=>{
  await page.goto('./');
  await expect(page.locator('.field-spawn-meter')).toHaveCount(0);
  expect(await page.evaluate(()=>typeof updateFieldSpawnMeter)).toBe('undefined');
+});
+test('field has no manual collect button, batch collect spans the row and uses a 30 minute cooldown',async({page})=>{
+ await page.goto('./');
+ expect(await page.locator('#uiCollect').count()).toBe(0);
+ await expect(page.locator('#treasureOdds')).toBeVisible();
+ expect(await page.locator('#collectAll').evaluate(el=>getComputedStyle(el).gridColumnEnd)).toBe('-1');
+ await page.evaluate(()=>{g.maso=1000;g.tiles.fill('magic');render()});
+ const before=await page.evaluate(()=>g.maso);
+ await page.click('#collectAll');
+ expect(await page.evaluate(()=>({unlocked:g.batchUnlocked,maso:g.maso}))).toEqual({unlocked:true,maso:before-200});
+ await page.evaluate(()=>{g.tiles.fill('magic');render()});
+ await page.click('#collectAll');
+ expect(await page.evaluate(()=>Date.now()-g.batchLast<1000)).toBe(true);
+ await expect(page.locator('#collectAll')).toContainText('30分');
+ expect(await page.locator('#collectAll').isDisabled()).toBe(true);
+ await page.evaluate(()=>{g.batchLast=Date.now()-BATCH_COOLDOWN_MS+1000;render()});
+ await expect(page.locator('#collectAll')).toContainText('1秒');
+ await page.evaluate(()=>{g.batchLast=Date.now()-BATCH_COOLDOWN_MS-1;render()});
+ await expect(page.locator('#collectAll')).toBeEnabled();
+});
+test('battle result band leaves the enemy name and HP area visible',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=battle]');
+ const result=await page.evaluate(()=>{treasureBattleResultFx('win');const card=document.getElementById('enemyCard'),overlay=document.querySelector('.treasure-battle-result'),name=document.getElementById('enemyName'),bar=document.getElementById('enemyBar'),r=overlay.getBoundingClientRect(),c=card.getBoundingClientRect(),n=name.getBoundingClientRect(),h=bar.getBoundingClientRect();return{insideCard:r.top>c.top&&r.bottom<c.bottom,belowName:r.top>n.bottom,aboveHp:r.bottom<h.top,ratio:r.height/c.height}});
+ expect(result.insideCard).toBe(true);expect(result.belowName).toBe(true);expect(result.aboveHp).toBe(true);expect(result.ratio).toBeLessThan(.4);
 });
 test('ranch shortcuts, equipment and battle controls remain connected',async({page})=>{
  await page.goto('./');
@@ -280,7 +306,7 @@ test('legacy plain JSON and import rollback are supported',async({page})=>{
 });
 test('cold cached image callbacks before initialization do not crash',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- for(let i=0;i<3;i++){await page.goto('./');await expect(page.locator('#uiCollect')).toBeVisible();}
+ for(let i=0;i<3;i++){await page.goto('./');await expect(page.locator('#fieldCanvas')).toBeVisible();await expect(page.locator('#uiCollect')).toHaveCount(0);}
  expect(errors).toEqual([]);
 });
 test('GAS export helper produces a compatible save without clearing the game',async({page,context})=>{
