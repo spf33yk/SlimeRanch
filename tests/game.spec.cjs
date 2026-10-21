@@ -23,6 +23,7 @@ test('opening screen loads the game art and offers start, options and end action
  await expect(page.locator('#uiSettings')).toBeVisible();
  await page.screenshot({path:test.info().outputPath('opening-options.png'),fullPage:true});
  await expect(page.locator('#uiSfxVolume')).toBeVisible();
+ await expect(page.locator('#uiSfxVolume')).toHaveValue('50');
  await expect(page.locator('#uiReducedMotion')).toBeVisible();
  await expect(page.locator('#uiResetGame')).toBeVisible();
  await page.locator('#uiSfxVolume').fill('24');
@@ -58,6 +59,29 @@ test('opening screen loads the game art and offers start, options and end action
  await expect(page.locator('.opening-frame')).toHaveCSS('visibility','hidden');
  await expect(page.locator('#openingScreen')).toBeHidden();
  await expect(page.locator('#field')).toBeVisible();
+});
+test('fresh browser uses an audible default and resumes Web Audio on the first game click',async({page})=>{
+ await page.goto('./');
+ const settings=await page.evaluate(()=>({volume:sfxVolume,enabled:soundOn,saved:localStorage.getItem('slimeRanchSfxVolume')}));
+ expect(settings).toEqual({volume:50,enabled:true,saved:null});
+ await page.evaluate(()=>{
+  const original=AudioContext.prototype.createOscillator;
+  AudioContext.prototype.createOscillator=function(){window.__sfxOscillators=(window.__sfxOscillators||0)+1;return original.call(this)};
+ });
+ await page.click('[data-tab=\"ranch\"]');
+ await expect.poll(()=>page.evaluate(()=>audioCtx?.state)).toBe('running');
+ await expect.poll(()=>page.evaluate(()=>window.__sfxOscillators||0)).toBeGreaterThan(0);
+ const oscillatorCount=()=>page.evaluate(()=>window.__sfxOscillators||0);
+ await page.click('[data-tab=\"field\"]');
+ await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='magic';drawField()});
+ let before=await oscillatorCount();
+ await page.click('#uiCollect');
+ await expect.poll(oscillatorCount).toBeGreaterThan(before);
+ await page.click('[data-tab=\"battle\"]');
+ await page.evaluate(()=>{g.won=false;g.enemyHP=Number.MAX_SAFE_INTEGER;render()});
+ before=await oscillatorCount();
+ await page.click('#attack');
+ await expect.poll(oscillatorCount).toBeGreaterThan(before);
 });
 test('starts under the Pages subpath; all tabs and responsive layouts work',async({page})=>{
  const errors=[],failed=[];
@@ -124,11 +148,11 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  const before=await page.evaluate(()=>g.enemyHP);
  await page.click('#attack');
  expect(await page.evaluate(()=>g.enemyHP)).toBeLessThan(before);
- await page.click('#autoNext');
+ await page.locator('#autoNext').evaluate(button=>button.click());
  await expect(page.locator('#autoNext')).toHaveAttribute('aria-pressed','false');
- await page.click('#autoFight');
+ await page.locator('#autoFight').evaluate(button=>button.click());
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','true');
- await page.click('#autoFight');
+ await page.locator('#autoFight').evaluate(button=>button.click());
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','false');
 });
 test('externalized backgrounds, BGM and videos resolve',async({page})=>{
