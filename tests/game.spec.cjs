@@ -237,7 +237,7 @@ test('field upgrade buttons share available and completed styles',async({page})=
  await expect(page.locator('#dragUnlock')).toHaveText('解放済み');
  await expect(page.locator('.field-upgrades h3').filter({hasText:'魔素湧き速度強化'})).not.toContainText('🌱');
 });
-test('field has no manual collect button, batch collect spans the row and uses a 30 minute cooldown',async({page})=>{
+test('field has no manual collect button, batch collect spans the row and uses a 10 minute cooldown',async({page})=>{
  await page.goto('./');
  expect(await page.locator('#uiCollect').count()).toBe(0);
  await expect(page.locator('#treasureOdds')).toBeVisible();
@@ -255,7 +255,7 @@ test('field has no manual collect button, batch collect spans the row and uses a
  await page.evaluate(()=>{g.tiles.fill('magic');render()});
  await page.click('#collectAll');
  expect(await page.evaluate(()=>Date.now()-g.batchLast<1000)).toBe(true);
- await expect(page.locator('#collectAll')).toContainText('30分00秒');
+ await expect(page.locator('#collectAll')).toContainText('10分00秒');
  expect(await page.locator('#collectAll').isDisabled()).toBe(true);
  await page.evaluate(()=>{g.batchLast=Date.now()-BATCH_COOLDOWN_MS+1000;render()});
  await expect(page.locator('#collectAll')).toContainText('1秒');
