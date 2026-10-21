@@ -6,6 +6,8 @@ test('opening screen loads the game art and offers start, options and end action
  await page.addInitScript(()=>{window.__SLIME_E2E__=false;});
  await page.goto('./');
  await expect(page.locator('#openingScreen')).toBeVisible();
+ const openingFrame=await page.locator('.opening-frame').boundingBox();
+ expect(openingFrame.x+openingFrame.width/2).toBeGreaterThan(640);
  await expect(page.locator('#openingTitle')).toHaveText('スライム牧場');
  await expect(page.locator('#gameStart')).toHaveText('GAME START');
  await expect(page.locator('#gameOption')).toHaveText('OPTION');
@@ -28,10 +30,15 @@ test('opening screen loads the game art and offers start, options and end action
  page.once('dialog',dialog=>dialog.accept());
  await page.click('#uiResetGame');
  expect(await page.evaluate(()=>g.maso)).toBe(80);
+ await page.locator('#uiReducedMotion').uncheck();
+ expect(await page.evaluate(()=>localStorage.getItem('slimeRanchReducedMotion'))).toBe('false');
  await page.locator('#uiSettings').getByRole('button',{name:'閉じる ×'}).click();
  await page.click('#gameEnd');
  await expect(page.locator('#openingStatus')).toContainText('このタブを閉じてください');
+ await page.evaluate(()=>{window.__startSfx=[];window.sfx=kind=>window.__startSfx.push(kind);});
  await page.click('#gameStart');
+ await expect(page.locator('#openingScreen')).toHaveClass(/is-starting/);
+ expect(await page.evaluate(()=>window.__startSfx)).toEqual(['win']);
  await expect(page.locator('#openingScreen')).toBeHidden();
  await expect(page.locator('#field')).toBeVisible();
 });
