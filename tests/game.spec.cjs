@@ -131,6 +131,10 @@ test('field starts with click collection and has a separate drag collection unlo
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
  expect(await page.evaluate(()=>g.maso)).toBe(masoBeforeUnlock-120);
  await expect(page.locator('body')).toHaveClass(/field-drag-unlocked/);
+ await expect(page.locator('#dragUnlock')).toContainText('ドラッグ採集を再適用');
+ await page.evaluate(()=>{document.body.classList.remove('field-drag-unlocked');document.getElementById('fieldCanvas').style.touchAction='auto'});
+ await page.click('#dragUnlock');
+ await expect(page.locator('body')).toHaveClass(/field-drag-unlocked/);
  await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
  const dragPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
  const beforeDrag=await page.evaluate(()=>g.maso);
@@ -147,6 +151,13 @@ test('field spawn meter is removed',async({page})=>{
  await page.goto('./');
  await expect(page.locator('.field-spawn-meter')).toHaveCount(0);
  expect(await page.evaluate(()=>typeof updateFieldSpawnMeter)).toBe('undefined');
+});
+test('legacy field bonuses do not falsely mark drag collection as unlocked',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('slimeRanchCodex1'));delete s.dragCollectUnlocked;s.rangeLv=0;s.yield=1;s.maso=500;localStorage.setItem('slimeRanchCodex1',JSON.stringify(s))});
+ await page.reload();
+ expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
+ await expect(page.locator('#dragUnlock')).toBeEnabled();
 });
 test('field has no manual collect button, batch collect spans the row and uses a 30 minute cooldown',async({page})=>{
  await page.goto('./');
@@ -207,6 +218,16 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','true');
  await page.locator('#autoFight').evaluate(button=>button.click());
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','false');
+});
+test('auto battle keeps ranch monster idle animations attached and smooth',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ await page.evaluate(()=>{const m=monster('森スライム');g.slimes.push(m);g.sub=m.id;g.kills=3;g.enemyHP=1e20;g.teamHP=1e20;g.won=false;g.autoNext=false;g.autoFight=true;render()});
+ const mainMotion=await page.locator('#mainCard .ui-monster-idle-motion--main').elementHandle();
+ const subMotion=await page.locator('#subCard .ui-monster-idle-motion--sub').elementHandle();
+ expect(mainMotion).not.toBeNull();expect(subMotion).not.toBeNull();
+ await page.waitForTimeout(1900);
+ expect(await mainMotion.evaluate(el=>el.isConnected)).toBe(true);
+ expect(await subMotion.evaluate(el=>el.isConnected)).toBe(true);
 });
 test('selected monsters lock themselves and hover does not shift game controls',async({page})=>{
  await page.goto('./');
