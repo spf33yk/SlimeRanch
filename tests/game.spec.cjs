@@ -109,7 +109,7 @@ test('starts under the Pages subpath; all tabs and responsive layouts work',asyn
  }
  expect(errors).toEqual([]);expect(failed).toEqual([]);
 });
-test('field starts with click collection and has a separate drag collection unlock',async({page})=>{
+test('field starts with click collection and unlocks mouseover collection',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('./');
  await page.evaluate(()=>{g.tiles.fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';g.maso=100;drawField();});
@@ -130,15 +130,15 @@ test('field starts with click collection and has a separate drag collection unlo
  await page.click('#dragUnlock');
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(true);
  expect(await page.evaluate(()=>g.maso)).toBe(masoBeforeUnlock-120);
- await expect(page.locator('body')).toHaveClass(/field-drag-unlocked/);
- await expect(page.locator('#dragUnlock')).toContainText('ドラッグ採集を再適用');
- await page.evaluate(()=>{document.body.classList.remove('field-drag-unlocked');document.getElementById('fieldCanvas').style.touchAction='auto'});
+ await expect(page.locator('body')).toHaveClass(/field-hover-unlocked/);
+ await expect(page.locator('#dragUnlock')).toContainText('ホバー採集を再適用');
+ await page.evaluate(()=>{document.body.classList.remove('field-hover-unlocked');document.getElementById('fieldCanvas').style.touchAction='auto'});
  await page.click('#dragUnlock');
- await expect(page.locator('body')).toHaveClass(/field-drag-unlocked/);
+ await expect(page.locator('body')).toHaveClass(/field-hover-unlocked/);
  await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
  const dragPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
  const beforeDrag=await page.evaluate(()=>g.maso);
- await page.mouse.move(dragPoints[0].x,dragPoints[0].y);await page.mouse.down();await page.mouse.move(dragPoints[1].x,dragPoints[1].y,{steps:4});await page.mouse.up();
+ await page.mouse.move(dragPoints[0].x,dragPoints[0].y);await page.mouse.move(dragPoints[1].x,dragPoints[1].y,{steps:4});
  expect(await page.evaluate(()=>g.maso)).toBeGreaterThan(beforeDrag);
  expect(await page.evaluate(()=>g.tiles.slice(0,2))).toEqual(['empty','empty']);
  await page.evaluate(()=>{g.lv=SIZES.indexOf(24);g.tiles=Array(24*24).fill('empty');g.tiles[0]='magic';drawField();});
@@ -159,7 +159,7 @@ test('legacy field bonuses do not falsely mark drag collection as unlocked',asyn
  expect(await page.evaluate(()=>g.dragCollectUnlocked)).toBe(false);
  await expect(page.locator('#dragUnlock')).toBeEnabled();
 });
-test('drag unlock remains clickable and reports the required magic when funds are short',async({page})=>{
+test('hover collection unlock remains clickable and reports the required magic when funds are short',async({page})=>{
  await page.goto('./');
  await page.evaluate(()=>{g.maso=0;render()});
  await expect(page.locator('#dragUnlock')).toBeEnabled();
@@ -173,6 +173,9 @@ test('field has no manual collect button, batch collect spans the row and uses a
  await expect(page.locator('#treasureOdds')).toBeVisible();
  expect(await page.locator('#treasureOdds').evaluate(el=>el.parentElement.classList.contains('ui-field-facts'))).toBe(true);
  expect(await page.locator('#treasureOdds').evaluate(el=>el.classList.contains('ui-fact'))).toBe(true);
+ await page.setViewportSize({width:320,height:780});
+ const oddsStyle=await page.locator('#treasureOdds').evaluate(el=>({whiteSpace:getComputedStyle(el).whiteSpace,childWhiteSpaces:[...el.children].map(x=>getComputedStyle(x).whiteSpace),overflow:el.scrollWidth>el.clientWidth}));
+ expect(oddsStyle.whiteSpace).toBe('nowrap');expect(oddsStyle.childWhiteSpaces).toEqual(['nowrap','nowrap']);expect(oddsStyle.overflow).toBe(false);
  expect(await page.locator('#nextSize').evaluate(el=>el.parentElement.parentElement.classList.contains('row'))).toBe(true);
  expect(await page.locator('#collectAll').evaluate(el=>getComputedStyle(el).gridColumnEnd)).toBe('-1');
  await page.evaluate(()=>{g.maso=1000;g.tiles.fill('magic');render()});
@@ -201,7 +204,10 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await page.click('[data-tab=ranch]');
  const actions=page.locator('.ui-ranch-actions');
  await expect(page.locator('#uiFusion > summary')).toHaveText('合成');
+ await page.evaluate(()=>document.querySelector('[data-tab="battle"]').focus());
  await actions.getByRole('button',{name:'合成',exact:true}).click();
+ expect(await page.locator('[data-tab=battle]').evaluate(el=>el.matches(':focus-visible'))).toBe(false);
+ await expect(page.locator('[data-tab=ranch]')).toHaveClass(/active/);
  await expect(page.locator('#fuse')).toBeVisible();
  await actions.getByRole('button',{name:'一括合成',exact:true}).click();
  await expect(page.locator('#bulkFusionDialog')).toBeVisible();
