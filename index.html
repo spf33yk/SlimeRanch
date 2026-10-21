@@ -182,8 +182,9 @@ nav button.active{background:linear-gradient(135deg,#246657,#245348);border-colo
 .treasure-equip-epic{border-color:#b789ff!important;box-shadow:inset 0 0 0 1px #b789ff55,0 0 12px #b789ff44!important}
 .treasure-equip-normal{border-color:#ed7066!important;box-shadow:inset 0 0 0 1px #ed706655,0 0 12px #ed706644!important}
 .treasure-bonus-caption{font-size:11px;color:#ffe4a1;line-height:1.5;margin-top:5px}
-.treasure-battle-result{position:absolute;top:50%;left:0;right:0;height:clamp(110px,40%,170px);transform:translateY(-50%);z-index:40;display:grid;place-items:center;pointer-events:none;background:#081827c9;border-radius:inherit;animation:treasure-result-fade 1.45s ease forwards}
-.treasure-battle-result strong{font-size:clamp(32px,6vw,72px);font-weight:1000;letter-spacing:.09em;text-shadow:0 5px 0 #101c2d,0 0 35px currentColor;transform:scale(.55);animation:treasure-result-pop .45s cubic-bezier(.2,1.5,.3,1) forwards}
+.fight{position:relative}
+.treasure-battle-result{position:absolute;top:50%;left:50%;width:max-content;max-width:90%;height:auto;transform:translate(-50%,-50%);z-index:40;display:grid;place-items:center;pointer-events:none;background:transparent;border:0;border-radius:0;animation:treasure-result-fade 1.45s ease forwards}
+.treasure-battle-result strong{font-size:clamp(32px,6vw,72px);font-weight:1000;letter-spacing:.09em;white-space:nowrap;text-shadow:0 3px 0 #101c2d,0 0 28px currentColor;transform:scale(.55);animation:treasure-result-pop .45s cubic-bezier(.2,1.5,.3,1) forwards}
 .treasure-battle-result.win strong{color:#ffdd66}.treasure-battle-result.lose strong{color:#ff6a82}
 @keyframes treasure-result-pop{to{transform:scale(1)}}@keyframes treasure-result-fade{0%,65%{opacity:1}100%{opacity:0}}
  #enemyCard{position:relative;overflow:hidden} </style><style id="field-status-left-alignment">

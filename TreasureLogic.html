@@ -164,10 +164,9 @@ function treasureDeleteSelected(){
 function treasureBattleResultFx(kind){
  const old=document.querySelector('.treasure-battle-result');if(old)old.remove();
  const el=document.createElement('div');el.className='treasure-battle-result '+kind;
- const card=document.getElementById('enemyCard'),name=document.getElementById('enemyName'),bar=document.getElementById('enemyBar');
- if(card&&name&&bar){const cardRect=card.getBoundingClientRect(),start=name.getBoundingClientRect().bottom-cardRect.top+6,end=bar.parentElement.getBoundingClientRect().top-cardRect.top-6;if(end-start>=72){el.style.top=start+'px';el.style.height=(end-start)+'px';el.style.transform='none'}}
+ const field=document.querySelector('#battle .fight');
  const label=document.createElement('strong');label.textContent=kind==='win'?'WIN':'LOSE';el.appendChild(label);
- (card||document.body).appendChild(el);setTimeout(()=>el.remove(),1500);
+ (field||document.body).appendChild(el);setTimeout(()=>el.remove(),1500);
 }
 
 let treasureSoundPlayer=null;

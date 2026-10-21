@@ -215,10 +215,12 @@ test('field has no manual collect button, batch collect spans the row and uses a
  await page.evaluate(()=>{g.batchLast=Date.now()-BATCH_COOLDOWN_MS-1;render()});
  await expect(page.locator('#collectAll')).toBeEnabled();
 });
-test('battle result band leaves the enemy name and HP area visible',async({page})=>{
+test('battle win and lose result is text only at the center of both teams',async({page})=>{
  await page.goto('./');await page.click('[data-tab=battle]');
- const result=await page.evaluate(()=>{treasureBattleResultFx('win');const card=document.getElementById('enemyCard'),overlay=document.querySelector('.treasure-battle-result'),name=document.getElementById('enemyName'),bar=document.getElementById('enemyBar'),r=overlay.getBoundingClientRect(),c=card.getBoundingClientRect(),n=name.getBoundingClientRect(),h=bar.parentElement.getBoundingClientRect();return{insideCard:r.top>c.top&&r.bottom<c.bottom,belowName:r.top>n.bottom,aboveHp:r.bottom<h.top,ratio:r.height/c.height}});
- expect(result.insideCard).toBe(true);expect(result.belowName).toBe(true);expect(result.aboveHp).toBe(true);expect(result.ratio).toBeGreaterThan(.3);expect(result.ratio).toBeLessThan(.85);
+ const result=await page.evaluate(()=>{treasureBattleResultFx('win');const field=document.querySelector('#battle .fight'),team=document.getElementById('teamCard'),enemy=document.getElementById('enemyCard'),overlay=document.querySelector('.treasure-battle-result'),r=overlay.getBoundingClientRect(),f=field.getBoundingClientRect(),t=team.getBoundingClientRect(),e=enemy.getBoundingClientRect();return{inFight:overlay.parentElement===field,transparent:getComputedStyle(overlay).backgroundColor==='rgba(0, 0, 0, 0)',centered:Math.abs((r.left+r.right)/2-(f.left+f.width/2))<2,betweenTeams:Math.abs((r.left+r.right)/2-(t.right+e.left)/2)<2,ratio:r.height/f.height}});
+ expect(result.inFight).toBe(true);expect(result.transparent).toBe(true);expect(result.centered).toBe(true);expect(result.betweenTeams).toBe(true);expect(result.ratio).toBeLessThan(.3);
+ const lose=await page.evaluate(()=>{treasureBattleResultFx('lose');return document.querySelector('.treasure-battle-result strong').textContent});
+ expect(lose).toBe('LOSE');
 });
 test('ranch shortcuts, equipment and battle controls remain connected',async({page})=>{
  await page.goto('./');
@@ -234,6 +236,8 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  expect(await battleTab.evaluate(el=>el.matches(':focus')||el.matches(':focus-visible'))).toBe(false);
  expect(await battleTab.evaluate(el=>getComputedStyle(el).outlineStyle)).toBe('none');
  expect(await battleTab.evaluate(el=>getComputedStyle(el).borderTopColor)).not.toBe('rgb(224, 201, 135)');
+ await page.evaluate(()=>document.querySelector('[data-tab="battle"]').focus({focusVisible:true}));
+ expect(await battleTab.evaluate(el=>getComputedStyle(el).outlineStyle)).toBe('none');
  await expect(page.locator('#fuse')).toBeVisible();
  await actions.getByRole('button',{name:'一括合成',exact:true}).click();
  await expect(page.locator('#bulkFusionDialog')).toBeVisible();
