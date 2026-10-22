@@ -334,6 +334,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const details=make('details','ui-fold');details.id=id;panel.before(details);details.append(make('summary','',label),panel);return details;
  }
  const fusion=fold(ranchPanels[0],'合成','uiFusion'),inventory=fold(ranchPanels[1],'モンスター・ハート一覧','uiInventory');
+ inventory.addEventListener('toggle',()=>{if(!inventory.open)return;if(inventoryTab==='hearts')renderHeartInventory();else renderMonsterInventory()});
  const reveal=(details,target=details)=>{details.open=true;const align=()=>{const behavior=matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';if(target===details)details.scrollIntoView({behavior,block:'start'});else{const r=target.getBoundingClientRect(),top=scrollY+r.top+r.height/2-innerHeight/2;if(details.id==='uiFusion'&&target.id==='fuse'){const max= document.scrollingElement.scrollHeight-innerHeight,space=Math.max(0,Math.ceil(top-max+12));document.body.style.setProperty('--ui-fusion-center-space',space+'px');document.body.classList.add('ui-fusion-center-scroll')}window.scrollTo({top:Math.max(0,top),behavior})}};requestAnimationFrame(()=>{align();requestAnimationFrame(align);setTimeout(align,120)})};
  const actions=make('div','ui-ranch-actions');
  actions.append(button('合成',()=>reveal(fusion,byId('fuse'))),button('一括合成',()=>{reveal(fusion);byId('bulkFusionDialog').showModal()}),button('モンスター一覧',()=>{byId('inventoryMonsters').click();reveal(inventory)}),button('ハート一覧',()=>{byId('inventoryHearts').click();reveal(inventory)}));

@@ -367,6 +367,7 @@ test('selected monsters lock themselves and hover does not shift game controls',
  await expect(page.locator('#fuseB option')).toHaveCount(1);
  await expect(page.locator('label[for="fuseB"]')).toHaveText('合成素材');
  await page.click('[data-tab=ranch]');
+ await page.locator('#uiInventory > summary').click();
  await page.waitForTimeout(300);
  const card=page.locator('#monsterList .mcard').first();
  const before=await card.boundingBox();await page.mouse.move(before.x+Math.min(12,before.width/2),before.y+Math.min(12,before.height/2));await page.waitForTimeout(200);const after=await card.boundingBox();
@@ -571,6 +572,27 @@ test('auto attacks update only battle vitals between results and show floating d
  const popup=page.locator('#enemyCard .battle-damage-popup');await expect(popup).toHaveCount(1);await expect(popup).toContainText('−');
  const popupInNameGap=await page.evaluate(()=>window.__damagePopupGap);expect(popupInNameGap.top).toBeGreaterThanOrEqual(popupInNameGap.nameBottom);expect(popupInNameGap.bottom).toBeLessThanOrEqual(popupInNameGap.spriteTop);
  await page.evaluate(()=>{window.render=window.__realRender;g.autoFight=false;render()});
+});
+test('battle result refresh skips hidden inventories and grows stage options incrementally',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{
+  g.slimes.push(...Array.from({length:40},()=>monster('森スライム')));
+  g.autoNext=false;g.autoFight=false;g.won=false;g.enemyHP=1;g.teamHP=teamMax();main().atk=1e30;Math.random=()=>.99;
+  render();
+  window.__firstStageOption=document.querySelector('#stageSelect option');
+  document.querySelector('#monsterList').innerHTML='<span id="inventory-sentinel">stale</span>';
+  document.querySelector('#bulkMaterialList').innerHTML='<span id="bulk-sentinel">stale</span>';
+  battle(true);
+ });
+ expect(await page.locator('#inventory-sentinel').textContent()).toBe('stale');
+ expect(await page.locator('#bulk-sentinel').textContent()).toBe('stale');
+ expect(await page.evaluate(()=>document.querySelector('#stageSelect option')===window.__firstStageOption)).toBe(true);
+ expect(await page.locator('#stageSelect option').count()).toBe(2);
+ await page.click('[data-tab=ranch]');
+ await page.click('#uiInventory > summary');await page.evaluate(()=>showInventory('monsters'));
+ await expect(page.locator('#monsterList .mcard')).toHaveCount(41);
+ await page.evaluate(()=>renderNewRulesUI(true));
+ await expect(page.locator('#bulkMaterialList .bulk-material')).toHaveCount(40);
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
  await page.goto('./');
