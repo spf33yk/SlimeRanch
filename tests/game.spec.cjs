@@ -2,6 +2,14 @@ const {test,expect}=require('@playwright/test');
 test.beforeEach(async({page})=>{
  await page.addInitScript(()=>{window.__SLIME_E2E__=true;localStorage.setItem('slimeRanchBgmSettings',JSON.stringify({track:0,volume:3,playing:false}));});
 });
+test('shared title and settings header stays fixed with the navigation while scrolling',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ const desktop=await page.evaluate(()=>{window.scrollTo(0,document.documentElement.scrollHeight);const bar=document.getElementById('uiTopbar'),header=bar.querySelector('header'),nav=bar.querySelector('nav');return {position:getComputedStyle(bar).position,top:bar.getBoundingClientRect().top,headerTop:header.getBoundingClientRect().top,navTop:nav.getBoundingClientRect().top,headerBottom:header.getBoundingClientRect().bottom,navBottom:nav.getBoundingClientRect().bottom}});
+ expect(desktop.position).toBe('sticky');expect(desktop.top).toBe(0);expect(desktop.headerTop).toBe(0);expect(desktop.navTop).toBeCloseTo(desktop.headerBottom,0);expect(desktop.navBottom).toBeGreaterThan(desktop.navTop);
+ await page.setViewportSize({width:390,height:844});
+ const mobile=await page.evaluate(()=>{window.scrollTo(0,document.documentElement.scrollHeight);const bar=document.getElementById('uiTopbar'),header=bar.querySelector('header'),nav=bar.querySelector('nav');return {top:bar.getBoundingClientRect().top,headerTop:header.getBoundingClientRect().top,navTop:nav.getBoundingClientRect().top,headerBottom:header.getBoundingClientRect().bottom}});
+ expect(mobile.top).toBe(0);expect(mobile.headerTop).toBe(0);expect(mobile.navTop).toBeCloseTo(mobile.headerBottom,0);
+});
 test('opening screen loads the game art and offers start, options and end actions',async({page})=>{
  await page.setViewportSize({width:1902,height:1069});
  await page.addInitScript(()=>{window.__SLIME_E2E__=false;});
@@ -182,6 +190,7 @@ test('field starts with click collection and unlocks mouseover collection',async
  await expect(page.locator('#dragUnlock')).toHaveText('解放済み');
  await expect(page.locator('#dragUnlock')).toBeDisabled();
  await page.evaluate(()=>{g.tiles=Array(9).fill('empty');g.tiles[0]='magic';g.tiles[1]='magic';drawField();});
+ await page.locator('#fieldCanvas').scrollIntoViewIfNeeded();
  const hoverPoints=await page.evaluate(()=>{const c=document.getElementById('fieldCanvas'),r=c.getBoundingClientRect(),z=fieldGeom();return [0,1].map(i=>({x:r.left+(z.off+(i+.5)*z.cell)/720*r.width,y:r.top+(z.off+z.cell/2)/720*r.height}))});
  const beforeHover=await page.evaluate(()=>g.maso);
  await page.mouse.move(hoverPoints[0].x,hoverPoints[0].y);await page.mouse.move(hoverPoints[1].x,hoverPoints[1].y,{steps:4});
@@ -515,23 +524,23 @@ test('ranch selection rows fit the name limit and extend the main monster frame 
  for(const row of desktop.rows){expect(row.selectWidth).toBeLessThan(row.width);expect(row.buttonLeft).toBeGreaterThanOrEqual(row.selectRight)}
  expect(desktop.rows.map(row=>row.button)).toEqual(['宝箱/装備','宝箱/装備']);
  expect(desktop.rows[0].buttonWidth).toBe(desktop.rows[1].buttonWidth);
- expect(desktop.mainMinHeight).toBe('400px');expect(desktop.mainSpriteWidth).toBe(174);expect(desktop.mainBackgroundPosition).toContain('56%');
+ expect(desktop.mainMinHeight).toBe('260px');expect(desktop.mainSpriteWidth).toBe(174);expect(desktop.mainBackgroundPosition).toContain('56%');
  await page.evaluate(()=>{const partner=monster('森スライム');g.slimes.push(partner);g.sub=partner.id;g.kills=3;render()});
  const aligned=await page.evaluate(()=>({mainPanelBottom:document.querySelector('.ranch-layout>.panel').getBoundingClientRect().bottom,sideStackBottom:document.querySelector('.ranch-side-stack').getBoundingClientRect().bottom,mainFrameBottom:document.querySelector('#mainCard>.mcard').getBoundingClientRect().bottom,subFrameBottom:document.querySelector('#subCard>.mcard').getBoundingClientRect().bottom,mainHeight:document.querySelector('#mainCard>.mcard').getBoundingClientRect().height,subHeight:document.querySelector('#subCard>.mcard').getBoundingClientRect().height,subBadgePadding:getComputedStyle(document.querySelector('#subCard .trait')).paddingTop}));
- expect(aligned.mainPanelBottom).toBeCloseTo(aligned.sideStackBottom,0);expect(aligned.mainFrameBottom).toBeCloseTo(aligned.subFrameBottom,0);expect(aligned.mainHeight).toBeGreaterThan(aligned.subHeight);expect(aligned.subHeight).toBeCloseTo(360,2);expect(aligned.subBadgePadding).toBe('5px');
+ expect(aligned.mainPanelBottom).toBeCloseTo(aligned.sideStackBottom,0);expect(aligned.mainFrameBottom).toBeCloseTo(aligned.subFrameBottom,0);expect(aligned.mainHeight).toBeGreaterThan(aligned.subHeight);expect(aligned.subHeight).toBeCloseTo(312,2);expect(aligned.subBadgePadding).toBe('5px');
  const optionLabels=await page.evaluate(()=>['mainSelect','subSelect','fuseA','fuseB'].flatMap(id=>[...document.getElementById(id).options].map(option=>option.textContent)));
  expect(optionLabels.every(text=>!/\s\/\s.*系$/.test(text))).toBe(true);
  await expect(page.locator('.treasure-equip-action')).toHaveCount(0);
  const maxSkillCard=await page.evaluate(()=>{
   const partner=g.slimes.find(m=>m.id===Number(g.sub)),skillNames=RANCH_STAT_RULES.map(([,name])=>name);partner.name='あ'.repeat(16);partner.uniq=Array.from({length:16},(_,i)=>({type:RANCH_STAT_RULES[i%RANCH_STAT_RULES.length][0],name:skillNames[i%skillNames.length],value:123456789}));render();
   const card=document.querySelector('#subCard>.mcard'),select=document.getElementById('subSelect'),row=select.parentElement;
-  const fullHeight=card.getBoundingClientRect().height;card.style.height='auto';const naturalHeight=card.getBoundingClientRect().height;card.style.height='360px';partner.uniq=partner.uniq.slice(0,2);render();
+  const fullHeight=card.getBoundingClientRect().height;card.style.height='auto';const naturalHeight=card.getBoundingClientRect().height;card.style.height='312px';partner.uniq=partner.uniq.slice(0,2);render();
   const mainMonster=main(),savedSkills=mainMonster.uniq;mainMonster.uniq=Array.from({length:16},(_,i)=>({type:RANCH_STAT_RULES[i%RANCH_STAT_RULES.length][0],name:skillNames[i%skillNames.length],value:123456789}));render();
   const mainCard=document.querySelector('#mainCard>.mcard');mainCard.style.height='auto';const mainNaturalHeight=mainCard.getBoundingClientRect().height;mainCard.style.removeProperty('height');mainMonster.uniq=savedSkills;render();
   return {height:fullHeight,naturalHeight,shortHeight:card.getBoundingClientRect().height,mainCardHeight:document.querySelector('#mainCard>.mcard').getBoundingClientRect().height,mainNaturalHeight,scrollHeight:card.scrollHeight,clientHeight:card.clientHeight,selectWidth:select.getBoundingClientRect().width,rowWidth:row.getBoundingClientRect().width,mainHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight};
  });
- expect(maxSkillCard.height).toBeCloseTo(360,2);expect(maxSkillCard.naturalHeight).toBeLessThanOrEqual(maxSkillCard.height);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
- expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('400px');expect(maxSkillCard.mainCardHeight).toBeGreaterThan(maxSkillCard.height);
+ expect(maxSkillCard.height).toBeCloseTo(312,2);expect(maxSkillCard.naturalHeight).toBeGreaterThan(maxSkillCard.height);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.clientHeight).toBeCloseTo(310,0);
+ expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('260px');expect(maxSkillCard.mainCardHeight).toBeGreaterThan(maxSkillCard.height);
  await page.click('[data-tab="field"]');
  const fieldMessage=await page.locator('#fieldMsg').evaluate(el=>({width:el.getBoundingClientRect().width,field:el.parentElement.querySelector('.field-wrap').getBoundingClientRect().width,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
  expect(Math.abs(fieldMessage.width-fieldMessage.field)).toBeLessThan(2);expect(fieldMessage.height).toBeLessThan(45);expect(fieldMessage.height).toBeGreaterThanOrEqual(fieldMessage.lineHeight);
@@ -555,6 +564,7 @@ test('auto attacks update only battle vitals between results and show floating d
  const status=await page.evaluate(()=>({renderCount:window.__fullRenderCount,lastHit:g.lastHit,enemyText:document.getElementById('enemyHP').textContent,teamText:document.getElementById('teamHP').textContent}));
  expect(status.renderCount).toBe(0);expect(status.lastHit.damage).toBeGreaterThan(0);expect(status.enemyText).toContain('HP ');expect(status.teamText).toContain('HP ');
  const popup=page.locator('#enemyCard .battle-damage-popup');await expect(popup).toHaveCount(1);await expect(popup).toContainText('−');
+ const popupAboveEnemy=await page.evaluate(()=>{const popup=document.querySelector('.battle-damage-popup').getBoundingClientRect(),sprite=document.getElementById('enemySprite').getBoundingClientRect();return popup.bottom<=sprite.top+3});expect(popupAboveEnemy).toBe(true);
  await page.evaluate(()=>{window.render=window.__realRender;g.autoFight=false;render()});
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{

@@ -266,12 +266,19 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 #mainCard .mhead{min-height:400px;box-sizing:border-box}
 .ui-v2 #uiSubCompanion #subCard>.mcard{height:360px;box-sizing:border-box;overflow:auto;overscroll-behavior:contain}
 .ui-v2 #enemyCard{position:relative;isolation:isolate}
-.ui-v2 .battle-damage-popup{position:absolute;z-index:6;top:43%;left:52%;pointer-events:none;white-space:nowrap;color:#fff0b8;font-size:clamp(17px,2vw,25px);font-weight:900;text-shadow:2px 2px #281a12,-1px -1px #281a12,0 0 8px #e6a849;animation:battle-damage-float .85s ease-out forwards}
+.ui-v2 .battle-damage-popup{position:absolute;z-index:6;top:0;left:0;pointer-events:none;white-space:nowrap;color:#fff0b8;font-size:clamp(17px,2vw,25px);font-weight:900;text-shadow:2px 2px #281a12,-1px -1px #281a12,0 0 8px #e6a849;animation:battle-damage-float .85s ease-out forwards}
 .ui-v2 .battle-damage-popup.critical{color:#fff3df;font-size:clamp(20px,2.5vw,30px);text-shadow:2px 2px #4b1010,-1px -1px #4b1010,0 0 12px #ff604d}
 @keyframes battle-damage-float{0%{opacity:0;transform:translate(-50%,8px) scale(.8)}16%{opacity:1;transform:translate(-50%,0) scale(1.08)}100%{opacity:0;transform:translate(-50%,-38px) scale(1)}}
 @media(prefers-reduced-motion:reduce){.ui-v2 .battle-damage-popup{animation:none!important;opacity:1}}
 .ui-v2 #battle .fight{height:100%;min-height:0;box-sizing:border-box;overflow:auto;align-self:stretch}
 @media(max-width:760px){.ui-v2 .ui-monster-select-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}.ui-v2 .ui-monster-select-row select{width:100%;font-size:13px;padding-inline:7px}.ui-v2 .ui-monster-select-row button{justify-self:start}}
+/* Keep the shared title/resources/settings and navigation together while scrolling. */
+.ui-v2 #uiTopbar{position:sticky;top:0;z-index:40;background:#23272cf5;box-shadow:0 5px 12px #0006;backdrop-filter:blur(8px)}
+.ui-v2 #uiTopbar nav{position:relative;top:auto;z-index:auto;background:transparent}
+/* Shorten the ranch cards by roughly two skill rows while preserving the original badge spacing. */
+.ui-v2 #mainCard>.mcard{min-height:312px}
+.ui-v2 #mainCard .mhead{min-height:260px}
+.ui-v2 #uiSubCompanion #subCard>.mcard{height:312px}
 </style>
 <script>
 /* DOM presentation only: reuse game controls, handlers and state. */
@@ -280,7 +287,9 @@ document.addEventListener('DOMContentLoaded',()=>{
  document.body.classList.add('ui-v2');
  const make=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e};
  const button=(text,action)=>{const b=make('button','',text);b.type='button';b.addEventListener('click',action);return b};
+ const header=document.querySelector('body>header');
  const nav=document.querySelector('body>nav');
+ const topbar=make('div');topbar.id='uiTopbar';header.before(topbar);topbar.append(header,nav);
  ['魔素フィールド','モンスター牧場','バトル','世界樹'].forEach((text,i)=>nav.children[i].textContent=text);
  nav.setAttribute('aria-label','メインメニュー');
  const syncNav=()=>nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-current',b.classList.contains('active')?'page':'false'));
@@ -305,7 +314,6 @@ document.addEventListener('DOMContentLoaded',()=>{
  const status=make('p','ui-status','進行状況は自動保存されます。');status.setAttribute('role','status');
  settings.append(sfxRow,motionRow,resetRow,save,status);document.body.append(settings);
  settings.addEventListener('click',e=>{if(e.target===settings){const r=settings.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)settings.close();}});
- const header=document.querySelector('header');
  const gear=button('⚙',()=>settings.showModal());gear.id='uiSettingsButton';gear.className='ui-header-icon';gear.setAttribute('aria-label','音と設定を開く');gear.title='音量・効果音・手動セーブ';header.append(gear);
  const codex=button('📖',()=>showTab('guide'));codex.id='uiCodexButton';codex.className='ui-header-icon';codex.setAttribute('aria-label','冒険の書を開く');codex.title='冒険の書';header.insertBefore(codex,gear);
  const syncCodex=()=>{const active=byId('guide').classList.contains('active');codex.classList.toggle('active',active);codex.setAttribute('aria-current',active?'page':'false')};
