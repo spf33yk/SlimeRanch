@@ -560,11 +560,11 @@ test('battle control card uses the requested desktop height without its helper t
 });
 test('auto attacks update only battle vitals between results and show floating damage',async({page})=>{
  await page.goto('./');await page.click('[data-tab=battle]');
- await page.evaluate(()=>{g.won=false;g.autoFight=true;g.autoNext=false;g.enemyHP=1e30;g.teamHP=1e30;render();window.__fullRenderCount=0;window.__realRender=window.render;window.render=()=>{window.__fullRenderCount++;return window.__realRender()};battle(true);showTab('ranch');battle(true)});
+ await page.evaluate(()=>{g.won=false;g.autoFight=true;g.autoNext=false;g.enemyHP=1e30;g.teamHP=1e30;render();window.__fullRenderCount=0;window.__realRender=window.render;window.render=()=>{window.__fullRenderCount++;return window.__realRender()};battle(true);const popup=document.querySelector('.battle-damage-popup'),card=document.getElementById('enemyCard'),name=document.getElementById('enemyName'),sprite=document.getElementById('enemySprite'),cardTop=card.getBoundingClientRect().top,top=parseFloat(popup.style.top),height=popup.getBoundingClientRect().height;window.__damagePopupGap={top,bottom:top+height,nameBottom:name.getBoundingClientRect().bottom-cardTop,spriteTop:sprite.getBoundingClientRect().top-cardTop};showTab('ranch');battle(true)});
  const status=await page.evaluate(()=>({renderCount:window.__fullRenderCount,lastHit:g.lastHit,enemyText:document.getElementById('enemyHP').textContent,teamText:document.getElementById('teamHP').textContent}));
  expect(status.renderCount).toBe(0);expect(status.lastHit.damage).toBeGreaterThan(0);expect(status.enemyText).toContain('HP ');expect(status.teamText).toContain('HP ');
  const popup=page.locator('#enemyCard .battle-damage-popup');await expect(popup).toHaveCount(1);await expect(popup).toContainText('−');
- const popupAboveEnemy=await page.evaluate(()=>{const popup=document.querySelector('.battle-damage-popup').getBoundingClientRect(),sprite=document.getElementById('enemySprite').getBoundingClientRect();return popup.bottom<=sprite.top+3});expect(popupAboveEnemy).toBe(true);
+ const popupInNameGap=await page.evaluate(()=>window.__damagePopupGap);expect(popupInNameGap.top).toBeGreaterThanOrEqual(popupInNameGap.nameBottom);expect(popupInNameGap.bottom).toBeLessThanOrEqual(popupInNameGap.spriteTop);
  await page.evaluate(()=>{window.render=window.__realRender;g.autoFight=false;render()});
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
