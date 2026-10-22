@@ -497,7 +497,7 @@ test('ranch header, capacity upgrades, monster layout and sub charm stats work',
  expect(await page.locator('#uiSubCompanion .ui-monster-idle-motion').evaluate(e=>getComputedStyle(e).animationName)).toBe('ranch-idle-bob');
  expect(await page.locator('#mainCard .mhead').evaluate(e=>getComputedStyle(e).backgroundPositionY)).toContain('56%');
 });
-test('ranch selection rows fit the name limit, place equipment actions beside them and align monster cards',async({page})=>{
+test('ranch selection rows fit the name limit and extend the main monster frame to the sub card bottom',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
  const desktop=await page.evaluate(()=>({
   intro:document.querySelector('#ranch .ranch-layout>.panel>p')?.textContent||'',
@@ -515,8 +515,10 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
  for(const row of desktop.rows){expect(row.selectWidth).toBeLessThan(row.width);expect(row.buttonLeft).toBeGreaterThanOrEqual(row.selectRight)}
  expect(desktop.rows.map(row=>row.button)).toEqual(['宝箱/装備','宝箱/装備']);
  expect(desktop.rows[0].buttonWidth).toBe(desktop.rows[1].buttonWidth);
- expect(desktop.mainMinHeight).toBe('220px');expect(desktop.mainCardHeight).toBeCloseTo(320,2);expect(desktop.mainSpriteWidth).toBe(174);expect(desktop.mainBackgroundPosition).toContain('56%');
+ expect(desktop.mainMinHeight).toBe('400px');expect(desktop.mainSpriteWidth).toBe(174);expect(desktop.mainBackgroundPosition).toContain('56%');
  await page.evaluate(()=>{const partner=monster('森スライム');g.slimes.push(partner);g.sub=partner.id;g.kills=3;render()});
+ const aligned=await page.evaluate(()=>({mainPanelBottom:document.querySelector('.ranch-layout>.panel').getBoundingClientRect().bottom,sideStackBottom:document.querySelector('.ranch-side-stack').getBoundingClientRect().bottom,mainFrameBottom:document.querySelector('#mainCard>.mcard').getBoundingClientRect().bottom,subFrameBottom:document.querySelector('#subCard>.mcard').getBoundingClientRect().bottom,mainHeight:document.querySelector('#mainCard>.mcard').getBoundingClientRect().height,subHeight:document.querySelector('#subCard>.mcard').getBoundingClientRect().height,subBadgePadding:getComputedStyle(document.querySelector('#subCard .trait')).paddingTop}));
+ expect(aligned.mainPanelBottom).toBeCloseTo(aligned.sideStackBottom,0);expect(aligned.mainFrameBottom).toBeCloseTo(aligned.subFrameBottom,0);expect(aligned.mainHeight).toBeGreaterThan(aligned.subHeight);expect(aligned.subHeight).toBeCloseTo(360,2);expect(aligned.subBadgePadding).toBe('5px');
  const optionLabels=await page.evaluate(()=>['mainSelect','subSelect','fuseA','fuseB'].flatMap(id=>[...document.getElementById(id).options].map(option=>option.textContent)));
  expect(optionLabels.every(text=>!/\s\/\s.*系$/.test(text))).toBe(true);
  await expect(page.locator('.treasure-equip-action')).toHaveCount(0);
@@ -528,8 +530,8 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
   const mainCard=document.querySelector('#mainCard>.mcard');mainCard.style.height='auto';const mainNaturalHeight=mainCard.getBoundingClientRect().height;mainCard.style.removeProperty('height');mainMonster.uniq=savedSkills;render();
   return {height:fullHeight,naturalHeight,shortHeight:card.getBoundingClientRect().height,mainCardHeight:document.querySelector('#mainCard>.mcard').getBoundingClientRect().height,mainNaturalHeight,scrollHeight:card.scrollHeight,clientHeight:card.clientHeight,selectWidth:select.getBoundingClientRect().width,rowWidth:row.getBoundingClientRect().width,mainHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight};
  });
- expect(maxSkillCard.height).toBeCloseTo(320,2);expect(maxSkillCard.naturalHeight).toBeLessThanOrEqual(maxSkillCard.height);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
- expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('220px');expect(maxSkillCard.mainCardHeight).toBeCloseTo(maxSkillCard.height,2);
+ expect(maxSkillCard.height).toBeCloseTo(360,2);expect(maxSkillCard.naturalHeight).toBeLessThanOrEqual(maxSkillCard.height);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
+ expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('400px');expect(maxSkillCard.mainCardHeight).toBeGreaterThan(maxSkillCard.height);
  await page.click('[data-tab="field"]');
  const fieldMessage=await page.locator('#fieldMsg').evaluate(el=>({width:el.getBoundingClientRect().width,field:el.parentElement.querySelector('.field-wrap').getBoundingClientRect().width,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
  expect(Math.abs(fieldMessage.width-fieldMessage.field)).toBeLessThan(2);expect(fieldMessage.height).toBeLessThan(45);expect(fieldMessage.height).toBeGreaterThanOrEqual(fieldMessage.lineHeight);
@@ -546,6 +548,14 @@ test('battle control card uses the requested desktop height without its helper t
  await page.setViewportSize({width:390,height:844});
  const mobile=await page.locator('#battle').evaluate(el=>({screen:el.getBoundingClientRect().height,control:el.querySelector('.battle-control').getBoundingClientRect().height,fight:el.querySelector('.fight').getBoundingClientRect().height,documentWidth:document.documentElement.scrollWidth,viewport:innerWidth}));
  expect(mobile.screen).toBeGreaterThan(900);expect(mobile.control).toBeGreaterThan(420);expect(mobile.fight).toBeGreaterThan(300);expect(mobile.documentWidth).toBeLessThanOrEqual(mobile.viewport);
+});
+test('auto attacks update only battle vitals between results and show floating damage',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=battle]');
+ await page.evaluate(()=>{g.won=false;g.autoFight=true;g.autoNext=false;g.enemyHP=1e30;g.teamHP=1e30;render();window.__fullRenderCount=0;window.__realRender=window.render;window.render=()=>{window.__fullRenderCount++;return window.__realRender()};battle(true);showTab('ranch');battle(true)});
+ const status=await page.evaluate(()=>({renderCount:window.__fullRenderCount,lastHit:g.lastHit,enemyText:document.getElementById('enemyHP').textContent,teamText:document.getElementById('teamHP').textContent}));
+ expect(status.renderCount).toBe(0);expect(status.lastHit.damage).toBeGreaterThan(0);expect(status.enemyText).toContain('HP ');expect(status.teamText).toContain('HP ');
+ const popup=page.locator('#enemyCard .battle-damage-popup');await expect(popup).toHaveCount(1);await expect(popup).toContainText('−');
+ await page.evaluate(()=>{window.render=window.__realRender;g.autoFight=false;render()});
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
  await page.goto('./');
