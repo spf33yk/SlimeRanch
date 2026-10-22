@@ -259,8 +259,9 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 #fieldMsg{width:100%;max-width:none;min-height:0;height:auto;margin:8px 0 4px;padding:6px 10px;line-height:1.4;box-sizing:border-box}
 .ui-v2 .ui-monster-select-row select{width:auto;max-width:none;flex:1 1 0;min-width:0;font-size:13px}
 .ui-v2 .ui-monster-select-row button{flex:0 0 6.5em;width:6.5em;padding-inline:4px}
-.ui-v2 #mainCard .mhead{min-height:400px}
-.ui-v2 #uiSubCompanion #subCard>.mcard{height:360px;box-sizing:border-box;overflow:auto;overscroll-behavior:contain}
+.ui-v2 #mainCard>.mcard,.ui-v2 #uiSubCompanion #subCard>.mcard{height:320px;box-sizing:border-box;overflow:auto;overscroll-behavior:contain}
+.ui-v2 #mainCard .mhead{min-height:220px;box-sizing:border-box}
+.ui-v2 #uiSubCompanion #subCard>.mcard>div:nth-child(2) .trait{margin:2px 2px 0 0;padding:2px 4px;font-size:10px;line-height:1.15}
 .ui-v2 #battle .fight{height:100%;min-height:0;box-sizing:border-box;overflow:auto;align-self:stretch}
 @media(max-width:760px){.ui-v2 .ui-monster-select-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}.ui-v2 .ui-monster-select-row select{width:100%;font-size:13px;padding-inline:7px}.ui-v2 .ui-monster-select-row button{justify-self:start}}
 </style>

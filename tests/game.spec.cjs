@@ -497,7 +497,7 @@ test('ranch header, capacity upgrades, monster layout and sub charm stats work',
  expect(await page.locator('#uiSubCompanion .ui-monster-idle-motion').evaluate(e=>getComputedStyle(e).animationName)).toBe('ranch-idle-bob');
  expect(await page.locator('#mainCard .mhead').evaluate(e=>getComputedStyle(e).backgroundPositionY)).toContain('56%');
 });
-test('ranch selection rows fit the name limit, place equipment actions beside them and expand the main display',async({page})=>{
+test('ranch selection rows fit the name limit, place equipment actions beside them and align monster cards',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
  const desktop=await page.evaluate(()=>({
   intro:document.querySelector('#ranch .ranch-layout>.panel>p')?.textContent||'',
@@ -515,7 +515,7 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
  for(const row of desktop.rows){expect(row.selectWidth).toBeLessThan(row.width);expect(row.buttonLeft).toBeGreaterThanOrEqual(row.selectRight)}
  expect(desktop.rows.map(row=>row.button)).toEqual(['宝箱/装備','宝箱/装備']);
  expect(desktop.rows[0].buttonWidth).toBe(desktop.rows[1].buttonWidth);
- expect(desktop.mainMinHeight).toBe('400px');expect(desktop.mainSpriteWidth).toBe(174);expect(desktop.mainBackgroundPosition).toContain('56%');
+ expect(desktop.mainMinHeight).toBe('220px');expect(desktop.mainCardHeight).toBeCloseTo(320,2);expect(desktop.mainSpriteWidth).toBe(174);expect(desktop.mainBackgroundPosition).toContain('56%');
  await page.evaluate(()=>{const partner=monster('森スライム');g.slimes.push(partner);g.sub=partner.id;g.kills=3;render()});
  const optionLabels=await page.evaluate(()=>['mainSelect','subSelect','fuseA','fuseB'].flatMap(id=>[...document.getElementById(id).options].map(option=>option.textContent)));
  expect(optionLabels.every(text=>!/\s\/\s.*系$/.test(text))).toBe(true);
@@ -528,8 +528,8 @@ test('ranch selection rows fit the name limit, place equipment actions beside th
   const mainCard=document.querySelector('#mainCard>.mcard');mainCard.style.height='auto';const mainNaturalHeight=mainCard.getBoundingClientRect().height;mainCard.style.removeProperty('height');mainMonster.uniq=savedSkills;render();
   return {height:fullHeight,naturalHeight,shortHeight:card.getBoundingClientRect().height,mainCardHeight:document.querySelector('#mainCard>.mcard').getBoundingClientRect().height,mainNaturalHeight,scrollHeight:card.scrollHeight,clientHeight:card.clientHeight,selectWidth:select.getBoundingClientRect().width,rowWidth:row.getBoundingClientRect().width,mainHeight:getComputedStyle(document.querySelector('#mainCard .mhead')).minHeight};
  });
- expect(maxSkillCard.height).toBeCloseTo(360,2);expect(maxSkillCard.naturalHeight).toBeLessThanOrEqual(maxSkillCard.height);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
- expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('400px');expect(maxSkillCard.mainCardHeight).toBeGreaterThan(maxSkillCard.height);
+ expect(maxSkillCard.height).toBeCloseTo(320,2);expect(maxSkillCard.naturalHeight).toBeLessThanOrEqual(maxSkillCard.height);expect(maxSkillCard.shortHeight).toBeCloseTo(maxSkillCard.height,2);expect(maxSkillCard.scrollHeight).toBeLessThanOrEqual(maxSkillCard.clientHeight);
+ expect(maxSkillCard.selectWidth).toBeLessThan(maxSkillCard.rowWidth);expect(maxSkillCard.mainHeight).toBe('220px');expect(maxSkillCard.mainCardHeight).toBeCloseTo(maxSkillCard.height,2);
  await page.click('[data-tab="field"]');
  const fieldMessage=await page.locator('#fieldMsg').evaluate(el=>({width:el.getBoundingClientRect().width,field:el.parentElement.querySelector('.field-wrap').getBoundingClientRect().width,height:el.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(el).lineHeight)}));
  expect(Math.abs(fieldMessage.width-fieldMessage.field)).toBeLessThan(2);expect(fieldMessage.height).toBeLessThan(45);expect(fieldMessage.height).toBeGreaterThanOrEqual(fieldMessage.lineHeight);
