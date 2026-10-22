@@ -386,6 +386,11 @@ test('auto attack setting survives a browser reload',async({page})=>{
  expect(await page.evaluate(()=>g.autoFight)).toBe(true);
  await expect(page.locator('#autoFight')).toHaveAttribute('aria-pressed','true');
 });
+test('turning auto attack off cancels its pending attack timer',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=battle]');
+ const timer=await page.evaluate(()=>{window.__autoCalls=0;const realBattle=battle;window.battle=(...args)=>{if(args[0])window.__autoCalls++;return realBattle(...args)};g.autoFight=true;syncAutoFightTimer();const started=autoFightTimer!==null;g.autoFight=false;syncAutoFightTimer();return {started,stopped:autoFightTimer===null}});
+ expect(timer).toEqual({started:true,stopped:true});await page.waitForTimeout(900);expect(await page.evaluate(()=>window.__autoCalls)).toBe(0);
+});
 test('externalized backgrounds, BGM and videos resolve',async({page})=>{
  await page.goto('./');
  const backgrounds=await page.evaluate(async()=>{
