@@ -284,9 +284,10 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await page.goto('./');
  await page.click('[data-tab=ranch]');
  const actions=page.locator('.ui-ranch-actions');
- await expect(page.locator('#uiFusion > summary')).toHaveText('合成');
+ await expect(page.locator('#ranch #monsterList, #ranch #heartList, #ranch #bulkFusionDialog, #ranch #uiFusion')).toHaveCount(0);
+ await expect(page.locator('#uiFusion')).not.toHaveJSProperty('open',true);
  await page.evaluate(()=>document.querySelector('[data-tab="battle"]').focus());
- await actions.getByRole('button',{name:'合成',exact:true}).click();
+ await page.locator('#ranchOpenFusion').click();
  expect(await page.locator('[data-tab=battle]').evaluate(el=>el.matches(':focus-visible'))).toBe(false);
  await expect.poll(()=>page.locator('[data-tab]').evaluateAll(tabs=>tabs.filter(el=>el.classList.contains('active')).map(el=>el.dataset.tab))).toEqual(['ranch']);
  await page.waitForTimeout(300);
@@ -294,14 +295,17 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  expect(await battleTab.evaluate(el=>el.matches(':focus')||el.matches(':focus-visible'))).toBe(false);
  expect(await battleTab.evaluate(el=>getComputedStyle(el).outlineStyle)).toBe('none');
  expect(await battleTab.evaluate(el=>getComputedStyle(el).borderTopColor)).not.toBe('rgb(224, 201, 135)');
+ await expect(page.locator('#uiFusion')).toHaveJSProperty('open',true);
  await expect(page.locator('#fuse')).toBeVisible();
- await actions.getByRole('button',{name:'一括合成',exact:true}).click();
+ await page.locator('#openBulkFusion').click();
  await expect(page.locator('#bulkFusionDialog')).toBeVisible();
- await page.click('#closeBulkFusion');
- await actions.getByRole('button',{name:'ハート一覧',exact:true}).click();
- await expect(page.locator('#heartInventory')).toBeVisible();
- await actions.getByRole('button',{name:'モンスター一覧',exact:true}).click();
- await expect(page.locator('#monsterInventory')).toBeVisible();
+ await page.locator('[data-dialog-close="bulkFusionDialog"]').click();
+ await page.locator('#ranchOpenHeartInventory').click();
+ await expect(page.locator('#heartInventoryDialog')).toHaveJSProperty('open',true);
+ await page.locator('[data-dialog-close="heartInventoryDialog"]').click();
+ await page.locator('#ranchOpenMonsterInventory').click();
+ await expect(page.locator('#monsterInventoryDialog')).toHaveJSProperty('open',true);
+ await page.locator('[data-dialog-close="monsterInventoryDialog"]').click();
  await page.locator('.ui-monster-select-row--main').getByRole('button',{name:'宝箱/装備',exact:true}).click();
  await expect(page.locator('#treasureModal')).toBeVisible();
  await page.click('#treasureClose');
@@ -311,6 +315,8 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await page.click('#treasureClose');
  await page.evaluate(()=>{treasureEnsure();g.treasureCharms.push({id:999,name:'Test Charm',rarity:'normal',effects:[{key:'atk',label:'攻撃力',mult:1.1}]});treasureEquipCharm('main',999);});
  expect(await page.evaluate(()=>!!g.treasureEquip.main)).toBe(true);
+ await expect(page.locator('#ranchTeamCompare')).toContainText('メイン装備：変更前 → 変更後');
+ await expect(page.locator('#ranchTeamCompare')).toContainText('→');
  await page.click('[data-tab=battle]');
  // Keep the target alive while exercising the auto settings so a fast CI
  // worker cannot trigger the victory continuation between the button clicks.
@@ -362,16 +368,19 @@ test('auto battle keeps ranch monster idle animations attached and smooth',async
 });
 test('selected monsters lock themselves and hover does not shift game controls',async({page})=>{
  await page.goto('./');
- await page.evaluate(()=>{const added=[monster('森スライム'),monster('森スライム')];g.slimes.push(...added);g.main=g.slimes[0].id;g.sub=added[0].id;g.kills=3;g.tiles.fill('magic');g.slimes.forEach(m=>{m.locked=false;delete m.autoLocked});render()});
+ await page.evaluate(()=>{const added=[monster('森スライム'),monster('森スライム')];g.slimes.push(...added);g.main=g.slimes[0].id;g.sub=added[0].id;g.kills=3;g.tiles.fill('magic');g.slimes.forEach(m=>{m.locked=false;delete m.autoLocked});invalidateMonsterInventory();render()});
  expect(await page.evaluate(()=>g.slimes.filter(m=>m.id===+g.main||m.id===+g.sub).every(m=>m.locked))).toBe(true);
+ await page.click('[data-tab=ranch]');
+ await page.locator('#ranchOpenFusion').click();
  await expect(page.locator('#fuseB option')).toHaveCount(1);
  await expect(page.locator('label[for="fuseB"]')).toHaveText('合成素材');
- await page.click('[data-tab=ranch]');
- await page.locator('#uiInventory > summary').click();
+ await page.locator('#uiFusion [data-dialog-close]').click();
+ await page.locator('#ranchOpenMonsterInventory').click();
  await page.waitForTimeout(300);
  const card=page.locator('#monsterList .mcard').first();
  const before=await card.boundingBox();await page.mouse.move(before.x+Math.min(12,before.width/2),before.y+Math.min(12,before.height/2));await page.waitForTimeout(200);const after=await card.boundingBox();
  expect(after.x).toBe(before.x);expect(after.y).toBe(before.y);
+  await page.locator('[data-dialog-close="monsterInventoryDialog"]').click();
  await page.click('[data-tab=battle]');
  await page.waitForTimeout(300);
  const auto=page.locator('#autoFight'),autoBefore=await auto.boundingBox();await page.mouse.move(autoBefore.x+autoBefore.width/2,autoBefore.y+autoBefore.height/2);await page.waitForTimeout(200);const autoAfter=await auto.boundingBox();
@@ -497,7 +506,7 @@ test('ranch header, capacity upgrades, monster layout and sub charm stats work',
  const resourceLabels=await page.locator('header .resource small').allTextContents();expect(resourceLabels).toEqual(['✨ 魔素','🐾 モンスター','💗 ハート']);
  const layout=await page.evaluate(()=>{const main=document.getElementById('mainCard').getBoundingClientRect(),stats=document.getElementById('ranchTeamStats').getBoundingClientRect(),sub=document.getElementById('uiSubCompanion').getBoundingClientRect();return {mainX:main.x,statsX:stats.x,statsY:stats.y,statsBottom:stats.bottom,subX:sub.x,subY:sub.y}});
  expect(layout.mainX).toBeLessThan(layout.statsX);expect(layout.subX).toBe(layout.statsX);expect(layout.subY).toBeGreaterThanOrEqual(layout.statsBottom);
- await page.getByRole('button',{name:'モンスター一覧',exact:true}).click();
+ await page.locator('#ranchOpenMonsterInventory').click();
  await page.evaluate(()=>{g.maso=1000;render();});
  await page.click('#capacityUp');
  expect(await page.evaluate(()=>({capacity:cap(),price:capCost(),header:document.getElementById('headerMonsterCount').textContent}))).toEqual({capacity:110,price:405,header:'1 / 110'});
@@ -589,9 +598,10 @@ test('battle result refresh skips hidden inventories and grows stage options inc
  expect(await page.evaluate(()=>document.querySelector('#stageSelect option')===window.__firstStageOption)).toBe(true);
  expect(await page.locator('#stageSelect option').count()).toBe(2);
  await page.click('[data-tab=ranch]');
- await page.click('#uiInventory > summary');await page.evaluate(()=>showInventory('monsters'));
+ await page.click('#ranchOpenMonsterInventory');
  await expect(page.locator('#monsterList .mcard')).toHaveCount(41);
- await page.evaluate(()=>renderNewRulesUI(true));
+ await page.locator('[data-dialog-close="monsterInventoryDialog"]').click();
+ await page.click('#ranchOpenBulkFusion');
  await expect(page.locator('#bulkMaterialList .bulk-material')).toHaveCount(40);
 });
 test('ranch team stats keep the requested order after fusion adds stats in reverse order',async({page})=>{
@@ -616,13 +626,23 @@ test('monster ranch cards sort added status badges in the fixed order',async({pa
 });
 test('main monster changes keep the idle animation attached to the new sprite',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
- const id=await page.evaluate(()=>{const m=monster('森スライム');m.name='切替テスト';g.slimes.push(m);render();return m.id;});
+ const id=await page.evaluate(()=>{const m=monster('森スライム');m.name='切替テスト';g.slimes.push(m);invalidateMonsterInventory();render();return m.id;});
  await page.selectOption('#mainSelect',String(id));
  await expect(page.locator('#mainCard')).toContainText('切替テスト');
  const motion=page.locator('#mainCard .ui-monster-idle-motion--main');
  await expect(motion).toHaveCount(1);
  expect(await motion.evaluate(e=>getComputedStyle(e).animationName)).toBe('ranch-idle-bob');
  expect(await motion.locator('.sprite').evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
+});
+test('main and sub selection show before and after team totals',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ const ids=await page.evaluate(()=>{const a=monster('炎スライム'),b=monster('海スライム');a.name='メイン比較用';b.name='サブ比較用';a.atk*=5;b.atk*=4;g.slimes.push(a,b);g.kills=3;invalidateMonsterInventory();render();return [a.id,b.id]});
+ await page.selectOption('#mainSelect',String(ids[0]));
+ await expect(page.locator('#ranchTeamCompare')).toContainText('メイン変更：変更前 → 変更後');
+ await expect(page.locator('#ranchTeamCompare')).toContainText('攻撃力');
+ await page.selectOption('#subSelect',String(ids[1]));
+ await expect(page.locator('#ranchTeamCompare')).toContainText('サブ変更：変更前 → 変更後');
+ await expect(page.locator('#ranchTeamCompare')).toContainText('→');
 });
 test('active tabs have balanced corner marks and screens use a brief scene change',async({page})=>{
  await page.goto('./');
@@ -641,12 +661,12 @@ test('charm controls and modal windows use the shared game UI',async({page})=>{
  expect(await panel.evaluate(e=>getComputedStyle(e).borderTopColor)).toBe('rgb(189, 171, 120)');
  await page.locator('#treasureClose').click();
  await page.click('[data-tab=ranch]');
- await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
- expect(await page.locator('#bulkFusionDialog').evaluate(e=>getComputedStyle(e).borderTopColor)).toBe('rgb(189, 171, 120)');
+ await page.locator('.ui-ranch-actions').locator('#ranchOpenBulkFusion').click();
+ expect(await page.locator('#bulkFusionDialog').evaluate(e=>getComputedStyle(e).borderTopColor)).toBe('rgb(184, 161, 105)');
 });
 test('bulk fusion tries each selected material once, even when every attempt fails',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
- await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
+ await page.locator('.ui-ranch-actions').locator('#ranchOpenBulkFusion').click();
  await page.evaluate(()=>{
   g.maso=100000;g.slimes.push(monster('森スライム'),monster('森スライム'));render();
   document.querySelectorAll('.bulk-material').forEach(x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -659,7 +679,7 @@ test('bulk fusion tries each selected material once, even when every attempt fai
 });
 test('bulk fusion completes selected monster and heart materials when the full budget is available',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
- await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
+ await page.locator('.ui-ranch-actions').locator('#ranchOpenBulkFusion').click();
  page.on('dialog',dialog=>dialog.accept());
  await page.evaluate(()=>{
   g.maso=100000;g.firstFusionUsed=true;g.slimes.push(monster('森スライム'),monster('森スライム'));failRate=()=>0;render();
@@ -669,8 +689,8 @@ test('bulk fusion completes selected monster and heart materials when the full b
  await expect(page.locator('#fuseMsg')).toContainText('成功 2個');
  expect(await page.evaluate(()=>g.slimes.length)).toBe(1);
 
- await page.click('#closeBulkFusion');
- await page.locator('.ui-ranch-actions').getByRole('button',{name:'一括合成'}).click();
+ await page.locator('[data-dialog-close="bulkFusionDialog"]').click();
+ await page.locator('.ui-ranch-actions').locator('#ranchOpenBulkFusion').click();
  await page.locator('#bulkModeSelect').selectOption('heart');
  await page.evaluate(()=>{
   g.heartItems=[{id:1,type:'attack',name:'攻撃力',value:2},{id:2,type:'hp',name:'HP',value:3}];g.hearts=g.heartItems.length;g.maso=100000;renderNewRulesUI();

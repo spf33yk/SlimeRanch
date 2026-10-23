@@ -68,6 +68,8 @@
    if(target){
     focus.forEach(node=>node.classList.add('tutorial-focus'));
     if(!overlay.hidden)target.scrollIntoView({block:'nearest',behavior:'auto'});
+    const fusionDialog=el('uiFusion');if(fusionDialog)fusionDialog.style.transform='';
+    if(state.step===2&&focus.some(node=>node.id==='fuseA')&&fusionDialog?.open){const button=el('fuse'),dialogRect=fusionDialog.getBoundingClientRect(),buttonRect=button.getBoundingClientRect(),desired=innerHeight/2-(buttonRect.top+buttonRect.height/2),shift=Math.max(8-dialogRect.top,Math.min(innerHeight-8-dialogRect.bottom,desired));fusionDialog.style.transform='translateY('+shift+'px)'}
     let r;
     if(state.step===2&&focus.some(node=>node.id==='fuseA')){
      const nodes=['label[for="fuseA"]','#fuseA','label[for="fuseB"]','#fuseB','#fuse'].map(selector=>document.querySelector(selector)).filter(node=>node&&node.getClientRects().length);
@@ -115,7 +117,7 @@
    state.magic=state.magic||detail.magic>0;state.monster=state.monster||detail.monsters>0;
    if(state.magic&&state.monster)advance();else{saveState();paint()}
   }else if(state.step===1&&detail.action==='field-upgrade')advance();
-  else if(state.step===2&&detail.action==='fusion')advance();
+   else if(state.step===2&&detail.action==='fusion'){el('uiFusion')?.close();advance()}
   else if(state.step===3&&detail.action==='battle-win'&&detail.kills>=3&&detail.maxStage>=4)advance();
   else if(state.step===4&&detail.action==='collect'&&detail.monsters>0)advance();
   else if(state.step===5&&detail.action==='sub-select'&&detail.sub>0)advance();
