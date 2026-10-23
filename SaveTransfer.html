@@ -89,8 +89,7 @@
     const selected=file.files[0];if(!selected)return;
     if(selected.size>MAX_BYTES)throw Error('ファイルは4MB以内にしてください。');
     const text=await selected.text(),state=parse(text);
-    if(!confirm('STAGE '+state.stage+' / '+state.slimes.length+'体のデータを読み込みます。現在の進行状況を置き換えますか？（直前データは端末内に退避します）'))return;
-    restore(text);status.textContent='読み込みました。続きからプレイできます。';
+     gameConfirm('STAGE '+state.stage+' / '+state.slimes.length+'体のデータを読み込みます。現在の進行状況を置き換えますか？（直前データは端末内に退避します）',()=>{try{restore(text);status.textContent='読み込みました。続きからプレイできます。'}catch(e){status.textContent=e.message}},{title:'セーブデータ読み込み',acceptText:'読み込む'});
    }catch(e){status.textContent=e.message;}finally{file.value='';}
   };
  });

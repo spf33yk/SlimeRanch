@@ -40,9 +40,12 @@ test('opening screen loads the game art and offers start, options and end action
  expect(await page.evaluate(()=>localStorage.getItem('slimeRanchSoundEnabled'))).toBe('false');
  await page.locator('#uiReducedMotion').check();
  expect(await page.evaluate(()=>localStorage.getItem('slimeRanchReducedMotion'))).toBe('true');
- page.once('dialog',dialog=>dialog.accept());
  await page.click('#uiResetGame');
+ await expect(page.locator('#gameConfirmDialog')).toBeVisible();
+ await page.locator('#gameConfirmAccept').click();
  expect(await page.evaluate(()=>g.maso)).toBe(80);
+ if(await page.locator('#tutorialSkip').isVisible())await page.locator('#tutorialSkip').click();
+ await page.click('#gameOption');
  await page.locator('#uiReducedMotion').uncheck();
  expect(await page.evaluate(()=>localStorage.getItem('slimeRanchReducedMotion'))).toBe('false');
  await page.locator('#uiSettings').getByRole('button',{name:'閉じる ×'}).click();
@@ -540,8 +543,8 @@ test('save export/import preserves progress, zero currency and equipment',async(
  const text=await page.locator('#saveTransferText').inputValue();
  expect(JSON.parse(text).state.maso).toBe(0);
  await page.evaluate(()=>{g.maso=999;g.stage=1;g.treasureEquip.main=null;save();});
- page.on('dialog',d=>d.accept());
  await page.locator('#saveImportFile').setInputFiles({name:'old.save.json',mimeType:'application/json',buffer:Buffer.from(text)});
+  await expect(page.locator('#gameConfirmDialog')).toBeVisible();await page.locator('#gameConfirmAccept').click();
  await expect(page.locator('#saveTransferStatus')).toContainText('読み込みました');
  await page.reload();
  expect(await page.evaluate(()=>({maso:g.maso,stage:g.stage,max:g.maxStage,id:g.main,equip:g.treasureEquip.main,name:main().name})))
@@ -556,8 +559,8 @@ test('bad save and canceled import leave existing progress intact',async({page})
   await expect(page.locator('#saveTransferStatus')).not.toBeEmpty();
   expect(await page.evaluate(()=>g.maso)).toBe(80);
  }
- page.once('dialog',d=>d.dismiss());
  await page.locator('#saveImportFile').setInputFiles({name:'valid.json',mimeType:'application/json',buffer:Buffer.from(state)});
+  await expect(page.locator('#gameConfirmDialog')).toBeVisible();await page.locator('#gameConfirmCancel').click();
  expect(await page.evaluate(()=>localStorage.getItem('slimeRanchCodex1:beforeImport'))).toBeNull();
  expect(await page.evaluate(()=>g.maso)).toBe(80);
 });
@@ -802,8 +805,8 @@ test('active tabs have balanced corner marks and screens use a brief scene chang
 });
 test('charm controls and modal windows use the shared game UI',async({page})=>{
  await page.goto('./');await page.evaluate(()=>treasureDialog('main'));
- const order=await page.evaluate(()=>{const ids=['treasureSelectUnused','treasureClearSelected','treasureDeleteSelected'];return ids.map(id=>[...document.querySelector('.treasure-bulk-actions').children].indexOf(document.getElementById(id)));});
- expect(order).toEqual([0,1,2]);
+  const order=await page.evaluate(()=>{const ids=['treasureSelectUnused','treasureClearSelected','treasureRerollSelected','treasureDeleteSelected'];return ids.map(id=>[...document.querySelector('.treasure-bulk-actions').children].indexOf(document.getElementById(id)));});
+  expect(order).toEqual([0,1,2,3]);
  const panel=page.locator('#treasureModal .treasure-panel');
  expect(await panel.evaluate(e=>getComputedStyle(e).borderTopColor)).toBe('rgb(189, 171, 120)');
  await page.locator('#treasureClose').click();
@@ -819,20 +822,20 @@ test('bulk fusion tries each selected material once, even when every attempt fai
   document.querySelectorAll('.bulk-material').forEach(x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));});
   window.__fusionCalls=0;performFusion=()=>{window.__fusionCalls++;return 'fail';};
  });
- page.on('dialog',dialog=>dialog.accept());
  await page.click('#bulkFuse');
+  await expect(page.locator('#gameConfirmDialog')).toBeVisible();await page.locator('#gameConfirmAccept').click();
  expect(await page.evaluate(()=>window.__fusionCalls)).toBe(2);
  await expect(page.locator('#fuseMsg')).toContainText('失敗 2個');
 });
 test('bulk fusion completes selected monster and heart materials when the full budget is available',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
  await page.locator('.ui-ranch-actions').locator('#ranchOpenBulkFusion').click();
- page.on('dialog',dialog=>dialog.accept());
  await page.evaluate(()=>{
   g.maso=100000;g.firstFusionUsed=true;g.slimes.push(monster('森スライム'),monster('森スライム'));failRate=()=>0;render();
   document.querySelectorAll('.bulk-material').forEach(x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));});
  });
  await page.click('#bulkFuse');
+  await expect(page.locator('#gameConfirmDialog')).toBeVisible();await page.locator('#gameConfirmAccept').click();
  await expect(page.locator('#fuseMsg')).toContainText('成功 2個');
  expect(await page.evaluate(()=>g.slimes.length)).toBe(1);
 
@@ -844,6 +847,7 @@ test('bulk fusion completes selected monster and heart materials when the full b
   document.querySelectorAll('.bulk-material').forEach(x=>{x.checked=true;x.dispatchEvent(new Event('change',{bubbles:true}));});
  });
  await page.click('#bulkFuse');
+  await expect(page.locator('#gameConfirmDialog')).toBeVisible();await page.locator('#gameConfirmAccept').click();
  await expect(page.locator('#fuseMsg')).toContainText('成功 2個');
  expect(await page.evaluate(()=>g.heartItems.length)).toBe(0);
 });
@@ -889,6 +893,51 @@ test('equipped charms cannot be shared, and the charm selection can be cleared',
  await boxes.evaluateAll(xs=>xs.forEach(x=>{x.checked=true;}));
  await page.click('#treasureClearSelected');
  expect(await boxes.evaluateAll(xs=>xs.some(x=>x.checked))).toBe(false);
+});
+test('three un-equipped charms of one rarity reroll into one charm of that rarity',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{
+  for(let i=0;i<3;i++)g.treasureCharms.push({id:g.treasureNextId++,rarity:'epic',name:'変換素材'+i,effects:[{key:'hp',label:'HP',mult:1.2+i/10}]});
+  treasureDialog('main');document.querySelector('#treasureCharmSection summary').click();renderTreasure();
+ });
+ const choices=page.locator('#treasureCharmList input[data-tselect]:not(:disabled)');
+ await choices.evaluateAll(xs=>xs.slice(0,3).forEach(x=>{x.checked=true}));
+ await page.click('#treasureRerollSelected');await expect(page.locator('#gameConfirmDialog')).toBeVisible();
+ await page.locator('#gameConfirmAccept').click();
+ const inventory=await page.evaluate(()=>g.treasureCharms.map(c=>({rarity:c.rarity,effects:c.effects.length})));
+ expect(inventory).toHaveLength(1);expect(inventory[0]).toEqual({rarity:'epic',effects:2});
+});
+test('charm reroll rejects mixed rarity and retains legendary freeze at a total multiplier of exactly ten',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{
+  for(let i=0;i<3;i++)g.treasureCharms.push({id:g.treasureNextId++,rarity:'legendary',name:'変換素材'+i,effects:[{key:'hp',label:'HP',mult:2},{key:'atk',label:'攻撃力',mult:2},{key:'def',label:'守備力',mult:2}]});
+  treasureDialog('main');document.querySelector('#treasureCharmSection summary').click();
+  window.__oldRandom=Math.random;window.__rollValues=[0,.5641,.1,.5641,.2,.58974358974];Math.random=()=>window.__rollValues.shift();
+  window.__freezeCall=null;treasureFreezePrompt=(...args)=>{window.__freezeCall=args};
+ });
+ await page.locator('#treasureCharmList input[data-tselect]:not(:disabled)').evaluateAll(xs=>xs.forEach(x=>{x.checked=true}));
+ await page.click('#treasureRerollSelected');await page.locator('#gameConfirmAccept').click();
+ const result=await page.evaluate(()=>{const charm=g.treasureCharms.at(-1);Math.random=window.__oldRandom;return {count:g.treasureCharms.length,rarity:charm.rarity,total:charm.effects.reduce((n,e)=>n+e.mult,0),freezeCall:window.__freezeCall}});
+ expect(result).toEqual({count:1,rarity:'legendary',total:10,freezeCall:[1,null,true]});
+ await page.evaluate(()=>{g.treasureCharms.push({id:g.treasureNextId++,rarity:'legendary',name:'レジェンド',effects:[]},{id:g.treasureNextId++,rarity:'epic',name:'エピック',effects:[]},{id:g.treasureNextId++,rarity:'legendary',name:'レジェンド',effects:[]});renderTreasure()});
+ await page.locator('#treasureCharmList input[data-tselect]:not(:disabled)').evaluateAll(xs=>xs.slice(-3).forEach(x=>{x.checked=true}));
+ await page.click('#treasureRerollSelected');await expect(page.locator('#gameConfirmDialog')).not.toBeVisible();
+ await expect(page.locator('#treasureToast')).toContainText('同じレアリティ');
+ expect(await page.evaluate(()=>g.treasureCharms.length)).toBe(4);
+});
+test('bulk fusion shares the regular fusion form style and confirmation uses an in-game dialog',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{
+  const a=g.slimes[0];for(let i=0;i<2;i++){const m=monster('森スライム');m.id=g.nextId++;m.locked=false;g.slimes.push(m)}
+  invalidateMonsterInventory();render();
+ });
+ await page.locator('[data-tab="ranch"]').click();
+ await page.locator('#ranchOpenBulkFusion').click();
+ await expect(page.locator('#bulkFusionDialog .fusion-form-panel')).toBeVisible();
+ expect(await page.locator('#uiFusion .fusion-form-panel').count()).toBe(1);
+ await expect(page.locator('#battleLog')).toHaveCSS('max-height',/3[0-9]{2}px/);
+ await page.evaluate(()=>gameConfirm('テスト確認',()=>{}));await expect(page.locator('#gameConfirmDialog')).toBeVisible();
+ await page.locator('#gameConfirmCancel').click();await expect(page.locator('#gameConfirmDialog')).not.toBeVisible();
 });
 test('legendary charms above a total multiplier of ten use the guaranteed freeze sequence',async({page})=>{
  await page.goto('./');

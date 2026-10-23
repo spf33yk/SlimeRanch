@@ -114,7 +114,9 @@ function treasureBattleRoll(stage){
  }
  return got.length?got.map(r=>TREASURE_RARITIES[r].name+'宝箱'+(r==='legendary'?'（確定フリーズ）':'')).join('・'):'';
 }
-function treasureOpenChest(id){treasureEnsure();const i=g.treasureChests.findIndex(c=>c.id===id);if(i<0)return;const c=g.treasureChests.splice(i,1)[0],charmRarity=treasureCharmRarity(c.rarity),cfg=TREASURE_RARITIES[charmRarity];const keys=[...TREASURE_STATS];const effects=[];for(let n=0;n<cfg.count;n++){const p=Math.floor(Math.random()*keys.length);const [key,label]=keys.splice(p,1)[0];effects.push({key,label,mult:Number((1.1+Math.random()*(cfg.max-1.1)).toFixed(2))})}const charm={id:g.treasureNextId++,rarity:charmRarity,name:cfg.label,effects};g.treasureCharms.push(charm);save();renderTreasure();treasureNotify('✨ '+cfg.label+'を入手！');if(charmRarity==='legendary'&&effects.reduce((v,x)=>v+x.mult,0)>10)treasureFreezePrompt(1,null,true)}
+function treasureRollCharm(rarity){const cfg=TREASURE_RARITIES[rarity];if(!cfg)return null;const keys=[...TREASURE_STATS],effects=[];for(let n=0;n<cfg.count;n++){const p=Math.floor(Math.random()*keys.length);const [key,label]=keys.splice(p,1)[0];effects.push({key,label,mult:Number((1.1+Math.random()*(cfg.max-1.1)).toFixed(2))})}return {id:g.treasureNextId++,rarity,name:cfg.label,effects}}
+function treasureCharmHasFreeze(charm){return charm?.rarity==='legendary'&&charm.effects.reduce((v,x)=>v+Number(x.mult||0),0)>=10}
+function treasureOpenChest(id){treasureEnsure();const i=g.treasureChests.findIndex(c=>c.id===id);if(i<0)return;const c=g.treasureChests.splice(i,1)[0],charm=treasureRollCharm(treasureCharmRarity(c.rarity));g.treasureCharms.push(charm);save();renderTreasure();treasureNotify('✨ '+charm.name+'を入手！');if(treasureCharmHasFreeze(charm))treasureFreezePrompt(1,null,true)}
 function treasureApplyCharm(slot,id){treasureEnsure();if(!['main','sub'].includes(slot))return false;const other=slot==='main'?'sub':'main',next=id||null;if(next&&g.treasureEquip[other]===next)return false;if((g.treasureEquip[slot]||null)===next)return true;g.treasureEquip[slot]=next;save();renderTreasure();render();return true}
 function treasureEquipCharm(slot,id){treasureEnsure();if(!['main','sub'].includes(slot))return false;const other=slot==='main'?'sub':'main',next=id||null;if(next&&g.treasureEquip[other]===next){treasureNotify('そのお守りは'+(other==='main'?'メイン':'サブ')+'モンスターが装備中です');renderTreasure();return false}if((g.treasureEquip[slot]||null)===next)return true;const before=typeof teamTotalsSnapshot==='function'?teamTotalsSnapshot():null;let after=null;if(before){const previous=g.treasureEquip[slot];try{g.treasureEquip[slot]=next;after=teamTotalsSnapshot()}finally{g.treasureEquip[slot]=previous}}if(before&&after&&typeof showTeamChangeConfirm==='function'){showTeamChangeConfirm((slot==='main'?'メイン':'サブ')+'モンスターのおまもり装備',before,after,()=>treasureApplyCharm(slot,next));return true}return treasureApplyCharm(slot,next)}
 function treasureCharm(slot){treasureEnsure();return g.treasureCharms.find(c=>c.id===g.treasureEquip[slot])||null}
@@ -157,8 +159,21 @@ function treasureDeleteSelected(){
  const ids=new Set([...document.querySelectorAll('#treasureCharmList input[data-tselect]:checked')].map(x=>Number(x.dataset.tselect)));
  ids.delete(g.treasureEquip.main);ids.delete(g.treasureEquip.sub);
  if(!ids.size){treasureNotify('削除する未装備のおまもりを選択してください');return}
- if(!confirm('選択した'+ids.size+'個のおまもりを削除しますか？ この操作は取り消せません。'))return;
- g.treasureCharms=g.treasureCharms.filter(c=>!ids.has(c.id));save();renderTreasure();treasureNotify(ids.size+'個のおまもりを削除しました');
+ gameConfirm('選択した'+ids.size+'個のおまもりを削除しますか？ この操作は取り消せません。',()=>{g.treasureCharms=g.treasureCharms.filter(c=>!ids.has(c.id));save();renderTreasure();treasureNotify(ids.size+'個のおまもりを削除しました')},{title:'おまもり削除の確認',acceptText:'削除する',danger:true});
+}
+function treasureRerollSelected(){
+ treasureEnsure();const ids=[...new Set([...document.querySelectorAll('#treasureCharmList input[data-tselect]:checked')].map(x=>Number(x.dataset.tselect)))];
+ if(ids.length!==3){treasureNotify('同じレアリティのおまもりを3個選択してください');return}
+ const selected=ids.map(id=>g.treasureCharms.find(c=>c.id===id));
+ if(selected.some(c=>!c)||new Set(selected.map(c=>c.rarity)).size!==1){treasureNotify('同じレアリティのおまもりを3個選択してください');return}
+ if(selected.some(c=>g.treasureEquip.main===c.id||g.treasureEquip.sub===c.id)){treasureNotify('装備中のおまもりは変換できません');return}
+ const rarity=selected[0].rarity,cfg=TREASURE_RARITIES[rarity];
+ gameConfirm(cfg.name+'のおまもり3個を消費して、同じレアリティのおまもり1個をランダムに作ります。実行しますか？',()=>{
+  const current=ids.map(id=>g.treasureCharms.find(c=>c.id===id));
+  if(current.some(c=>!c||c.rarity!==rarity||g.treasureEquip.main===c.id||g.treasureEquip.sub===c.id)){treasureNotify('選択状態が変わったため、変換を中止しました');renderTreasure();return}
+  g.treasureCharms=g.treasureCharms.filter(c=>!ids.includes(c.id));const charm=treasureRollCharm(rarity);g.treasureCharms.push(charm);save();renderTreasure();
+  treasureNotify('✨ '+cfg.label+'を再抽選しました（3個消費 → 1個獲得）');if(treasureCharmHasFreeze(charm))treasureFreezePrompt(1,null,true);
+ },{title:'おまもりランダム変換',acceptText:'変換する'});
 }
 function treasureBattleResultFx(kind){
  const old=document.querySelector('.treasure-battle-result');if(old)old.remove();
@@ -265,14 +280,14 @@ function treasureDebugBattleOdds(){
   return totals;
  };
  const a=run(499),b=run(500);
- alert('バトル勝利時の宝箱抽選（各'+count.toLocaleString('ja-JP')+'回）\n'+
+  gameAlert('バトル勝利時の宝箱抽選（各'+count.toLocaleString('ja-JP')+'回）\n'+
  'STAGE 499：NORMAL '+a.normal+' / EPIC '+a.epic+' / LEGENDARY '+a.legendary+'\n'+
  'STAGE 500：NORMAL '+b.normal+' / EPIC '+b.epic+' / LEGENDARY '+b.legendary+'\n'+
  '理論値：NORMAL 1/4,096、EPIC 1/8,192、LEGENDARY 1/16,384（500以降）\n'+
- '※結果は乱数により変動。所持品・ステージには影響しません。');
+  '※結果は乱数により変動。所持品・ステージには影響しません。','抽選検証結果');
 }
 function treasureDebugGive(rarity){treasureAwardChest(rarity,'debug');save()}
-function treasureDebugClear(){if(!confirm('宝箱・おまもり・装備をすべて削除しますか？'))return;g.treasureChests=[];g.treasureCharms=[];g.treasureEquip={main:null,sub:null};save();render()}
+function treasureDebugClear(){gameConfirm('宝箱・おまもり・装備をすべて削除しますか？',()=>{g.treasureChests=[];g.treasureCharms=[];g.treasureEquip={main:null,sub:null};save();render()},{title:'宝箱・おまもりの初期化',acceptText:'すべて削除',danger:true})}
 let autoFightTimer=null;
 function syncAutoFightTimer(){
  if(autoFightTimer!==null){clearTimeout(autoFightTimer);autoFightTimer=null}
@@ -288,6 +303,7 @@ function treasureSetup(){if(typeof TREASURE_FIELD_IMAGE!=='undefined'&&typeof TR
 
 init();treasureSetup();
 const treasureDeleteButton=document.getElementById('treasureDeleteSelected');if(treasureDeleteButton)treasureDeleteButton.addEventListener('click',treasureDeleteSelected);
+const treasureRerollButton=document.getElementById('treasureRerollSelected');if(treasureRerollButton)treasureRerollButton.addEventListener('click',treasureRerollSelected);
 const treasureSelectUnusedButton=document.getElementById('treasureSelectUnused');if(treasureSelectUnusedButton)treasureSelectUnusedButton.addEventListener('click',()=>document.querySelectorAll('#treasureCharmList input[data-tselect]:not(:disabled)').forEach(x=>x.checked=true));
 const treasureClearSelectedButton=document.getElementById('treasureClearSelected');if(treasureClearSelectedButton)treasureClearSelectedButton.addEventListener('click',()=>document.querySelectorAll('#treasureCharmList input[data-tselect]').forEach(x=>x.checked=false));
 setInterval(()=>{const c=g.lv>=SIZES.length-1?null:COSTS[g.lv+1];$('expand').disabled=c===null||g.maso<c;const yc=Math.ceil(12*Math.pow(1.75,g.yield));$('yieldUp').disabled=g.maso<yc;const rc=rangeCost();$('rangeUp').disabled=rc===null||g.maso<rc;if(g.batchUnlocked){const remain=Math.max(0,Math.ceil((g.batchLast+BATCH_COOLDOWN_MS-Date.now())/1000));$('collectAll').disabled=remain>0;$('collectAll').textContent=remain?'✨ まとめて採集（あと'+cooldownLabel(remain)+'）':'✨ まとめて採集'}},1000);setInterval(()=>advanceFieldSpawn(250),250);setInterval(save,10000);

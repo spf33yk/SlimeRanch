@@ -405,8 +405,8 @@ document.addEventListener('DOMContentLoaded',()=>{
  try{motionToggle.checked=localStorage.getItem('slimeRanchReducedMotion')==='true'}catch{}
  document.body.classList.toggle('user-reduced-motion',motionToggle.checked);
  motionToggle.addEventListener('change',()=>{document.body.classList.toggle('user-reduced-motion',motionToggle.checked);try{localStorage.setItem('slimeRanchReducedMotion',String(motionToggle.checked))}catch{}});
- const resetRow=make('div','ui-reset-row'),resetNote=make('p','small','ゲームの進行状況と所持データを消去し、最初からやり直します。セーブのバックアップを書き出してから実行できます。');
- const resetGame=button('データ初期化',()=>byId('resetBtn').click());resetGame.id='uiResetGame';resetRow.append(resetNote,resetGame);
+  const resetRow=make('div','ui-reset-row'),resetNote=make('p','small','ゲームの進行状況と所持データを消去し、最初からやり直します。セーブのバックアップを書き出してから実行できます。');
+  const resetGame=button('データ初期化',()=>{settings.close();byId('resetBtn').click()});resetGame.id='uiResetGame';resetRow.append(resetNote,resetGame);
  const save=button('手動セーブ',()=>{byId('saveBtn').click();status.textContent='セーブしました。';});
  const status=make('p','ui-status','進行状況は自動保存されます。');status.setAttribute('role','status');
  settings.append(sfxRow,motionRow,resetRow,save,status);document.body.append(settings);
