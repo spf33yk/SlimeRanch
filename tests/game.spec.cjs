@@ -433,6 +433,11 @@ test('externalized backgrounds, BGM and videos resolve',async({page})=>{
  await page.keyboard.press('Escape');
  await expect(page.locator('#uiSettings')).not.toBeVisible();
 });
+test('new field and World Tree art assets load at 16:9 game scene size',async({page})=>{
+ await page.goto('./');
+ const dimensions=await page.evaluate(async()=>Promise.all(['assets/mana-field-scene.png','assets/world-tree-growth.png'].map(src=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve([image.naturalWidth,image.naturalHeight]);image.onerror=()=>resolve(null);image.src=src}))));
+ expect(dimensions).toEqual([[1672,941],[1672,941]]);
+});
 test('save export/import preserves progress, zero currency and equipment',async({page})=>{
  await page.goto('./');
  await page.evaluate(()=>{
