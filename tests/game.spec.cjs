@@ -314,9 +314,14 @@ test('ranch shortcuts, equipment and battle controls remain connected',async({pa
  await expect(page.locator('#treasureSlot')).toHaveValue('sub');
  await page.click('#treasureClose');
  await page.evaluate(()=>{treasureEnsure();g.treasureCharms.push({id:999,name:'Test Charm',rarity:'normal',effects:[{key:'atk',label:'攻撃力',mult:1.1}]});treasureEquipCharm('main',999);});
- expect(await page.evaluate(()=>!!g.treasureEquip.main)).toBe(true);
- await expect(page.locator('#ranchTeamCompare')).toContainText('メイン装備：変更前 → 変更後');
- await expect(page.locator('#ranchTeamCompare')).toContainText('→');
+ await expect(page.locator('#teamChangeConfirmDialog')).toBeVisible();
+ await expect(page.locator('#teamChangeTitle')).toHaveText('変更しますか？');
+ await expect(page.locator('#teamChangeDescription')).toContainText('メインモンスターのおまもり装備');
+ await expect(page.locator('#teamChangeStats')).toContainText('攻撃力');
+ await expect(page.locator('#teamChangeStats')).toContainText(/e[+-]\d+/i);
+ expect(await page.evaluate(()=>g.treasureEquip.main)).toBeNull();
+ await page.click('#teamChangeAccept');
+ expect(await page.evaluate(()=>g.treasureEquip.main)).toBe(999);
  await page.click('[data-tab=battle]');
  // Keep the target alive while exercising the auto settings so a fast CI
  // worker cannot trigger the victory continuation between the button clicks.
@@ -433,7 +438,7 @@ test('save export/import preserves progress, zero currency and equipment',async(
  await page.evaluate(()=>{
   g.maso=0;g.stage=7;g.maxStage=12;g.kills=20;
   treasureDebugGive('normal');treasureOpenChest(g.treasureChests.at(-1).id);
-  treasureEquipCharm('main',g.treasureCharms.at(-1).id);save();
+  treasureApplyCharm('main',g.treasureCharms.at(-1).id);save();
  });
  const original=await page.evaluate(()=>({id:g.main,equip:g.treasureEquip.main,name:main().name}));
  await page.click('#uiSettingsButton');
@@ -512,7 +517,7 @@ test('ranch header, capacity upgrades, monster layout and sub charm stats work',
  expect(await page.evaluate(()=>({capacity:cap(),price:capCost(),header:document.getElementById('headerMonsterCount').textContent}))).toEqual({capacity:110,price:405,header:'1 / 110'});
  const charmStats=await page.evaluate(()=>{
   const partner=monster('森スライム');partner.name='装備確認用サブ';g.slimes.push(partner);g.kills=5;g.sub=partner.id;
-  const charm={id:g.treasureNextId++,rarity:'normal',name:'検証用',effects:[{key:'atk',label:'攻撃力',mult:2}]};g.treasureCharms.push(charm);treasureEquipCharm('sub',charm.id);
+  const charm={id:g.treasureNextId++,rarity:'normal',name:'検証用',effects:[{key:'atk',label:'攻撃力',mult:2}]};g.treasureCharms.push(charm);treasureApplyCharm('sub',charm.id);
   return {sub:singleStats(partner).atk,base:treasureOriginalSingleStats(partner).atk,team:teamBattleStats().atk,main:singleStats(main()).atk};
  });
  expect(charmStats.sub).toBe(charmStats.base*2);expect(charmStats.team).toBe(charmStats.sub+charmStats.main);
@@ -628,21 +633,33 @@ test('main monster changes keep the idle animation attached to the new sprite',a
  await page.goto('./');await page.click('[data-tab=ranch]');
  const id=await page.evaluate(()=>{const m=monster('森スライム');m.name='切替テスト';g.slimes.push(m);invalidateMonsterInventory();render();return m.id;});
  await page.selectOption('#mainSelect',String(id));
+ await expect(page.locator('#teamChangeConfirmDialog')).toBeVisible();
+ await page.click('#teamChangeAccept');
  await expect(page.locator('#mainCard')).toContainText('切替テスト');
  const motion=page.locator('#mainCard .ui-monster-idle-motion--main');
  await expect(motion).toHaveCount(1);
  expect(await motion.evaluate(e=>getComputedStyle(e).animationName)).toBe('ranch-idle-bob');
  expect(await motion.locator('.sprite').evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
 });
-test('main and sub selection show before and after team totals',async({page})=>{
+test('main and sub selection use a scientific notation confirmation and can be cancelled',async({page})=>{
  await page.goto('./');await page.click('[data-tab=ranch]');
  const ids=await page.evaluate(()=>{const a=monster('炎スライム'),b=monster('海スライム');a.name='メイン比較用';b.name='サブ比較用';a.atk*=5;b.atk*=4;g.slimes.push(a,b);g.kills=3;invalidateMonsterInventory();render();return [a.id,b.id]});
+ const originalMain=await page.evaluate(()=>g.main);
  await page.selectOption('#mainSelect',String(ids[0]));
- await expect(page.locator('#ranchTeamCompare')).toContainText('メイン変更：変更前 → 変更後');
- await expect(page.locator('#ranchTeamCompare')).toContainText('攻撃力');
+ await expect(page.locator('#teamChangeConfirmDialog')).toBeVisible();
+ await expect(page.locator('#teamChangeDescription')).toContainText('メインモンスター');
+ await expect(page.locator('#teamChangeStats')).toContainText('攻撃力');
+ await expect(page.locator('#teamChangeStats')).toContainText(/e[+-]\d+/i);
+ expect(await page.evaluate(()=>g.main)).toBe(originalMain);
+ await page.click('#teamChangeAccept');
+ expect(await page.evaluate(()=>g.main)).toBe(ids[0]);
  await page.selectOption('#subSelect',String(ids[1]));
- await expect(page.locator('#ranchTeamCompare')).toContainText('サブ変更：変更前 → 変更後');
- await expect(page.locator('#ranchTeamCompare')).toContainText('→');
+ await expect(page.locator('#teamChangeConfirmDialog')).toBeVisible();
+ await expect(page.locator('#teamChangeDescription')).toContainText('サブモンスター');
+ await expect(page.locator('#teamChangeStats')).toContainText(/e[+-]\d+/i);
+ await page.click('#teamChangeCancel');
+ expect(await page.evaluate(()=>g.sub)).toBeNull();
+ await expect(page.locator('#teamChangeConfirmDialog')).not.toBeVisible();
 });
 test('active tabs have balanced corner marks and screens use a brief scene change',async({page})=>{
  await page.goto('./');
@@ -726,7 +743,7 @@ test('equipped charms cannot be shared, and the charm selection can be cleared',
  await page.goto('./');
  const charmId=await page.evaluate(()=>{
   const id=g.treasureNextId++;g.treasureCharms.push({id,rarity:'normal',name:'専用装備',effects:[{key:'atk',label:'攻撃力',mult:1.5}]});
-  treasureEquipCharm('main',id);treasureDialog('sub');return id;
+  treasureApplyCharm('main',id);treasureDialog('sub');return id;
  });
  const equipButton=page.locator(`#treasureCharmList button[data-tequip="${charmId}"]`);
  await expect(equipButton).toBeDisabled();await expect(equipButton).toContainText('メイン装備中');
@@ -888,6 +905,8 @@ test('first-run tutorial follows collection, upgrades, fusion, battle and sub-sl
  await expect(page.locator('#subSelect')).toBeEnabled();
  const subId=await page.evaluate(()=>g.slimes.find(m=>m.id!==+g.main).id);
  await page.locator('#subSelect').selectOption(String(subId));
+ await expect(page.locator('#teamChangeConfirmDialog')).toBeVisible();
+ await page.click('#teamChangeAccept');
  await expect(page.locator('#tutorialTitle')).toHaveText('チュートリアル完了');
  await expect(page.locator('#tutorialContinue')).toBeVisible();
  await expect(page.locator('#tutorialSkip')).toBeHidden();
