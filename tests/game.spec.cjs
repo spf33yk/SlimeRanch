@@ -669,6 +669,7 @@ test('ranch panels remain the same height whether a sub monster is assigned or e
   await page.setViewportSize({width:1920,height});const withSub=await measure();
   await page.evaluate(()=>{g.sub=null;render()});const withoutSub=await measure();
   await page.evaluate(()=>{g.sub=window.__testSubMonsterId;render()});
+  for(const state of [withSub,withoutSub])expect(Math.abs(state.mainPanel-state.sideStack),`${height}px ranch column bottoms`).toBeLessThanOrEqual(1);
   for(const key of ['layout','mainPanel','mainCard','sideStack','subPanel'])expect(Math.abs(withSub[key]-withoutSub[key]),`${height}px ${key}`).toBeLessThanOrEqual(1);
   for(const state of [withSub,withoutSub])expect(state.scrollHeight,`${height}px page scroll`).toBeLessThanOrEqual(state.viewport);
   expect(withSub.subCard).toBeGreaterThan(0);expect(withoutSub.subCard).toBeNull();
