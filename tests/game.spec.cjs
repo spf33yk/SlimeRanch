@@ -661,6 +661,19 @@ test('ranch selection rows fit the name limit and extend the main monster frame 
  expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.viewport);expect(mobile.rows).toHaveLength(2);
  for(const row of mobile.rows)expect(row.select).toBeLessThanOrEqual(row.row);
 });
+test('ranch panels remain the same height whether a sub monster is assigned or empty',async({page})=>{
+ await page.setViewportSize({width:1920,height:1080});await page.goto('./');await page.locator('[data-tab="ranch"]').click();
+ await page.evaluate(()=>{const partner=monster('森スライム');g.slimes.push(partner);window.__testSubMonsterId=partner.id;g.sub=partner.id;g.kills=3;render()});
+ const measure=()=>page.evaluate(()=>({layout:document.querySelector('.ranch-layout').getBoundingClientRect().height,mainPanel:document.querySelector('.ranch-layout>.panel').getBoundingClientRect().height,mainCard:document.querySelector('#mainCard>.mcard').getBoundingClientRect().height,sideStack:document.querySelector('.ranch-side-stack').getBoundingClientRect().height,subPanel:document.querySelector('#uiSubCompanion').getBoundingClientRect().height,subCard:document.querySelector('#subCard>.mcard')?.getBoundingClientRect().height??null,scrollHeight:document.documentElement.scrollHeight,viewport:innerHeight}));
+ for(const height of [1080,960,900,889]){
+  await page.setViewportSize({width:1920,height});const withSub=await measure();
+  await page.evaluate(()=>{g.sub=null;render()});const withoutSub=await measure();
+  await page.evaluate(()=>{g.sub=window.__testSubMonsterId;render()});
+  for(const key of ['layout','mainPanel','mainCard','sideStack','subPanel'])expect(Math.abs(withSub[key]-withoutSub[key]),`${height}px ${key}`).toBeLessThanOrEqual(1);
+  for(const state of [withSub,withoutSub])expect(state.scrollHeight,`${height}px page scroll`).toBeLessThanOrEqual(state.viewport);
+  expect(withSub.subCard).toBeGreaterThan(0);expect(withoutSub.subCard).toBeNull();
+ }
+});
 test('battle control card uses the requested desktop height without its helper text',async({page})=>{
  await page.goto('./');await page.click('[data-tab=battle]');
  await expect(page.locator('#battle')).not.toContainText('敵を倒して次のステージを解放。');
