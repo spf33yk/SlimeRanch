@@ -289,6 +289,9 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 #mainCard>.mcard{min-height:312px}
 .ui-v2 #mainCard .mhead{min-height:260px}
 .ui-v2 #uiSubCompanion #subCard>.mcard{height:312px}
+/* Fill the unused lower portion with the ranch scene instead of empty card space. */
+.ui-v2 #mainCard>.mcard{display:flex;flex-direction:column}
+.ui-v2 #mainCard .mhead{flex:1 1 auto}
 </style>
 <style id="packaged-resolution-layout">
 /* 1920×1080 packaged viewport: expand the game canvas and keep every current scene on one screen. */
@@ -301,6 +304,12 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
  .ui-v2 .battle-control{height:100%}
  .ui-v2 #worldtree.active{height:856px}
 }
+@media (min-width:1500px) and (min-height:950px){
+ /* Keep the desktop scene compact even when the ranch illustration fills its card. */
+ .ui-v2 #ranch.active{padding-bottom:0!important}
+ .ui-v2 #ranch .ranch-layout{gap:10px}
+ .ui-v2 #ranch .ranch-layout>.panel:first-child{padding-bottom:12px}
+}
 .ui-v2 #mainCard .mhead{background-image:linear-gradient(#1a100308,#17100b72),url("assets/game-art/ranch/ranch-background.webp")!important;background-size:cover!important;background-position:center 56%!important}
 .ui-v2 .fight{background-image:linear-gradient(#10192322,#11182255),var(--fight-backdrop,url("assets/game-art/battle/normal-ruins.webp"))!important;background-size:cover,cover!important;background-position:center!important}
 </style>
@@ -311,15 +320,24 @@ document.addEventListener('DOMContentLoaded',()=>{
  document.body.classList.add('ui-v2');
  const fight=byId('battle')?.querySelector('.fight');
  const battleBackdrops={normal:['ruins','forest','frozen','volcanic'],boss:['eclipse','sky-fortress','crystal-cavern','world-tree']};
+ const battleBackdropLoads=new Map();
+ const preloadBattleBackdrop=scene=>{
+  if(battleBackdropLoads.has(scene))return battleBackdropLoads.get(scene);
+  const image=new Image();image.decoding='async';image.src=`assets/game-art/battle/${scene}.webp`;
+  const loaded=(image.decode?image.decode():new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject})).catch(()=>{});
+  battleBackdropLoads.set(scene,loaded);return loaded;
+ };
  const syncBattleBackdrop=()=>{
   if(!fight)return;
   const stage=Number((byId('stageLabel')?.textContent.match(/\d+/)||[])[0])||1;
   const boss=byId('bossTag')?.style.display!=='none';
-  const variant=battleBackdrops[boss?'boss':'normal'][(stage-1)%4];
+  const variant=battleBackdrops[boss?'boss':'normal'][Math.floor((stage-1)/5)%4];
   const scene=`${boss?'boss':'normal'}-${variant}`;
   if(fight.dataset.backdrop===scene)return;
-  fight.style.setProperty('--fight-backdrop',`url("assets/game-art/battle/${scene}.webp")`);
   fight.dataset.backdrop=scene;
+  preloadBattleBackdrop(scene).then(()=>{
+   if(fight.dataset.backdrop===scene)fight.style.setProperty('--fight-backdrop',`url("assets/game-art/battle/${scene}.webp")`);
+  });
  };
  syncBattleBackdrop();
  const battleSceneObserver=new MutationObserver(syncBattleBackdrop);

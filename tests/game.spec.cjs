@@ -442,6 +442,14 @@ test('1920×1080 packaged viewport keeps each game tab on screen, and phone widt
   expect(size.width,`${tab} width`).toBeLessThanOrEqual(size.viewportWidth);
   expect(size.height,`${tab} height`).toBeLessThanOrEqual(size.viewportHeight);
  }
+ await page.locator('[data-tab="ranch"]').click();
+ const ranchFill=await page.evaluate(()=>{
+  const card=document.querySelector('#mainCard>.mcard'),scene=card.querySelector('.mhead'),last=card.lastElementChild;
+  return {sceneHeight:scene.getBoundingClientRect().height,sceneMinHeight:parseFloat(getComputedStyle(scene).minHeight),cardBottom:card.getBoundingClientRect().bottom,lastBottom:last.getBoundingClientRect().bottom,scrollHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight};
+ });
+ expect(ranchFill.sceneHeight).toBeGreaterThan(ranchFill.sceneMinHeight);
+ expect(ranchFill.cardBottom-ranchFill.lastBottom).toBeLessThanOrEqual(14);
+ expect(ranchFill.scrollHeight).toBeLessThanOrEqual(ranchFill.viewportHeight);
  await page.setViewportSize({width:390,height:844});
  for(const tab of ['field','ranch','battle','worldtree']){
   await page.locator(`[data-tab="${tab}"]`).evaluate(button=>button.click());
@@ -471,14 +479,19 @@ test('scene art assets load at their intended game resolutions',async({page})=>{
  expect(dimensions[14]).toEqual([1920,1080]);
  expect(dimensions.slice(15)).toEqual(Array(8).fill([1920,660]));
 });
-test('battle backgrounds switch between regular stages and bosses',async({page})=>{
+test('battle backgrounds stay stable for five stages and decode before swapping',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="battle"]').click();
  await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-ruins');
  await page.evaluate(()=>{g.stage=2;g.enemyHP=enemyMax(g.stage);render()});
- await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-forest');
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-ruins');
  await page.evaluate(()=>{g.stage=3;g.enemyHP=enemyMax(g.stage);render()});
- await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-crystal-cavern');
- await expect.poll(()=>page.locator('#battle .fight').evaluate(e=>getComputedStyle(e).backgroundImage)).toContain('boss-crystal-cavern.webp');
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-eclipse');
+ await expect.poll(()=>page.locator('#battle .fight').evaluate(e=>getComputedStyle(e).backgroundImage)).toContain('boss-eclipse.webp');
+ await page.evaluate(()=>{g.stage=5;g.enemyHP=enemyMax(g.stage);render()});
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-eclipse');
+ await page.evaluate(()=>{g.stage=6;g.enemyHP=enemyMax(g.stage);render()});
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-sky-fortress');
+ await expect.poll(()=>page.locator('#battle .fight').evaluate(e=>getComputedStyle(e).backgroundImage)).toContain('boss-sky-fortress.webp');
 });
 test('save export/import preserves progress, zero currency and equipment',async({page})=>{
  await page.goto('./');
