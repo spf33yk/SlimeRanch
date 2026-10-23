@@ -433,10 +433,52 @@ test('externalized backgrounds, BGM and videos resolve',async({page})=>{
  await page.keyboard.press('Escape');
  await expect(page.locator('#uiSettings')).not.toBeVisible();
 });
-test('new field and World Tree art assets load at 16:9 game scene size',async({page})=>{
+test('1920×1080 packaged viewport keeps each game tab on screen, and phone width has no horizontal overflow',async({page})=>{
+ await page.setViewportSize({width:1920,height:1080});
  await page.goto('./');
- const dimensions=await page.evaluate(async()=>Promise.all(['assets/mana-field-scene.png','assets/world-tree-growth.png'].map(src=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve([image.naturalWidth,image.naturalHeight]);image.onerror=()=>resolve(null);image.src=src}))));
- expect(dimensions).toEqual([[1672,941],[1672,941]]);
+ for(const tab of ['field','ranch','battle','worldtree']){
+  await page.locator(`[data-tab="${tab}"]`).evaluate(button=>button.click());
+  const size=await page.evaluate(()=>({width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,viewportWidth:innerWidth,viewportHeight:innerHeight}));
+  expect(size.width,`${tab} width`).toBeLessThanOrEqual(size.viewportWidth);
+  expect(size.height,`${tab} height`).toBeLessThanOrEqual(size.viewportHeight);
+ }
+ await page.setViewportSize({width:390,height:844});
+ for(const tab of ['field','ranch','battle','worldtree']){
+  await page.locator(`[data-tab="${tab}"]`).evaluate(button=>button.click());
+  const size=await page.evaluate(()=>({width:document.documentElement.scrollWidth,viewportWidth:innerWidth}));
+  expect(size.width,`${tab} phone width`).toBeLessThanOrEqual(size.viewportWidth);
+ }
+});
+test('scene art assets load at their intended game resolutions',async({page})=>{
+ await page.goto('./');
+ const dimensions=await page.evaluate(async()=>{
+  const sources=[
+   ...['empty','monster','mana','treasure'].map(name=>`assets/game-art/field/${name}.webp`),
+   ...Array.from({length:10},(_,i)=>`assets/game-art/world-tree/stage-${String(i+1).padStart(2,'0')}.webp`),
+   'assets/game-art/ranch/ranch-background.webp',
+   ...['normal-ruins','normal-forest','normal-frozen','normal-volcanic','boss-eclipse','boss-sky-fortress','boss-crystal-cavern','boss-world-tree'].map(name=>`assets/game-art/battle/${name}.webp`)
+  ];
+  const results=[];
+  for(const src of sources){
+   const image=new Image();
+   results.push(await new Promise(resolve=>{image.onload=()=>resolve([image.naturalWidth,image.naturalHeight]);image.onerror=()=>resolve(null);image.src=src}));
+   image.src='';
+  }
+  return results;
+ });
+ expect(dimensions.slice(0,4)).toEqual(Array(4).fill([512,512]));
+ expect(dimensions.slice(4,14)).toEqual(Array(10).fill([1920,1080]));
+ expect(dimensions[14]).toEqual([1920,1080]);
+ expect(dimensions.slice(15)).toEqual(Array(8).fill([1920,660]));
+});
+test('battle backgrounds switch between regular stages and bosses',async({page})=>{
+ await page.goto('./');await page.locator('[data-tab="battle"]').click();
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-ruins');
+ await page.evaluate(()=>{g.stage=2;g.enemyHP=enemyMax(g.stage);render()});
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-forest');
+ await page.evaluate(()=>{g.stage=3;g.enemyHP=enemyMax(g.stage);render()});
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-crystal-cavern');
+ await expect.poll(()=>page.locator('#battle .fight').evaluate(e=>getComputedStyle(e).backgroundImage)).toContain('boss-crystal-cavern.webp');
 });
 test('save export/import preserves progress, zero currency and equipment',async({page})=>{
  await page.goto('./');
