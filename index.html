@@ -720,8 +720,10 @@ function showTeamChangeConfirm(label,before,after,onConfirm,onCancel){
  $('teamChangeDescription').textContent=label+'を変更した場合のチーム合計ステータスです。';
  $('teamChangeStats').innerHTML=[...BATTLE_RULES,...FARM_RULES].map(([key,name])=>{
   const isFarm=FARM_RULES.some(([farmKey])=>farmKey===key),group=isFarm?'farm':'battle';
-  const oldValue=before[group][key]||0,newValue=after[group][key]||0;
-  return '<div class="team-change-row"><strong>'+name+'</strong><span class="team-change-values">'+formatTeamChangeNumber(oldValue,key)+' → <em>'+formatTeamChangeNumber(newValue,key)+'</em></span></div>';
+  const oldValue=before[group][key]||0,newValue=after[group][key]||0,delta=newValue-oldValue;
+  const trend=delta>0?'up':delta<0?'down':'same',direction=delta>0?'上昇 ▲':delta<0?'下降 ▼':'変更なし';
+  const deltaText=(delta>0?'+':delta<0?'−':'±')+formatTeamChangeNumber(Math.abs(delta),key);
+  return '<div class="team-change-row"><strong>'+name+'</strong><span class="team-change-values">'+formatTeamChangeNumber(oldValue,key)+' → '+formatTeamChangeNumber(newValue,key)+'</span><span class="team-change-direction is-'+trend+'">'+direction+' '+deltaText+'</span></div>';
  }).join('');
  pendingTeamChange={onConfirm,onCancel};dialog.showModal();
 }

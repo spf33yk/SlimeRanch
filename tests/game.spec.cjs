@@ -661,6 +661,19 @@ test('main and sub selection use a scientific notation confirmation and can be c
  expect(await page.evaluate(()=>g.sub)).toBeNull();
  await expect(page.locator('#teamChangeConfirmDialog')).not.toBeVisible();
 });
+test('team change preview colors increases, decreases and unchanged stats',async({page})=>{
+ await page.goto('./');
+ await page.evaluate(()=>{
+  const snapshot=()=>({battle:Object.fromEntries(BATTLE_RULES.map(([key])=>[key,1])),farm:Object.fromEntries(FARM_RULES.map(([key])=>[key,1]))});
+  const before=snapshot(),after=snapshot();
+  after.battle[BATTLE_RULES[0][0]]=3;after.battle[BATTLE_RULES[1][0]]=0.5;
+  showTeamChangeConfirm('検証',before,after,()=>{});
+ });
+ await expect(page.locator('.team-change-direction.is-up').first()).toContainText('上昇');
+ await expect(page.locator('.team-change-direction.is-down').first()).toContainText('下降');
+ await expect(page.locator('.team-change-direction.is-same').first()).toContainText('変更なし');
+ await page.click('#teamChangeCancel');
+});
 test('active tabs have balanced corner marks and screens use a brief scene change',async({page})=>{
  await page.goto('./');
  const field=page.locator('[data-tab=field]');
