@@ -674,6 +674,17 @@ test('team change preview colors increases, decreases and unchanged stats',async
  await expect(page.locator('.team-change-direction.is-same').first()).toContainText('変更なし');
  await page.click('#teamChangeCancel');
 });
+test('ranch team totals use consistent compact numbers and fit inside each stat tile',async({page})=>{
+ await page.goto('./');await page.click('[data-tab=ranch]');
+ await page.evaluate(()=>{
+  teamBattleStats=()=>({hp:7.984896e50,atk:4.46023424e50,def:3.6470784e50,spd:99136252204.99,crit:3699.73,critDmg:18359282.2});
+  teamFarmStats=()=>({maso:37393.86,masoGain:1442,heart:23.1,drop:22.88,success:24});
+  renderRanchTeamStats();
+ });
+ const values=await page.locator('#ranchTeamStats .team-stats-grid').first().locator('b').allTextContents();
+ expect(values).toEqual(['7.985e+50','4.460e+50','3.647e+50','9.914e+10','3,699.73%','1.836e+7']);
+ expect(await page.locator('#ranchTeamStats .team-stats-grid b').evaluateAll(nodes=>nodes.every(node=>node.scrollWidth<=node.clientWidth))).toBe(true);
+});
 test('active tabs have balanced corner marks and screens use a brief scene change',async({page})=>{
  await page.goto('./');
  const field=page.locator('[data-tab=field]');

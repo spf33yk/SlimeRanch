@@ -149,8 +149,9 @@ nav button.active{background:linear-gradient(135deg,#246657,#245348);border-colo
 #ranchTeamStats h3,#ranchTeamStats h4{margin:4px 0 6px!important;line-height:1.3}
 #ranchTeamStats .team-stats-grid{gap:6px!important;margin:4px 0 9px!important}
 #ranchTeamStats .team-stats-grid>div{padding:7px 9px!important;min-height:0!important}
+#ranchTeamStats .team-stats-grid>div{min-width:0!important}
 #ranchTeamStats .team-stats-grid small{line-height:1.15!important;margin:0 0 2px!important;display:block}
-#ranchTeamStats .team-stats-grid b{line-height:1.2!important}
+#ranchTeamStats .team-stats-grid b{line-height:1.2!important;font-size:clamp(12px,1.1vw,16px)!important;min-width:0;overflow-wrap:anywhere;word-break:break-word;font-variant-numeric:tabular-nums}
 #ranchTeamStats .stat-explain{padding:9px 11px!important;margin-top:7px!important;font-size:12px;line-height:1.4}
 #ranchTeamStats .stat-explain>div{margin:3px 0!important}
 </style><style id="debug-ui-style">#guideDebug .stats{margin:10px 0}#guideDebug .row{gap:8px;flex-wrap:wrap}#guideDebug button{min-height:38px}</style><style id="field32-ui">#fieldMsg.field-status{width:100%;max-width:650px;margin:8px auto 4px;box-sizing:border-box;min-height:34px;padding:7px 12px;line-height:1.4}#fieldCanvas{image-rendering:pixelated} .field-wrap{margin-top:6px}</style><style id="fusion-v3-css">.bulk-pick-actions{gap:5px;flex-wrap:wrap;margin-bottom:9px}.bulk-pick-actions button{font-size:11px;padding:7px 9px;min-height:30px}</style><style id="bulk-cost-style">.bulk-cost-status{margin-top:12px;padding:10px 12px;border:1px solid #45647b;border-radius:8px;background:#102437;color:#d5eaf2;font-size:13px;line-height:1.65}.bulk-cost-status.is-short{border-color:#b76a60;background:#352029;color:#ffd3cd}.bulk-cost-status.is-ready{border-color:#438a71;background:#15362e;color:#b9f6d9}</style>
@@ -711,6 +712,7 @@ function bulkPick(mode){
  updateBulkCostStatus();
 }
 function teamTotalsSnapshot(){return {battle:teamBattleStats(),farm:teamFarmStats()}}
+function formatRanchTeamStat(value){const n=Number(value);if(!Number.isFinite(n))return n===Infinity?'∞':n===-Infinity?'−∞':'—';const abs=Math.abs(n);if(abs>=1e6||(abs>0&&abs<.01))return n.toExponential(3);return n.toLocaleString('ja-JP',{maximumFractionDigits:2})}
 let pendingTeamChange=null;
 function formatTeamChangeNumber(value,key){return Number(value||0).toExponential(3)+(['crit','maso','masoGain','heart','drop','success'].includes(key)?'%':'')}
 function showTeamChangeConfirm(label,before,after,onConfirm,onCancel){
@@ -734,7 +736,7 @@ function resolveTeamChange(accepted){
 }
 function renderRanchTeamStats(){
  const stats=teamBattleStats(),farm=teamFarmStats();
- const body='<h3>📊 モンスターチーム合計ステータス（メイン＋サブ）</h3><div class="team-stats-grid">'+BATTLE_RULES.map(([k,n])=>'<div><small>'+n+'</small><b>'+Number(stats[k].toFixed(2))+(k==='crit'?'%':'')+'</b></div>').join('')+'</div><h4>🌱 ファームステータス</h4><div class="team-stats-grid">'+FARM_RULES.map(([k,n])=>'<div><small>'+n+'</small><b>+'+Number(farm[k].toFixed(3))+'%</b></div>').join('')+'</div>';
+ const body='<h3>📊 モンスターチーム合計ステータス（メイン＋サブ）</h3><div class="team-stats-grid">'+BATTLE_RULES.map(([k,n])=>'<div><small>'+n+'</small><b title="'+String(stats[k])+'">'+formatRanchTeamStat(stats[k])+(k==='crit'?'%':'')+'</b></div>').join('')+'</div><h4>🌱 ファームステータス</h4><div class="team-stats-grid">'+FARM_RULES.map(([k,n])=>'<div><small>'+n+'</small><b title="'+String(farm[k])+'">+'+formatRanchTeamStat(farm[k])+'%</b></div>').join('')+'</div>';
  $('ranchTeamStats').innerHTML=body+statExplain();
 }
 function renderSkillCodex(){if($('ruleSkillCodex').dataset.rendered)return;$('ruleSkillCodex').innerHTML='<h3>🌿 タイプスキル（Lv.1 = 1.1倍、以降+0.1倍）</h3><div class="codex-grid">'+Object.entries(TYPE_RULES).map(([t,v])=>'<div class="codex-card"><b>'+t+'</b><div>'+v[0]+' 1.1倍 / Lvごと+0.1倍</div></div>').join('')+'</div><p>属性相性：森 → 雷 → 海 → 炎 → 影 → 森（有利属性へのダメージ1.5倍）</p><h3>🌟 モンスター固有スキル</h3><div class="codex-grid">'+ENEMIES.map(e=>'<div class="codex-card"><b>'+e.name+'</b><div>'+speciesRule({kind:'enemy',enemyKey:e.key,species:e.name})[0]+' 1.1倍 / Lvごと+0.1倍</div></div>').join('')+'<div class="codex-card"><b>スライム</b><div>'+speciesRule({kind:'slime'})[0]+' ×1.1 / Lvごと+0.1倍</div></div></div><h3>💗 ハート仕様</h3><p>ドロップ率1%（補正前）。ハート内訳はバトル系80%、ファーム系20%。魔素湧き速度・魔素取得量のハートは1〜5%、その他のファーム系ハートは0.01〜0.05%。未所持の能力も追加可能。タイプ・固有スキルが一致すると対応Lvが上がり、低確率で異なる固有スキルを継承。</p>';ruleSkillCodex.dataset.rendered='true'}
