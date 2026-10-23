@@ -451,14 +451,23 @@ test('1920×1080 packaged viewport keeps each game tab on screen, and phone widt
  });
  const ranchFill=await page.evaluate(()=>{
   const card=document.querySelector('#mainCard>.mcard'),scene=card.querySelector('.mhead'),last=card.lastElementChild,sprite=scene.querySelector('.ui-monster-idle-motion--main'),stats=scene.querySelector(':scope > div');
-  return {sceneHeight:scene.getBoundingClientRect().height,sceneMinHeight:parseFloat(getComputedStyle(scene).minHeight),cardBottom:card.getBoundingClientRect().bottom,lastBottom:last.getBoundingClientRect().bottom,scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight,viewportHeight:innerHeight,spriteWidth:sprite.getBoundingClientRect().width,spriteAboveStats:sprite.getBoundingClientRect().bottom<=stats.getBoundingClientRect().top};
+  return {sceneHeight:scene.getBoundingClientRect().height,sceneMinHeight:parseFloat(getComputedStyle(scene).minHeight),cardBottom:card.getBoundingClientRect().bottom,lastBottom:last.getBoundingClientRect().bottom,scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight,viewportHeight:innerHeight,spriteWidth:sprite.getBoundingClientRect().width,spriteStatsGap:stats.getBoundingClientRect().top-sprite.getBoundingClientRect().bottom};
  });
  expect(ranchFill.sceneHeight).toBeGreaterThan(ranchFill.sceneMinHeight);
  expect(ranchFill.cardBottom-ranchFill.lastBottom).toBeLessThanOrEqual(14);
  expect(ranchFill.spriteWidth).toBeGreaterThanOrEqual(220);
- expect(ranchFill.spriteAboveStats).toBe(true);
+ expect(ranchFill.spriteStatsGap).toBeGreaterThanOrEqual(0);
+ expect(ranchFill.spriteStatsGap).toBeLessThanOrEqual(14);
  expect(ranchFill.scrollHeight).toBeLessThanOrEqual(ranchFill.clientHeight);
  expect(ranchFill.scrollHeight).toBeLessThanOrEqual(ranchFill.viewportHeight);
+ for(const height of [960,900]){
+  await page.setViewportSize({width:1920,height});
+  const compact=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight,viewportHeight:innerHeight,cardBottom:document.querySelector('#mainCard>.mcard').getBoundingClientRect().bottom,subBottom:document.querySelector('#uiSubCompanion #subCard>.mcard').getBoundingClientRect().bottom}));
+  expect(compact.scrollHeight,`F11 ${height}px document`).toBeLessThanOrEqual(compact.clientHeight);
+  expect(compact.scrollHeight,`F11 ${height}px viewport`).toBeLessThanOrEqual(compact.viewportHeight);
+  expect(compact.cardBottom,`F11 ${height}px main card`).toBeLessThanOrEqual(height);
+  expect(compact.subBottom,`F11 ${height}px sub card`).toBeLessThanOrEqual(height);
+ }
  await page.setViewportSize({width:390,height:844});
  for(const tab of ['field','ranch','battle','worldtree']){
   await page.locator(`[data-tab="${tab}"]`).evaluate(button=>button.click());
@@ -509,10 +518,12 @@ test('battle backgrounds use fixed five-stage scene groups and decode before swa
 test('battle combatant sprites sit directly above their HP bars',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="battle"]').click();
  const positions=await page.evaluate(()=>{
-  const gap=(image,hp)=>{const a=image.getBoundingClientRect(),b=hp.getBoundingClientRect();return {imageBottom:a.bottom,hpTop:b.top,gap:b.top-a.bottom}};
+  const gap=(image,hp)=>{const a=image.getBoundingClientRect(),b=hp.getBoundingClientRect();return {imageBottom:a.bottom,hpTop:b.top,gap:b.top-a.bottom,width:a.width,height:a.height}};
   return {team:gap(document.querySelector('#teamSprites .sprite'),document.querySelector('#teamCard .hp')),enemy:gap(document.querySelector('#enemySprite'),document.querySelector('#enemyCard .hp'))};
  });
  for(const side of [positions.team,positions.enemy]){expect(side.gap).toBeGreaterThanOrEqual(0);expect(side.gap).toBeLessThanOrEqual(10)}
+ expect(positions.team.width).toBeGreaterThanOrEqual(118);
+ expect(positions.team.height).toBeGreaterThanOrEqual(138);
 });
 test('save export/import preserves progress, zero currency and equipment',async({page})=>{
  await page.goto('./');

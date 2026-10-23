@@ -111,7 +111,7 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 .combat .label{font-size:10px;letter-spacing:.12em;color:#d8e4ed}
 .ui-v2 .combat .hp{background:#171d24dd;padding:8px;margin-top:auto;font-size:12px;flex-wrap:wrap;border-radius:3px}
 .ui-v2 #teamSprites{min-height:166px;align-items:end}
-.ui-v2 #teamSprites .sprite{width:105px!important;height:120px!important;filter:drop-shadow(0 7px 4px #0008);animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom}
+.ui-v2 #teamSprites .sprite{width:118px!important;height:138px!important;filter:drop-shadow(0 7px 4px #0008);animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom}
 .ui-v2 #enemySprite{height:166px;width:160px;margin:8px auto;filter:drop-shadow(0 7px 4px #0008)!important;animation:slime-idle 2.8s ease-in-out infinite;transform-origin:center bottom}
 .ui-v2 .combat .top{flex-wrap:wrap}
 .ui-v2 #lastHitDetail,.ui-v2 #advantage{background:#161d25df;padding:5px 8px;font-size:11px}
@@ -318,6 +318,38 @@ body.ui-v2{--bg:#15171b;--p:#272b30;--l:#656c73;--t:#f1eee5;--m:#bfc2c6;--g:#b4d
 .ui-v2 #teamSprites{margin:auto 0 4px!important}
 .ui-v2 #enemySprite{margin:auto auto 4px}
 .ui-v2 #teamCard .hp,.ui-v2 #enemyCard .hp{margin-top:4px!important}
+/* Keep the main monster directly above its information block in the taller ranch scene. */
+.ui-v2 #mainCard .mhead{display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;row-gap:0!important}
+.ui-v2 #mainCard .mhead>.ui-monster-idle-motion--main{align-self:center;margin-bottom:0}
+/* F11 can expose less than the packaged 1080px canvas on desktop; compact the ranch stack to fit. */
+@media (min-width:1500px) and (max-height:1000px){
+ .ui-v2 header{padding:6px 22px 8px}
+ .ui-v2 .resource{padding:7px 10px}
+ .ui-v2 nav{padding-bottom:8px}
+ .ui-v2 nav button{min-height:44px}
+ .ui-v2 main{padding-top:0;padding-bottom:0}
+ .ui-v2 #ranch.active{padding-bottom:0!important}
+ .ui-v2 #ranch .ranch-layout{gap:8px}
+ .ui-v2 #ranch .ranch-layout>.panel{padding:12px;margin-bottom:8px}
+ .ui-v2 #ranch .ranch-layout>.panel:first-child{padding-bottom:8px}
+ .ui-v2 #ranch>.panel{margin-top:0}
+ .ui-v2 #ranch .screen h3{margin:9px 0 6px}
+ .ui-v2 #ranch .stats{gap:5px}
+ .ui-v2 #ranch .stat{padding:6px 7px}
+ .ui-v2 #mainCard>.mcard{min-height:280px}
+ .ui-v2 #mainCard .mhead{min-height:220px}
+ .ui-v2 #uiSubCompanion #subCard>.mcard{height:260px}
+ .ui-v2 footer{padding-bottom:0!important;line-height:12px;margin-top:-2px!important;margin-bottom:-2px!important}
+}
+@media (min-width:1500px) and (max-height:920px){
+ .ui-v2 header{padding-block:4px}
+ .ui-v2 .resource{padding-block:5px}
+ .ui-v2 nav{padding-bottom:5px}
+ .ui-v2 nav button{min-height:40px}
+ .ui-v2 #ranch .ranch-layout>.panel{padding:9px;margin-bottom:6px}
+ .ui-v2 #uiSubCompanion #subCard>.mcard{height:210px}
+ .ui-v2 #mainCard .mhead{min-height:195px}
+}
 </style>
 <script>
 /* DOM presentation only: reuse game controls, handlers and state. */
