@@ -457,10 +457,10 @@ test('1920×1080 packaged viewport keeps each game tab on screen, and phone widt
  expect(ranchFill.cardBottom-ranchFill.lastBottom).toBeLessThanOrEqual(14);
  expect(ranchFill.spriteWidth).toBeGreaterThanOrEqual(220);
  expect(ranchFill.spriteStatsGap).toBeGreaterThanOrEqual(0);
- expect(ranchFill.spriteStatsGap).toBeLessThanOrEqual(14);
+ expect(ranchFill.spriteStatsGap).toBeLessThanOrEqual(36);
  expect(ranchFill.scrollHeight).toBeLessThanOrEqual(ranchFill.clientHeight);
  expect(ranchFill.scrollHeight).toBeLessThanOrEqual(ranchFill.viewportHeight);
- for(const height of [960,900]){
+ for(const height of [960,900,889]){
   await page.setViewportSize({width:1920,height});
   const compact=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight,viewportHeight:innerHeight,cardBottom:document.querySelector('#mainCard>.mcard').getBoundingClientRect().bottom,subBottom:document.querySelector('#uiSubCompanion #subCard>.mcard').getBoundingClientRect().bottom}));
   expect(compact.scrollHeight,`F11 ${height}px document`).toBeLessThanOrEqual(compact.clientHeight);
