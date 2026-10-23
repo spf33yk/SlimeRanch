@@ -443,12 +443,21 @@ test('1920×1080 packaged viewport keeps each game tab on screen, and phone widt
   expect(size.height,`${tab} height`).toBeLessThanOrEqual(size.viewportHeight);
  }
  await page.locator('[data-tab="ranch"]').click();
+ await page.evaluate(()=>{
+  const main=g.slimes.find(m=>m.id===Number(g.main));
+  main.debugOmni=true;main.uniq=Array.from({length:13},(_,i)=>({type:['hp','atk','def','spd','crit','critDmg','maso','masoGain','heart','drop','success'][i%11],name:'ステータス'+i,value:100}));
+  const sub={...structuredClone(main),id:Math.max(...g.slimes.map(m=>m.id))+1,name:'サブモンスター'};
+  g.slimes.push(sub);g.sub=sub.id;g.kills=Math.max(g.kills,3);render();
+ });
  const ranchFill=await page.evaluate(()=>{
-  const card=document.querySelector('#mainCard>.mcard'),scene=card.querySelector('.mhead'),last=card.lastElementChild;
-  return {sceneHeight:scene.getBoundingClientRect().height,sceneMinHeight:parseFloat(getComputedStyle(scene).minHeight),cardBottom:card.getBoundingClientRect().bottom,lastBottom:last.getBoundingClientRect().bottom,scrollHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight};
+  const card=document.querySelector('#mainCard>.mcard'),scene=card.querySelector('.mhead'),last=card.lastElementChild,sprite=scene.querySelector('.ui-monster-idle-motion--main'),stats=scene.querySelector(':scope > div');
+  return {sceneHeight:scene.getBoundingClientRect().height,sceneMinHeight:parseFloat(getComputedStyle(scene).minHeight),cardBottom:card.getBoundingClientRect().bottom,lastBottom:last.getBoundingClientRect().bottom,scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight,viewportHeight:innerHeight,spriteWidth:sprite.getBoundingClientRect().width,spriteAboveStats:sprite.getBoundingClientRect().bottom<=stats.getBoundingClientRect().top};
  });
  expect(ranchFill.sceneHeight).toBeGreaterThan(ranchFill.sceneMinHeight);
  expect(ranchFill.cardBottom-ranchFill.lastBottom).toBeLessThanOrEqual(14);
+ expect(ranchFill.spriteWidth).toBeGreaterThanOrEqual(220);
+ expect(ranchFill.spriteAboveStats).toBe(true);
+ expect(ranchFill.scrollHeight).toBeLessThanOrEqual(ranchFill.clientHeight);
  expect(ranchFill.scrollHeight).toBeLessThanOrEqual(ranchFill.viewportHeight);
  await page.setViewportSize({width:390,height:844});
  for(const tab of ['field','ranch','battle','worldtree']){
@@ -479,19 +488,31 @@ test('scene art assets load at their intended game resolutions',async({page})=>{
  expect(dimensions[14]).toEqual([1920,1080]);
  expect(dimensions.slice(15)).toEqual(Array(8).fill([1920,660]));
 });
-test('battle backgrounds stay stable for five stages and decode before swapping',async({page})=>{
+test('battle backgrounds use fixed five-stage scene groups and decode before swapping',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="battle"]').click();
  await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-ruins');
  await page.evaluate(()=>{g.stage=2;g.enemyHP=enemyMax(g.stage);render()});
  await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-ruins');
  await page.evaluate(()=>{g.stage=3;g.enemyHP=enemyMax(g.stage);render()});
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-ruins');
+ await page.evaluate(()=>{g.stage=5;g.enemyHP=enemyMax(g.stage);render()});
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-ruins');
+ await page.evaluate(()=>{g.stage=6;g.enemyHP=enemyMax(g.stage);render()});
  await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-eclipse');
  await expect.poll(()=>page.locator('#battle .fight').evaluate(e=>getComputedStyle(e).backgroundImage)).toContain('boss-eclipse.webp');
- await page.evaluate(()=>{g.stage=5;g.enemyHP=enemyMax(g.stage);render()});
+ await page.evaluate(()=>{g.stage=10;g.enemyHP=enemyMax(g.stage);render()});
  await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-eclipse');
- await page.evaluate(()=>{g.stage=6;g.enemyHP=enemyMax(g.stage);render()});
- await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','boss-sky-fortress');
- await expect.poll(()=>page.locator('#battle .fight').evaluate(e=>getComputedStyle(e).backgroundImage)).toContain('boss-sky-fortress.webp');
+ await page.evaluate(()=>{g.stage=11;g.enemyHP=enemyMax(g.stage);render()});
+ await expect(page.locator('#battle .fight')).toHaveAttribute('data-backdrop','normal-forest');
+ await expect.poll(()=>page.locator('#battle .fight').evaluate(e=>getComputedStyle(e).backgroundImage)).toContain('normal-forest.webp');
+});
+test('battle combatant sprites sit directly above their HP bars',async({page})=>{
+ await page.goto('./');await page.locator('[data-tab="battle"]').click();
+ const positions=await page.evaluate(()=>{
+  const gap=(image,hp)=>{const a=image.getBoundingClientRect(),b=hp.getBoundingClientRect();return {imageBottom:a.bottom,hpTop:b.top,gap:b.top-a.bottom}};
+  return {team:gap(document.querySelector('#teamSprites .sprite'),document.querySelector('#teamCard .hp')),enemy:gap(document.querySelector('#enemySprite'),document.querySelector('#enemyCard .hp'))};
+ });
+ for(const side of [positions.team,positions.enemy]){expect(side.gap).toBeGreaterThanOrEqual(0);expect(side.gap).toBeLessThanOrEqual(10)}
 });
 test('save export/import preserves progress, zero currency and equipment',async({page})=>{
  await page.goto('./');
@@ -604,7 +625,7 @@ test('ranch selection rows fit the name limit and extend the main monster frame 
  for(const row of desktop.rows){expect(row.selectWidth).toBeLessThan(row.width);expect(row.buttonLeft).toBeGreaterThanOrEqual(row.selectRight)}
  expect(desktop.rows.map(row=>row.button)).toEqual(['宝箱/装備','宝箱/装備']);
  expect(desktop.rows[0].buttonWidth).toBe(desktop.rows[1].buttonWidth);
- expect(desktop.mainMinHeight).toBe('260px');expect(desktop.mainSpriteWidth).toBe(174);expect(desktop.mainBackgroundPosition).toContain('56%');
+ expect(desktop.mainMinHeight).toBe('260px');expect(desktop.mainSpriteWidth).toBe(224);expect(desktop.mainBackgroundPosition).toContain('56%');
  await page.evaluate(()=>{const partner=monster('森スライム');g.slimes.push(partner);g.sub=partner.id;g.kills=3;render()});
  const aligned=await page.evaluate(()=>({mainPanelBottom:document.querySelector('.ranch-layout>.panel').getBoundingClientRect().bottom,sideStackBottom:document.querySelector('.ranch-side-stack').getBoundingClientRect().bottom,mainFrameBottom:document.querySelector('#mainCard>.mcard').getBoundingClientRect().bottom,subFrameBottom:document.querySelector('#subCard>.mcard').getBoundingClientRect().bottom,mainHeight:document.querySelector('#mainCard>.mcard').getBoundingClientRect().height,subHeight:document.querySelector('#subCard>.mcard').getBoundingClientRect().height,subBadgePadding:getComputedStyle(document.querySelector('#subCard .trait')).paddingTop}));
  expect(aligned.mainPanelBottom).toBeCloseTo(aligned.sideStackBottom,0);expect(aligned.mainFrameBottom).toBeCloseTo(aligned.subFrameBottom,0);expect(aligned.mainHeight).toBeGreaterThan(aligned.subHeight);expect(aligned.subHeight).toBeCloseTo(312,2);expect(aligned.subBadgePadding).toBe('5px');
