@@ -4,24 +4,16 @@
 .ui-v2 .world-tree-scene::before{position:absolute;inset:0;z-index:0;content:"";background:inherit;filter:blur(18px) brightness(.62);transform:scale(1.06);}
 .ui-v2 .world-tree-art{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;transition:opacity .35s ease;}
 .ui-v2 .world-tree-art.is-changing{opacity:.25;}
-.ui-v2 .world-tree-aura{position:absolute;z-index:2;inset:-10%;overflow:hidden;pointer-events:none;opacity:var(--aura-power,.08);transition:opacity 1.2s ease;mix-blend-mode:screen;}
-.ui-v2 .world-tree-aura::before,.ui-v2 .world-tree-aura::after{position:absolute;inset:0;content:"";}
-.ui-v2 .world-tree-aura::before{background:radial-gradient(ellipse at 50% 46%,#fff8cf4d 0%,#f7d77830 22%,#aee5bb20 42%,transparent 68%);animation:world-tree-breathe 4.8s ease-in-out infinite alternate;}
-.ui-v2 .world-tree-aura::after{inset:-35%;background:repeating-conic-gradient(from 0deg at 50% 50%,#fff2ad20 0deg 2deg,transparent 2deg 17deg);-webkit-mask-image:radial-gradient(ellipse,#000 0%,transparent 68%);mask-image:radial-gradient(ellipse,#000 0%,transparent 68%);animation:world-tree-rays 90s linear infinite;}
-@keyframes world-tree-breathe{from{transform:scale(.92);filter:brightness(.75)}to{transform:scale(1.12);filter:brightness(1.4)}}
-@keyframes world-tree-rays{to{transform:rotate(360deg)}}
-.ui-v2 .world-tree-scene.is-awakened .world-tree-art{filter:drop-shadow(0 0 18px #f6de8d45);}
 .ui-v2 .world-tree-vignette{position:absolute;z-index:3;inset:0;pointer-events:none;background:linear-gradient(180deg,#080c1330 0%,transparent 25%,transparent 58%,#090e13d9 100%),linear-gradient(90deg,#080c1320,transparent 22%,transparent 78%,#080c1320);}
 .ui-v2 .world-tree-actions{position:absolute;z-index:4;right:0;bottom:0;left:0;display:flex;align-items:stretch;justify-content:center;gap:12px;padding:22px clamp(12px,4vw,64px) max(22px,env(safe-area-inset-bottom));}
-.ui-v2 .world-tree-actions button{position:relative;display:flex;min-height:72px;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;border:2px solid #f3d98e;border-radius:7px;color:#fff4d0;font:inherit;font-size:clamp(14px,1.35vw,18px);font-weight:900;letter-spacing:.04em;text-shadow:0 2px 3px #000b;cursor:pointer;box-shadow:0 0 0 1px #593e1d,inset 0 1px #fff8,0 0 22px #f0cb6845,0 8px 22px #000b;transition:filter .2s,transform .2s,border-color .2s,box-shadow .2s;}
+.ui-v2 .world-tree-actions button{position:relative;display:flex;min-height:72px;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;border:2px solid #f3d98e;border-radius:7px;color:#fff4d0;font:inherit;font-size:clamp(14px,1.35vw,18px);font-weight:900;letter-spacing:.04em;text-shadow:0 2px 3px #000b;cursor:pointer;box-shadow:0 0 0 1px #593e1d,inset 0 1px #fff8,0 8px 22px #000b;transition:filter .2s,transform .2s,border-color .2s,box-shadow .2s;}
 .ui-v2 .world-tree-actions button::before{position:absolute;inset:3px;content:"";pointer-events:none;border:1px solid #fff5;border-radius:4px;}
-.ui-v2 .world-tree-actions button::after{position:absolute;top:-60%;left:-40%;width:34%;height:220%;content:"";pointer-events:none;background:linear-gradient(90deg,transparent,#fff6,transparent);transform:rotate(24deg);transition:left .7s ease;}
-.ui-v2 .world-tree-actions button:hover:not(:disabled){filter:brightness(1.2);transform:translateY(-3px);box-shadow:0 0 0 1px #593e1d,inset 0 1px #fff9,0 0 32px #f0cb6880,0 11px 25px #000b;}
-.ui-v2 .world-tree-actions button:hover:not(:disabled)::after{left:115%;}
+.ui-v2 .world-tree-actions button:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-2px);box-shadow:0 0 0 1px #593e1d,inset 0 1px #fff9,0 8px 22px #000b;}
 .ui-v2 .world-tree-actions button:focus-visible{outline:3px solid #fff3b8;outline-offset:3px;}
-.ui-v2 .world-tree-primary{width:min(460px,56vw);background:radial-gradient(ellipse at 50% 0%,#9bb876 0%,transparent 68%),linear-gradient(180deg,#62774b,#354d36 58%,#263a30);}
-.ui-v2 .world-tree-primary.is-ascension{border-color:#fff4b5;background:radial-gradient(ellipse at 50% 0%,#ffefaa 0%,transparent 75%),linear-gradient(180deg,#b18b43,#795b2d 58%,#493923);animation:world-tree-button-glow 1.8s ease-in-out infinite alternate;}
-@keyframes world-tree-button-glow{to{box-shadow:0 0 0 1px #fff1b7,inset 0 1px #fff,0 0 38px #ffe18aa8,0 0 12px #ffd768;}}
+.ui-v2 .world-tree-primary{width:min(460px,56vw);background:linear-gradient(180deg,#62774b,#354d36 58%,#263a30);}
+.ui-v2 .world-tree-primary.is-ascension{border-color:#e6cf8c;background:linear-gradient(180deg,#9b7e45,#705630 58%,#493923);}
+.ui-v2 .world-tree-primary{touch-action:none;user-select:none;-webkit-user-select:none;}
+.ui-v2 .world-tree-primary.is-donating{filter:brightness(1.16);transform:translateY(-1px);}
 .ui-v2 .world-tree-primary:disabled{cursor:default;filter:grayscale(.55);opacity:.78;}
 .ui-v2 .world-tree-progress{position:relative;z-index:0;max-width:100%;font-size:11px;font-weight:700;color:#e8e2cb;font-variant-numeric:tabular-nums;}
 .ui-v2 .world-tree-skills{width:min(300px,38vw);border-color:#a9bdc5!important;background:linear-gradient(180deg,#485d68,#2a3942 65%,#1c292f)!important;}
@@ -55,7 +47,7 @@
  .ui-v2 .world-tree-skill{padding:11px;}
 }
 @media(max-width:700px) and (orientation:landscape){.ui-v2 .world-tree-scene{height:calc(100dvh - 130px);min-height:300px}.ui-v2 .world-tree-actions{flex-direction:row;align-items:end}.ui-v2 .world-tree-actions button{min-height:54px}.ui-v2 .world-tree-primary{width:min(420px,58vw)}.ui-v2 .world-tree-skills{width:min(280px,36vw)}}
-@media(prefers-reduced-motion:reduce){.ui-v2 .world-tree-art,.ui-v2 .world-tree-actions button{transition:none}.ui-v2 .world-tree-aura::before,.ui-v2 .world-tree-aura::after,.ui-v2 .world-tree-primary.is-ascension{animation:none}}
+@media(prefers-reduced-motion:reduce){.ui-v2 .world-tree-art,.ui-v2 .world-tree-actions button{transition:none}}
 </style>
 <script>
 const WORLD_TREE_COSTS=[1e3,2500,5000,9000,15000,23000,33000,46000,62000,0];
@@ -106,9 +98,8 @@ function worldTreeAscend(monsterId){
 }
 function worldTreeRender(){
  const scene=document.querySelector('.world-tree-scene');if(!scene||!g)return;worldTreeEnsure();
- if(!scene.querySelector('.world-tree-aura')){const aura=document.createElement('div');aura.className='world-tree-aura';aura.setAttribute('aria-hidden','true');scene.insertBefore(aura,scene.querySelector('.world-tree-vignette'))}
  const image=document.getElementById('worldTreeArt'),primary=document.getElementById('worldTreePrimary'),label=document.getElementById('worldTreeActionLabel'),progress=document.getElementById('worldTreeProgress'),skillsButton=document.getElementById('worldTreeSkillsButton');
- const required=worldTreeMinimumBreakthrough(),highest=worldTreeHighestBreakthrough(),breakthrough=worldTreeBreakthroughReached(),complete=worldTreeGameCleared();scene.style.setProperty('--aura-power',(.08+g.worldTreeStage*.07).toFixed(2));scene.classList.toggle('is-awakened',g.worldTreeStage>=4);
+ const required=worldTreeMinimumBreakthrough(),highest=worldTreeHighestBreakthrough(),breakthrough=worldTreeBreakthroughReached(),complete=worldTreeGameCleared();
  const art=worldTreeArtPath(g.worldTreeStage);if(scene.dataset.art!==art){scene.dataset.art=art;scene.style.backgroundImage='linear-gradient(#10151a33,#10151a33),url("'+art+'")';}if(image.getAttribute('src')!==art){image.classList.add('is-changing');image.onload=()=>image.classList.remove('is-changing');image.src=art;image.alt='世界樹 成長段階 '+g.worldTreeStage+' / 10';}
  const max=worldTreeCost(),remaining=Math.max(0,max-g.worldTreeMaso),ready=g.worldTreeStage<10&&remaining<=0&&breakthrough;
  primary.disabled=g.worldTreeStage>=10;primary.classList.toggle('is-ascension',ready);
@@ -116,7 +107,7 @@ function worldTreeRender(){
  else if(g.worldTreeStage>=10){label.textContent='🌳 世界樹は完全に復活した';progress.textContent='STAGE 1000を突破してゲームクリア';}
  else if(ready){label.textContent='🌟 アセンション';progress.textContent='獲得 '+worldTreeAscensionReward()+' EP · STAGE '+required+'突破';}
  else if(remaining<=0){label.textContent='🔒 突破条件を達成しよう';progress.textContent='STAGE '+required+'クリア · 現在の最高突破 '+highest;}
- else {label.textContent='🌱 魔素を捧げる';progress.textContent=fmt(g.worldTreeMaso)+' / '+fmt(max)+' 魔素 · STAGE '+required+'突破';}
+ else {label.textContent=primary.classList.contains('is-donating')?'🌱 魔素を捧げています…':'🌱 魔素を捧げる（長押し）';progress.textContent=fmt(g.worldTreeMaso)+' / '+fmt(max)+' 魔素 · 長押しで投入 · STAGE '+required+'突破';}
  const unlocked=g.worldTreeStage>=2;skillsButton.disabled=!unlocked;skillsButton.textContent=unlocked?'🌿 スキルツリー　·　'+fmt(g.worldTreeEnergy)+' EP':'🔒 スキルツリー（2段階目で解放）';
  if(!document.getElementById('worldTreeSkillsView')?.hidden)worldTreeRenderSkills();
 }
@@ -125,11 +116,35 @@ function worldTreeRenderSkills(){
  points.textContent='エネルギーポイント：'+fmt(g.worldTreeEnergy)+' EP';
  list.innerHTML=Object.entries(WORLD_TREE_SKILLS).map(([key,skill])=>{const level=g.worldTreeSkills[key],cost=skill.costs[level],effect=key==='vitality'?'最大HP +'+(level*10)+'%':key==='might'?'攻撃力 +'+(level*5)+'%':key==='resonance'?'魔素取得量 +'+(level*5)+'%':'ハートドロップ率 +'+(level*.5).toFixed(1)+'ポイント';return '<article class="world-tree-skill"><h3>'+skill.icon+' '+skill.name+'</h3><p>'+skill.description+'</p><span class="tree-skill-level">Lv.'+level+' / '+skill.costs.length+'　·　現在 '+effect+'</span><button type="button" data-world-tree-skill="'+key+'" '+(cost===undefined||g.worldTreeEnergy<cost?'disabled':'')+'>'+(cost===undefined?'最大強化済み':'強化　'+cost+' EP')+'</button></article>'}).join('');
 }
-function worldTreeDonate(){
- worldTreeEnsure();const cost=worldTreeCost();if(!cost||g.worldTreeStage>=10)return;
- if(g.worldTreeMaso>=cost){if(!worldTreeBreakthroughReached()){$('worldTreeProgress').textContent='STAGE '+worldTreeMinimumBreakthrough()+'クリア · 現在 '+worldTreeHighestBreakthrough();sfx('fail');return}worldTreeOpenAscension();return;}
- const amount=Math.min(Math.max(0,Number(g.maso)||0),cost-g.worldTreeMaso);if(amount<=0){sfx('fail');return;}
- g.maso-=amount;g.worldTreeMaso+=amount;sfx('buy');save();render();
+const WORLD_TREE_HOLD_DELAY=320,WORLD_TREE_HOLD_INTERVAL=100;
+let worldTreeHoldDelay=null,worldTreeHoldInterval=null,worldTreeHoldActive=false,worldTreeHoldPointer=null,worldTreeHoldPulseCount=0;
+function worldTreeStopDonateHold(){
+ const wasHolding=worldTreeHoldDelay!==null||worldTreeHoldInterval!==null||worldTreeHoldActive;
+ if(worldTreeHoldDelay!==null)clearTimeout(worldTreeHoldDelay);if(worldTreeHoldInterval!==null)clearInterval(worldTreeHoldInterval);
+ worldTreeHoldDelay=null;worldTreeHoldInterval=null;worldTreeHoldActive=false;worldTreeHoldPointer=null;
+ document.getElementById('worldTreePrimary')?.classList.remove('is-donating');
+ if(wasHolding&&g)worldTreeRender();
+}
+function worldTreeDonatePulse(){
+ worldTreeEnsure();const cost=worldTreeCost();if(!cost||g.worldTreeStage>=10){worldTreeStopDonateHold();return false}
+ if(g.worldTreeMaso>=cost){worldTreeStopDonateHold();if(!worldTreeBreakthroughReached()){$('worldTreeProgress').textContent='STAGE '+worldTreeMinimumBreakthrough()+'クリア · 現在 '+worldTreeHighestBreakthrough();sfx('fail');return false}worldTreeOpenAscension();return false}
+ const amount=Math.min(Math.max(0,Number(g.maso)||0),cost-g.worldTreeMaso,Math.max(1,Math.min(1000,Math.ceil(cost*.25))));if(amount<=0){worldTreeStopDonateHold();sfx('fail');return false}
+ g.maso-=amount;g.worldTreeMaso+=amount;if(worldTreeHoldPulseCount++%4===0)sfx('buy');save();render();
+ if(g.worldTreeMaso>=cost)worldTreeStopDonateHold();
+ return true;
+}
+function worldTreeStartDonateHold(event){
+ if(event?.type==='pointerdown'&&event.button!==0)return;
+ event?.preventDefault?.();if(worldTreeHoldDelay!==null||worldTreeHoldActive)return;
+ worldTreeHoldPointer=event?.pointerId??null;worldTreeHoldPulseCount=0;
+ if(event?.pointerId!==undefined){try{event.currentTarget?.setPointerCapture(event.pointerId)}catch{}}
+ worldTreeHoldDelay=setTimeout(()=>{
+  worldTreeHoldDelay=null;worldTreeHoldActive=true;document.getElementById('worldTreePrimary')?.classList.add('is-donating');
+  if(worldTreeDonatePulse()&&worldTreeHoldActive&&g.worldTreeMaso<worldTreeCost())worldTreeHoldInterval=setInterval(worldTreeDonatePulse,WORLD_TREE_HOLD_INTERVAL);
+ },WORLD_TREE_HOLD_DELAY);
+}
+function worldTreeEndDonateHold(event){
+ worldTreeStopDonateHold();
 }
 function worldTreeBuySkill(key){
  worldTreeEnsure();const skill=WORLD_TREE_SKILLS[key];if(!skill||g.worldTreeStage<2)return;
@@ -144,7 +159,9 @@ const worldTreeBaseRender=render;
 render=function(options){const result=worldTreeBaseRender(options);worldTreeRender();return result};
 document.addEventListener('DOMContentLoaded',()=>{
  worldTreeEnsure();worldTreeRender();
- document.getElementById('worldTreePrimary').addEventListener('click',worldTreeDonate);
+ const donateButton=document.getElementById('worldTreePrimary');
+ donateButton.addEventListener('pointerdown',worldTreeStartDonateHold);donateButton.addEventListener('pointerup',worldTreeEndDonateHold);donateButton.addEventListener('pointercancel',worldTreeEndDonateHold);donateButton.addEventListener('lostpointercapture',worldTreeEndDonateHold);donateButton.addEventListener('contextmenu',event=>event.preventDefault());
+ donateButton.addEventListener('keydown',event=>{if((event.key===' '||event.key==='Enter')&&!event.repeat)worldTreeStartDonateHold(event)});donateButton.addEventListener('keyup',event=>{if(event.key===' '||event.key==='Enter')worldTreeEndDonateHold(event)});donateButton.addEventListener('click',event=>event.preventDefault());window.addEventListener('blur',worldTreeEndDonateHold);
  document.getElementById('worldTreeCarryMonster').addEventListener('change',worldTreeRenderCarryPreview);
  document.getElementById('worldTreeAscensionCancel').addEventListener('click',()=>document.getElementById('worldTreeAscensionDialog').close());
  document.getElementById('worldTreeAscensionAccept').addEventListener('click',()=>worldTreeAscend(document.getElementById('worldTreeCarryMonster').value));

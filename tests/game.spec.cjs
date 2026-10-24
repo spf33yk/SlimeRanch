@@ -1,4 +1,7 @@
 const {test,expect}=require('@playwright/test');
+async function holdWorldTreePrimary(page,duration=450){
+ const button=page.locator('#worldTreePrimary');await button.hover();await page.mouse.down();await page.waitForTimeout(duration);await page.mouse.up();
+}
 test.beforeEach(async({page})=>{
  await page.addInitScript(()=>{window.__SLIME_E2E__=true;localStorage.setItem('slimeRanchBgmSettings',JSON.stringify({track:0,volume:3,playing:false}));});
 });
@@ -1015,7 +1018,7 @@ test('opening screen fits phone portrait and landscape viewports',async({page})=
   expect(layout.frame.bottom).toBeLessThanOrEqual(viewport.height+1);
   const artwork=await page.locator('#openingArtwork').evaluate(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{x:r.x,y:r.y,width:r.width,height:r.height,fit:s.objectFit,duration:s.animationDuration}});
   expect(artwork.x).toBeLessThanOrEqual(0);expect(artwork.y).toBeLessThanOrEqual(0);expect(artwork.width).toBeGreaterThanOrEqual(viewport.width);expect(artwork.height).toBeGreaterThanOrEqual(viewport.height);expect(artwork.fit).toBe('cover');expect(artwork.duration).toBe('18s');
-  expect(await page.locator('.opening-shade').evaluate(el=>getComputedStyle(el,'::after').animationName)).toBe('opening-sunlight');
+  expect(await page.locator('.opening-shade').evaluate(el=>getComputedStyle(el,'::after').content)).toBe('none');
   for(const button of layout.buttons){expect(button.x).toBeGreaterThanOrEqual(0);expect(button.right).toBeLessThanOrEqual(viewport.width+1);expect(button.y).toBeGreaterThanOrEqual(0);expect(button.bottom).toBeLessThanOrEqual(viewport.height+1);}
   await expect(page.locator('#gameStart')).toBeVisible();
   await expect(page.locator('#gameOption')).toBeVisible();
@@ -1150,15 +1153,19 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await expect(page.locator('#worldTreeMainView button')).toHaveCount(2);
  const desktopScene=await page.locator('.world-tree-scene').boundingBox();expect(desktopScene.x).toBeGreaterThanOrEqual(-8);expect(desktopScene.width).toBe(1920);
+ await expect(page.locator('.world-tree-aura')).toHaveCount(0);
+ expect(await page.locator('#worldTreePrimary').evaluate(button=>getComputedStyle(button).animationName)).toBe('none');
  await page.screenshot({path:test.info().outputPath('world-tree-first-stage.png')});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-01\.webp$/);
  await expect(page.locator('#worldTreeSkillsButton')).toBeDisabled();
  await page.evaluate(()=>{g.maso=2300;g.clearedStages[100]=true;render()});
- await page.locator('#worldTreePrimary').click();
+ await page.locator('#worldTreePrimary').hover();await page.mouse.down();await page.waitForTimeout(100);await page.mouse.up();
+ expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso}))).toEqual({maso:2300,donated:0});
+ await holdWorldTreePrimary(page,800);
  expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso}))).toEqual({maso:1300,donated:1000});
  await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
  await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 2 EP · STAGE 100突破');
- await page.locator('#worldTreePrimary').click();
+ await holdWorldTreePrimary(page,450);
  await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await expect(page.locator('#worldTreeCarryMonster option')).toHaveCount(1);
  await page.locator('#worldTreeAscensionAccept').click();
@@ -1202,7 +1209,7 @@ test('ascension requires each hundred-stage milestone and the tenth image clears
  await page.evaluate(()=>{g.maso=5000;g.worldTreeMaso=1000;render()});
  await expect(page.locator('#worldTreeActionLabel')).toHaveText('🔒 突破条件を達成しよう');
  await expect(page.locator('#worldTreeProgress')).toContainText('STAGE 100クリア');
- await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeHidden();
+ await holdWorldTreePrimary(page,450);await expect(page.locator('#worldTreeAscensionDialog')).toBeHidden();
  await page.evaluate(()=>{g.clearedStages[100]=true;render()});
  await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
  await expect(page.locator('#worldTreeProgress')).toContainText('STAGE 100突破');
@@ -1211,7 +1218,7 @@ test('ascension requires each hundred-stage milestone and the tenth image clears
 test('ascension reset runs without publishing the video draft',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await page.evaluate(()=>{g.worldTreeMaso=1000;g.clearedStages[100]=true;render()});
- await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
+ await holdWorldTreePrimary(page,450);await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await page.locator('#worldTreeAscensionAccept').click();
  await expect(page.locator('#worldTreeAscensionVideoLayer')).toHaveCount(0);
  expect(await page.evaluate(()=>g.worldTreeStage)).toBe(2);
@@ -1234,7 +1241,7 @@ test('ascension warns, lets the player choose one monster and preserves mana, wo
   g.hearts=1;g.heartItems=[{type:'atk',value:2}];g.wins=12;g.fails=4;g.firstFusionUsed=true;
   g.treasureChests=[{id:700,rarity:'epic',source:'test'}];g.treasureCharms=[{id:701,rarity:'epic',name:'潮流のおまもり',effects:[{key:'atk',label:'攻撃力',mult:2}]},{id:702,rarity:'normal',name:'森のおまもり',effects:[{key:'maso',label:'魔素湧き速度',mult:1.5}]}];g.treasureEquip={main:701,sub:702};g.treasureNextId=703;render();save();
  });
- await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
+ await holdWorldTreePrimary(page,450);await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await expect(page.locator('#worldTreeAscensionDialog')).toContainText('ハート');
  const selected=await page.evaluate(()=>g.sub);
  await page.locator('#worldTreeCarryMonster').selectOption(String(selected));
@@ -1252,7 +1259,7 @@ test('ascension warns, lets the player choose one monster and preserves mana, wo
 test('canceling the ascension warning leaves the current run and save intact',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await page.evaluate(()=>{g.maso=900;g.worldTreeMaso=1000;g.maxStage=101;g.clearedStages[100]=true;g.slimes.push(monster('海スライム'));render();save()});
- await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
+ await holdWorldTreePrimary(page,450);await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await page.locator('#worldTreeAscensionCancel').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeHidden();
  expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso,stage:g.worldTreeStage,slimes:g.slimes.length,maxStage:g.maxStage}))).toEqual({maso:900,donated:1000,stage:1,slimes:2,maxStage:101});
 });

@@ -9,11 +9,10 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 .opening-art img{position:absolute;inset:0;width:100%;height:100%}
 .opening-art .opening-art-fill{display:none}
 .opening-art .opening-art-main{object-fit:cover;object-position:center;transform-origin:center;filter:saturate(.92);animation:opening-drift 18s ease-in-out infinite alternate}
-.opening-shade{background:linear-gradient(90deg,#0a0e13b8 0%,#10141b70 35%,#11172130 68%,#10141b55 100%),linear-gradient(0deg,#0a0d12d9 0%,#0a0d1266 20%,transparent 55%,#10131a70 100%);animation:opening-light 10s ease-in-out infinite alternate;overflow:hidden}
-.opening-shade:after{content:"";position:absolute;inset:-24%;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(ellipse at 19% 17%,#ffe2a280 0%,#f8c96c45 17%,transparent 43%),repeating-conic-gradient(from 10deg at 19% 17%,transparent 0deg 11deg,#ffe3a333 12deg 13deg,transparent 14deg 24deg);opacity:.82;transform:scale(1.02);animation:opening-sunlight 8s ease-in-out infinite alternate}
+.opening-shade{background:linear-gradient(90deg,#0a0e13b8 0%,#10141b70 35%,#11172130 68%,#10141b55 100%),linear-gradient(0deg,#0a0d12d9 0%,#0a0d1266 20%,transparent 55%,#10131a70 100%);overflow:hidden}
 .opening-frame{box-sizing:border-box;width:min(360px,100%);margin:0 0 0 auto;padding:clamp(18px,3vw,24px);border:2px solid #b49a60;border-radius:8px;background:linear-gradient(145deg,#252a30eb,#151a20e8);box-shadow:inset 0 0 0 3px #11151a,inset 0 0 0 4px #71634a,0 22px 70px #0009;backdrop-filter:blur(4px);text-align:center;transform:translateX(clamp(0px,3vw,32px));animation:opening-frame-enter .68s cubic-bezier(.18,.76,.22,1) both;transition:opacity .16s ease,transform .2s cubic-bezier(.2,.8,.2,1),visibility 0s linear .16s}
 .opening-kicker{margin:0 0 11px;color:#b5d4e5;font-size:clamp(11px,2vw,14px);letter-spacing:.22em;text-transform:uppercase}
-.opening-title{margin:0;color:#f3dfab;font-size:clamp(32px,4vw,48px);line-height:1.12;letter-spacing:.04em;text-shadow:0 3px #30271a,0 6px #080a0d,0 0 24px #f8d88e55}
+.opening-title{margin:0;color:#f3dfab;font-size:clamp(32px,4vw,48px);line-height:1.12;letter-spacing:.04em;text-shadow:0 3px #30271a,0 6px #080a0d}
 .opening-title-sub{margin:9px 0 0;color:#f5f0e7;font-size:clamp(13px,1.2vw,16px);letter-spacing:.04em;text-shadow:0 2px 6px #000}
 .opening-rule{display:flex;align-items:center;gap:12px;margin:23px 0 17px;color:#dfc887;font-size:12px;letter-spacing:.2em}
 .opening-rule:before,.opening-rule:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#b59b61)}
@@ -22,14 +21,14 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 .opening-menu button{min-height:52px;border:1px solid #8d9292;border-radius:4px;background:linear-gradient(#555b60,#32383e 50%,#252a30);box-shadow:inset 0 1px #ffffff30,inset 0 -3px #11151a,0 3px #0b0e12;color:#f1eee5;font:inherit;font-size:16px;letter-spacing:.13em;text-shadow:0 2px #111;transition:filter .15s,transform .15s,border-color .15s}
 .opening-menu button:hover{filter:brightness(1.2);border-color:#d8c184;transform:translateY(-1px)}
 .opening-menu button:active{transform:translateY(1px)}
-.opening-menu .opening-start{border-color:#cfb66e;background:linear-gradient(#8a794e,#5b5137 50%,#393427);color:#fff2c7;font-weight:900;box-shadow:inset 0 1px #fff7d44d,inset 0 -3px #292317,0 3px #0b0e12,0 0 18px #e2c47840}
+.opening-menu .opening-start{border-color:#cfb66e;background:linear-gradient(#8a794e,#5b5137 50%,#393427);color:#fff2c7;font-weight:900;box-shadow:inset 0 1px #fff7d44d,inset 0 -3px #292317,0 3px #0b0e12}
 .opening-menu .opening-option{font-size:14px}
 .opening-save-hint{margin:17px 0 0;color:#d0d2d1;font-size:12px;text-shadow:0 1px 4px #000;line-height:1.7}
 .opening-status{min-height:1.5em;margin:11px 0 0;color:#ffe3a0;font-size:12px;line-height:1.6}
 .opening-copyright{position:absolute;left:12px;right:12px;bottom:12px;text-align:center;color:#e6e5e1b3;font-size:10px;letter-spacing:.12em;text-shadow:0 2px 5px #000}
 #openingScreen.is-starting{opacity:0;pointer-events:none}
 #openingScreen.is-starting .opening-frame{opacity:0;visibility:hidden;transform:translateY(-16px) scale(.98)}
-#openingScreen.is-starting .opening-art-main{animation:none;transform:scale(1.18);filter:brightness(1.2) saturate(1.1);transition:transform .38s ease,filter .38s ease}
+#openingScreen.is-starting .opening-art-main{animation:none;transform:scale(1.18);filter:saturate(1.05);transition:transform .38s ease,filter .38s ease}
 .ui-v2 dialog.opening-confirm{width:min(440px,calc(100vw - 32px));max-width:440px;padding:26px;border-color:#b49a60;background:linear-gradient(145deg,#292e34,#171c22);color:#f7f0de;text-align:center}
 .ui-v2 dialog.opening-confirm::backdrop{background:#080c13d9;backdrop-filter:blur(4px)}
 .opening-confirm h2{margin:0 0 12px;color:#ffe2a1;font-size:22px}
@@ -50,8 +49,6 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 .ui-v2 #uiResetGame{border-color:#c17d78;background:linear-gradient(#804c4b,#513034);white-space:nowrap}
 .ui-v2.user-reduced-motion *,.ui-v2.user-reduced-motion *::before,.ui-v2.user-reduced-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @keyframes opening-drift{from{transform:scale(1.015)}to{transform:scale(1.15)}}
-@keyframes opening-light{from{opacity:.78}to{opacity:1}}
-@keyframes opening-sunlight{from{opacity:.68;transform:translate(-1.5%,.5%) scale(1.02)}to{opacity:1;transform:translate(1.5%,-.5%) scale(1.08)}}
 @keyframes opening-frame-enter{from{opacity:0;transform:translate(clamp(0px,3vw,32px),14px) scale(.985)}to{opacity:1;transform:translateX(clamp(0px,3vw,32px)) scale(1)}}
 @media(min-width:1500px){.opening-frame{margin-right:clamp(128px,9vw,170px)}}
 @media(min-width:1800px){.opening-frame{margin-right:clamp(200px,14vw,270px)}}
@@ -59,7 +56,7 @@ body.opening-active>*:not(#openingScreen):not(dialog){display:none!important}
 @media(max-width:700px) and (orientation:portrait){#openingScreen{display:block;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}.opening-art .opening-art-main{inset:0;width:100%;height:100%;max-height:none;object-fit:cover;object-position:center 64%}.opening-frame{position:relative;width:min(380px,100%);max-height:calc(100dvh - 24px);overflow:auto;margin:0 auto;padding:clamp(12px,3.2vh,20px) 16px}.opening-kicker{margin-bottom:7px;font-size:10px}.opening-title{font-size:clamp(28px,8vw,36px)}.opening-title-sub{margin-top:6px;font-size:clamp(12px,3.5vw,14px)}.opening-rule{margin:12px 0 9px;font-size:10px}.opening-menu{gap:6px}.opening-menu button{min-height:42px;font-size:14px}.opening-menu .opening-option{font-size:12px}.opening-save-hint{margin-top:10px;font-size:10px;line-height:1.5}.opening-status{margin-top:5px;font-size:10px}.opening-copyright{bottom:5px;font-size:8px}.opening-frame{animation:opening-frame-enter-mobile .55s cubic-bezier(.18,.76,.22,1) both}}
 @media(max-width:1000px) and (orientation:landscape) and (max-height:520px){#openingScreen{display:grid;place-items:center;padding:8px;overflow:hidden}.opening-frame{width:min(44vw,360px);max-height:calc(100dvh - 16px);overflow:auto;margin:0 8px 0 auto;padding:10px 16px;animation:opening-frame-enter-mobile .45s cubic-bezier(.18,.76,.22,1) both}.opening-kicker{margin-bottom:4px;font-size:9px}.opening-title{font-size:clamp(25px,6vh,36px)}.opening-title-sub{margin-top:4px;font-size:12px}.opening-rule{margin:8px 0 6px;font-size:9px}.opening-menu{gap:5px}.opening-menu button{min-height:36px;font-size:13px}.opening-save-hint{margin-top:7px;font-size:9px;line-height:1.35}.opening-status{margin-top:4px;font-size:9px}.opening-copyright{bottom:2px;font-size:7px}}
 @keyframes opening-frame-enter-mobile{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.opening-art .opening-art-main{animation:none}.opening-shade,.opening-shade:after{animation:none}#openingScreen,#openingScreen .opening-frame,#openingScreen .opening-art-main{transition:none!important;animation:none!important}.opening-menu button{transition:none}}
+@media(prefers-reduced-motion:reduce){.opening-art .opening-art-main{animation:none}#openingScreen,#openingScreen .opening-frame,#openingScreen .opening-art-main{transition:none!important;animation:none!important}.opening-menu button{transition:none}}
 </style>
 <div id="openingScreen" role="dialog" aria-modal="true" aria-labelledby="openingTitle">
  <div class="opening-art" aria-hidden="true"><img class="opening-art-fill" src="assets/title-screen.png" alt=""><img id="openingArtwork" class="opening-art-main" src="assets/title-screen.png" data-fallback="https://spf33yk.github.io/SlimeRanch/assets/title-screen.png" alt=""></div>
