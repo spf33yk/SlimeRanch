@@ -5,6 +5,10 @@
 .ui-v2 .world-tree-art{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;transition:opacity .35s ease;}
 .ui-v2 .world-tree-art.is-changing{opacity:.25;}
 .ui-v2 .world-tree-vignette{position:absolute;z-index:3;inset:0;pointer-events:none;background:linear-gradient(180deg,#080c1330 0%,transparent 25%,transparent 58%,#090e13d9 100%),linear-gradient(90deg,#080c1320,transparent 22%,transparent 78%,#080c1320);}
+.ui-v2 .world-tree-frame{position:fixed;z-index:5;inset:12px;pointer-events:none;border:1px solid #e5d39c99;box-shadow:inset 0 0 0 5px #121a1a55,inset 0 0 0 6px #e5d39c38,0 0 0 1px #171b1acc;}
+.ui-v2 .world-tree-frame::before,.ui-v2 .world-tree-frame::after{position:absolute;inset:8px;content:"";pointer-events:none;}
+.ui-v2 .world-tree-frame::before{border:1px solid #fff0c52e;}
+.ui-v2 .world-tree-frame::after{background:linear-gradient(#f0d99b,#f0d99b) left top/54px 2px,linear-gradient(#f0d99b,#f0d99b) left top/2px 54px,linear-gradient(#f0d99b,#f0d99b) right top/54px 2px,linear-gradient(#f0d99b,#f0d99b) right top/2px 54px,linear-gradient(#f0d99b,#f0d99b) left bottom/54px 2px,linear-gradient(#f0d99b,#f0d99b) left bottom/2px 54px,linear-gradient(#f0d99b,#f0d99b) right bottom/54px 2px,linear-gradient(#f0d99b,#f0d99b) right bottom/2px 54px;background-repeat:no-repeat;filter:drop-shadow(0 1px 2px #000c);}
 .ui-v2 .world-tree-actions{position:absolute;z-index:4;right:0;bottom:0;left:0;display:flex;align-items:stretch;justify-content:center;gap:12px;padding:22px clamp(12px,4vw,64px) max(22px,env(safe-area-inset-bottom));}
 .ui-v2 .world-tree-actions button{position:relative;display:flex;min-height:72px;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;border:2px solid #f3d98e;border-radius:7px;color:#fff4d0;font:inherit;font-size:clamp(14px,1.35vw,18px);font-weight:900;letter-spacing:.04em;text-shadow:0 2px 3px #000b;cursor:pointer;box-shadow:0 0 0 1px #593e1d,inset 0 1px #fff8,0 8px 22px #000b;transition:filter .2s,transform .2s,border-color .2s,box-shadow .2s;}
 .ui-v2 .world-tree-actions button::before{position:absolute;inset:3px;content:"";pointer-events:none;border:1px solid #fff5;border-radius:4px;}
@@ -82,6 +86,7 @@ function worldTreeAscensionReward(){return Math.max(1,Math.floor(worldTreeMinimu
 function worldTreeGameCleared(){return g.worldTreeStage>=10&&!!g.clearedStages?.[1000]}
 function worldTreeArtPath(stage){return 'assets/game-art/world-tree/stage-'+String(stage).padStart(2,'0')+'.webp'}
 function worldTreeSelectedMonster(){return g.slimes.find(monster=>monster.id===Number(document.getElementById('worldTreeCarryMonster')?.value))||null}
+function worldTreeCanAscend(){worldTreeEnsure();return g.worldTreeStage<10&&g.worldTreeMaso>=worldTreeCost()&&worldTreeBreakthroughReached()}
 function worldTreeRenderCarryPreview(){
  const monster=worldTreeSelectedMonster(),preview=document.getElementById('worldTreeCarryPreview');if(!preview)return;
  if(!monster){preview.textContent='引き継ぐモンスターを選択してください。';return}
@@ -91,7 +96,7 @@ function worldTreeRenderCarryPreview(){
 }
 function worldTreeOpenAscension(){
  worldTreeEnsure();const dialog=document.getElementById('worldTreeAscensionDialog'),select=document.getElementById('worldTreeCarryMonster');
- if(!dialog||g.worldTreeStage>=10||g.worldTreeMaso<worldTreeCost()||!worldTreeBreakthroughReached())return;
+ if(!dialog||dialog.open||!worldTreeCanAscend())return;
  select.innerHTML=g.slimes.map(monster=>'<option value="'+monster.id+'">'+(monster.id===Number(g.main)?'★ メイン · ':monster.id===Number(g.sub)?'サブ · ':'')+monsterDisplayName(monster)+' · Lv.'+monster.level+' · '+getType(monster)+'</option>').join('');
  select.value=String(g.main??g.slimes[0]?.id??'');document.getElementById('worldTreeAscensionRewardText').textContent='突破確認：STAGE '+worldTreeMinimumBreakthrough()+'　／　今回の獲得：'+fmt(worldTreeAscensionReward())+' EP　／　引き継ぐ魔素：'+fmt(g.maso)+'　／　世界樹：第'+g.worldTreeStage+'段階 → 第'+(g.worldTreeStage+1)+'段階';
  worldTreeRenderCarryPreview();dialog.showModal();sfx('tap');
@@ -144,6 +149,7 @@ function worldTreeDonatePulse(){
 }
 function worldTreeStartDonateHold(event){
  if(event?.type==='pointerdown'&&event.button!==0)return;
+ if(worldTreeCanAscend())return;
  event?.preventDefault?.();if(worldTreeHoldDelay!==null||worldTreeHoldActive)return;
  worldTreeHoldPointer=event?.pointerId??null;worldTreeHoldPulseCount=0;
  if(event?.pointerId!==undefined){try{event.currentTarget?.setPointerCapture(event.pointerId)}catch{}}
@@ -170,7 +176,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  worldTreeEnsure();worldTreeRender();
  const donateButton=document.getElementById('worldTreePrimary');
  donateButton.addEventListener('pointerdown',worldTreeStartDonateHold);donateButton.addEventListener('pointerup',worldTreeEndDonateHold);donateButton.addEventListener('pointercancel',worldTreeEndDonateHold);donateButton.addEventListener('lostpointercapture',worldTreeEndDonateHold);donateButton.addEventListener('contextmenu',event=>event.preventDefault());
- donateButton.addEventListener('keydown',event=>{if((event.key===' '||event.key==='Enter')&&!event.repeat)worldTreeStartDonateHold(event)});donateButton.addEventListener('keyup',event=>{if(event.key===' '||event.key==='Enter')worldTreeEndDonateHold(event)});donateButton.addEventListener('click',event=>event.preventDefault());window.addEventListener('blur',worldTreeEndDonateHold);
+ donateButton.addEventListener('keydown',event=>{if((event.key===' '||event.key==='Enter')&&!event.repeat){if(worldTreeCanAscend()){event.preventDefault();worldTreeOpenAscension()}else worldTreeStartDonateHold(event)}});donateButton.addEventListener('keyup',event=>{if(event.key===' '||event.key==='Enter')worldTreeEndDonateHold(event)});donateButton.addEventListener('click',event=>{event.preventDefault();if(worldTreeCanAscend())worldTreeOpenAscension()});window.addEventListener('blur',worldTreeEndDonateHold);
  document.getElementById('worldTreeCarryMonster').addEventListener('change',worldTreeRenderCarryPreview);
  document.getElementById('worldTreeAscensionCancel').addEventListener('click',()=>document.getElementById('worldTreeAscensionDialog').close());
  document.getElementById('worldTreeAscensionAccept').addEventListener('click',()=>worldTreeAscend(document.getElementById('worldTreeCarryMonster').value));

@@ -1154,6 +1154,8 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  await expect(page.locator('#worldTreeMainView button')).toHaveCount(2);
  const desktopScene=await page.locator('.world-tree-scene').boundingBox();expect(desktopScene).toEqual({x:0,y:0,width:1920,height:1080});
  expect(await page.locator('#worldTreeArt').evaluate(image=>getComputedStyle(image).objectFit)).toBe('cover');
+ await expect(page.locator('.world-tree-frame')).toBeVisible();
+ expect(await page.locator('.world-tree-frame').evaluate(frame=>getComputedStyle(frame).pointerEvents)).toBe('none');
  expect(Number(await page.locator('#uiTopbar').evaluate(bar=>getComputedStyle(bar).zIndex))).toBeGreaterThan(1);
  await expect(page.locator('.world-tree-aura')).toHaveCount(0);
  expect(await page.locator('#worldTreePrimary').evaluate(button=>getComputedStyle(button).animationName)).toBe('none');
@@ -1167,7 +1169,7 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso}))).toEqual({maso:1300,donated:1000});
  await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
  await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 2 EP · STAGE 100突破');
- await holdWorldTreePrimary(page,450);
+ await page.locator('#worldTreePrimary').evaluate(button=>button.click());
  await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await expect(page.locator('#worldTreeCarryMonster option')).toHaveCount(1);
  await page.locator('#worldTreeAscensionAccept').click();
