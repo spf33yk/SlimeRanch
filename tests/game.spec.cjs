@@ -1145,3 +1145,37 @@ test('game controls read as raised actions beside the quieter display panels',as
  expect(affordance.buttonBorder).not.toBe(affordance.panelBorder);
  expect(affordance.shadow).toContain('rgb(17, 20, 24)');
 });
+test('world tree accepts capped mana, ascends for stage-based EP, and permanently upgrades the skill tree',async({page})=>{
+ await page.setViewportSize({width:1920,height:1080});
+ await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
+ await expect(page.locator('#worldtree button')).toHaveCount(2);
+ const desktopScene=await page.locator('.world-tree-scene').boundingBox();expect(desktopScene.x).toBeGreaterThanOrEqual(-8);expect(desktopScene.width).toBe(1920);
+ await page.screenshot({path:test.info().outputPath('world-tree-first-stage.png')});
+ await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-01\.webp$/);
+ await expect(page.locator('#worldTreeSkillsButton')).toBeDisabled();
+ await page.evaluate(()=>{g.maso=2300;render()});
+ await page.locator('#worldTreePrimary').click();
+ expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso}))).toEqual({maso:1300,donated:1000});
+ await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
+ await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 1 EP');
+ await page.locator('#worldTreePrimary').click();
+ expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:1});
+ await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-02\.webp$/);
+ await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
+ await page.locator('#worldTreeSkillsButton').click();await expect(page.locator('#worldTreeSkillsDialog')).toBeVisible();
+ const baseMasoGain=await page.evaluate(()=>teamFarmStats().masoGain);
+ await page.locator('[data-world-tree-skill="resonance"]').click();
+ const upgraded=await page.evaluate(()=>({ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(upgraded.ep).toBe(0);expect(upgraded.level).toBe(1);expect(upgraded.masoGain).toBe(baseMasoGain+5);
+ await page.reload();
+ const reloaded=await page.evaluate(()=>({stage:g.worldTreeStage,ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(reloaded.stage).toBe(2);expect(reloaded.ep).toBe(0);expect(reloaded.level).toBe(1);expect(reloaded.masoGain).toBe(baseMasoGain+5);
+});
+test('world tree reaches its tenth artwork and stops further donations or ascensions',async({page})=>{
+ await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
+ await page.setViewportSize({width:390,height:844});
+ const mobileScene=await page.locator('.world-tree-scene').boundingBox();expect(mobileScene.x).toBeGreaterThanOrEqual(-8);expect(mobileScene.x+mobileScene.width).toBeLessThanOrEqual(390);
+ await page.evaluate(()=>{g.worldTreeStage=10;g.worldTreeMaso=1e12;render()});
+ await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-10\.webp$/);
+ await expect(page.locator('#worldTreePrimary')).toBeDisabled();
+ await expect(page.locator('#worldTreeActionLabel')).toHaveText('世界樹は完全に復活した');
+ await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
+});
