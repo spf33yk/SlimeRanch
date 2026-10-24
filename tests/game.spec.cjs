@@ -1162,8 +1162,7 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await expect(page.locator('#worldTreeCarryMonster option')).toHaveCount(1);
  await page.locator('#worldTreeAscensionAccept').click();
- await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeVisible();
- await page.evaluate(()=>document.getElementById('worldTreeAscensionVideo').onended());
+  await expect(page.locator('#worldTreeAscensionVideoLayer')).toHaveCount(0);
  expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:2});
  expect(await page.evaluate(()=>({maso:g.maso,stage:g.stage,maxStage:g.maxStage,slimes:g.slimes.length,field:g.lv}))).toEqual({maso:1300,stage:1,maxStage:1,slimes:1,field:0});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-02\.webp$/);
@@ -1209,17 +1208,12 @@ test('ascension requires each hundred-stage milestone and the tenth image clears
  await expect(page.locator('#worldTreeProgress')).toContainText('STAGE 100突破');
 });
 
-test('ascension video is a playable WebM scene and runs before the reset',async({page})=>{
+test('ascension reset runs without publishing the video draft',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await page.evaluate(()=>{g.worldTreeMaso=1000;g.clearedStages[100]=true;render()});
  await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await page.locator('#worldTreeAscensionAccept').click();
- await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeVisible();
- await page.waitForFunction(()=>{const video=document.getElementById('worldTreeAscensionVideo');return video&&video.readyState>=1},{timeout:10000});
- const metadata=await page.locator('#worldTreeAscensionVideo').evaluate(video=>({duration:video.duration,width:video.videoWidth,height:video.videoHeight,source:video.querySelector('source').getAttribute('src')}));
- expect(metadata.duration).toBeGreaterThan(3.5);expect(metadata.width).toBe(960);expect(metadata.height).toBe(540);expect(metadata.source).toMatch(/ascension\.webm$/);
- await page.evaluate(()=>document.getElementById('worldTreeAscensionVideo').onended());
- await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeHidden();
+ await expect(page.locator('#worldTreeAscensionVideoLayer')).toHaveCount(0);
  expect(await page.evaluate(()=>g.worldTreeStage)).toBe(2);
 });
 
@@ -1246,7 +1240,7 @@ test('ascension warns, lets the player choose one monster and preserves mana, wo
  await page.locator('#worldTreeCarryMonster').selectOption(String(selected));
  await expect(page.locator('#worldTreeCarryPreview')).toContainText('森のおまもり');
  await page.locator('#worldTreeAscensionAccept').click();
- await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeVisible();await page.evaluate(()=>document.getElementById('worldTreeAscensionVideo').onended());
+  await expect(page.locator('#worldTreeAscensionVideoLayer')).toHaveCount(0);
  const result=await page.evaluate(()=>({maso:g.maso,tree:[g.worldTreeStage,g.worldTreeMaso,g.worldTreeEnergy,g.worldTreeSkills.vitality,g.worldTreeSkills.might,g.worldTreeSkills.resonance,g.worldTreeSkills.fortune],stage:[g.stage,g.maxStage,g.kills,g.won,Object.keys(g.clearedStages).length],field:[g.lv,g.yield,g.rangeLv,g.spawnUpgradeLv,g.batchUnlocked,g.dragCollectUnlocked],ranch:[g.slimes.length,g.slimes[0].id,g.main,g.sub,g.slimes[0].level,g.hearts,g.heartItems.length,g.monsterCapacity,g.wins,g.fails,g.firstFusionUsed],gear:[g.treasureChests.length,g.treasureCharms.length,g.treasureEquip.main,g.treasureEquip.sub]}));
  expect(result.maso).toBe(54321);expect(result.tree).toEqual([3,0,11,2,1,3,1]);expect(result.stage).toEqual([1,1,0,false,0]);
  expect(result.field).toEqual([0,0,0,0,false,false]);expect(result.ranch).toEqual([1,selected,selected,null,1,0,0,100,0,0,true]);
