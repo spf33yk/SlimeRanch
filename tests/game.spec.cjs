@@ -1159,7 +1159,11 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
  await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 1 EP');
  await page.locator('#worldTreePrimary').click();
+ await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
+ await expect(page.locator('#worldTreeCarryMonster option')).toHaveCount(1);
+ await page.locator('#worldTreeAscensionAccept').click();
  expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:1});
+ expect(await page.evaluate(()=>({maso:g.maso,stage:g.stage,maxStage:g.maxStage,slimes:g.slimes.length,field:g.lv}))).toEqual({maso:1300,stage:1,maxStage:1,slimes:1,field:0});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-02\.webp$/);
  await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
  await page.locator('#worldTreeSkillsButton').click();await expect(page.locator('#worldTreeMainView')).toBeHidden();await expect(page.locator('#worldTreeSkillsView')).toBeVisible();
@@ -1186,4 +1190,35 @@ test('world tree skill costs and ascension rewards are paced against stage progr
  expect(pacing.reward).toBe(13);
  expect(pacing.costs).toEqual([12,12,12,12]);
  expect(pacing.costs.reduce((sum,cost)=>sum+cost,0)).toBe(48);
+});
+
+test('ascension warns, lets the player choose one monster and preserves mana, world tree and equipment while resetting the run',async({page})=>{
+ await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
+ await page.evaluate(()=>{
+  const extra=monster('炎スライム');g.slimes.push(extra);g.main=g.slimes[0].id;g.sub=extra.id;g.kills=31;g.stage=27;g.maxStage=31;g.clearedStages={1:true,27:true};g.enemyHP=12;g.won=true;
+  g.maso=54321;g.worldTreeStage=2;g.worldTreeMaso=1e4;g.worldTreeEnergy=6;g.worldTreeSkills={vitality:2,might:1,resonance:3,fortune:1};
+  g.lv=4;g.tiles=makeTiles(8);g.yield=5;g.rangeLv=3;g.spawnUpgradeLv=4;g.batchUnlocked=true;g.batchLast=Date.now();g.dragCollectUnlocked=true;g.monsterCapacity=140;
+  g.hearts=1;g.heartItems=[{type:'atk',value:2}];g.wins=12;g.fails=4;g.firstFusionUsed=true;
+  g.treasureChests=[{id:700,rarity:'epic',source:'test'}];g.treasureCharms=[{id:701,rarity:'epic',name:'潮流のおまもり',effects:[{key:'atk',label:'攻撃力',mult:2}]},{id:702,rarity:'normal',name:'森のおまもり',effects:[{key:'maso',label:'魔素湧き速度',mult:1.5}]}];g.treasureEquip={main:701,sub:702};g.treasureNextId=703;render();save();
+ });
+ await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
+ await expect(page.locator('#worldTreeAscensionDialog')).toContainText('ハート');
+ const selected=await page.evaluate(()=>g.sub);
+ await page.locator('#worldTreeCarryMonster').selectOption(String(selected));
+ await expect(page.locator('#worldTreeCarryPreview')).toContainText('森のおまもり');
+ await page.locator('#worldTreeAscensionAccept').click();
+ const result=await page.evaluate(()=>({maso:g.maso,tree:[g.worldTreeStage,g.worldTreeMaso,g.worldTreeEnergy,g.worldTreeSkills.vitality,g.worldTreeSkills.might,g.worldTreeSkills.resonance,g.worldTreeSkills.fortune],stage:[g.stage,g.maxStage,g.kills,g.won,Object.keys(g.clearedStages).length],field:[g.lv,g.yield,g.rangeLv,g.spawnUpgradeLv,g.batchUnlocked,g.dragCollectUnlocked],ranch:[g.slimes.length,g.slimes[0].id,g.main,g.sub,g.slimes[0].level,g.hearts,g.heartItems.length,g.monsterCapacity,g.wins,g.fails,g.firstFusionUsed],gear:[g.treasureChests.length,g.treasureCharms.length,g.treasureEquip.main,g.treasureEquip.sub]}));
+ expect(result.maso).toBe(54321);expect(result.tree).toEqual([3,0,12,2,1,3,1]);expect(result.stage).toEqual([1,1,0,false,0]);
+ expect(result.field).toEqual([0,0,0,0,false,false]);expect(result.ranch).toEqual([1,selected,selected,null,1,0,0,100,0,0,true]);
+ expect(result.gear).toEqual([1,2,702,null]);
+ await page.reload();
+ expect(await page.evaluate(()=>({maso:g.maso,tree:g.worldTreeStage,energy:g.worldTreeEnergy,slimes:g.slimes.length,main:g.main,gear:g.treasureEquip}))).toEqual({maso:54321,tree:3,energy:12,slimes:1,main:selected,gear:{main:702,sub:null}});
+});
+
+test('canceling the ascension warning leaves the current run and save intact',async({page})=>{
+ await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
+ await page.evaluate(()=>{g.maso=900;g.worldTreeMaso=1000;g.maxStage=8;g.slimes.push(monster('海スライム'));render();save()});
+ await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
+ await page.locator('#worldTreeAscensionCancel').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeHidden();
+ expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso,stage:g.worldTreeStage,slimes:g.slimes.length,maxStage:g.maxStage}))).toEqual({maso:900,donated:1000,stage:1,slimes:2,maxStage:8});
 });

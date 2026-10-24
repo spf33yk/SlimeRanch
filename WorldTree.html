@@ -28,6 +28,12 @@
 .ui-v2 .world-tree-skill .tree-skill-level{grid-column:1;color:#a7d8b1;font-size:11px;}
 .ui-v2 .world-tree-skill button{grid-column:2;grid-row:1/4;min-width:122px;min-height:42px;border-color:#a6b57a;background:linear-gradient(#556b45,#344832);}
 .ui-v2 .world-tree-skill button:disabled{cursor:not-allowed;opacity:.55;}
+.ui-v2 .world-tree-ascension-dialog{width:min(620px,calc(100vw - 28px));max-height:min(88dvh,760px);overflow:auto;border:1px solid #d9bf79;background:linear-gradient(160deg,#303735,#1b2226);color:#e8e2cb;box-shadow:0 18px 64px #000c,inset 0 1px #ffffff20;}
+.ui-v2 .world-tree-ascension-dialog::backdrop{background:#080c12c9;backdrop-filter:blur(4px);}
+.ui-v2 .world-tree-ascension-dialog .world-tree-ascension-warning{padding:12px;border:1px solid #8e7240;border-radius:4px;background:#352e22;color:#f2e2b9;font-size:12px;line-height:1.7;}
+.ui-v2 .world-tree-ascension-dialog label{display:block;margin:14px 0 6px;color:#d2e5e0;font-weight:800;}
+.ui-v2 .world-tree-ascension-dialog select{width:100%;min-height:46px;padding:8px 10px;border:1px solid #69777b;border-radius:4px;background:#1b2126;color:#f2eddf;font:inherit;}
+.ui-v2 .world-tree-ascension-dialog .world-tree-carry-preview{min-height:38px;margin:8px 0;padding:9px 11px;border:1px solid #52605a;border-radius:4px;background:#202a29;color:#c6d6c5;font-size:12px;line-height:1.6;}
 @media(max-width:700px){
  .ui-v2 .world-tree-scene{height:calc(100dvh - 155px);min-height:440px;max-height:760px;background-position:center;}
  .ui-v2 .world-tree-art{object-fit:cover;object-position:center center;}
@@ -59,6 +65,30 @@ function worldTreeEnsure(){
 function worldTreeCost(){return WORLD_TREE_COSTS[g.worldTreeStage-1]||0}
 function worldTreeAscensionReward(){return Math.max(1,Math.floor(Math.max(1,Number(g.maxStage)||1)*(g.worldTreeStage+1)/15))}
 function worldTreeArtPath(stage){return 'assets/game-art/world-tree/stage-'+String(stage).padStart(2,'0')+'.webp'}
+function worldTreeSelectedMonster(){return g.slimes.find(monster=>monster.id===Number(document.getElementById('worldTreeCarryMonster')?.value))||null}
+function worldTreeRenderCarryPreview(){
+ const monster=worldTreeSelectedMonster(),preview=document.getElementById('worldTreeCarryPreview');if(!preview)return;
+ if(!monster){preview.textContent='引き継ぐモンスターを選択してください。';return}
+ const slots=[];if(Number(monster.id)===Number(g.main))slots.push('main');if(Number(monster.id)===Number(g.sub))slots.push('sub');
+ const charms=slots.map(slot=>g.treasureCharms?.find(charm=>charm.id===g.treasureEquip?.[slot])).filter(Boolean);
+ preview.textContent=monsterDisplayName(monster)+' · Lv.'+monster.level+' · '+getType(monster)+(charms.length?' · 装備維持：'+charms.map(charm=>charm.name).join('／'):' · 装備中のおまもりなし');
+}
+function worldTreeOpenAscension(){
+ worldTreeEnsure();const dialog=document.getElementById('worldTreeAscensionDialog'),select=document.getElementById('worldTreeCarryMonster');
+ if(!dialog||g.worldTreeStage>=10||g.worldTreeMaso<worldTreeCost())return;
+ select.innerHTML=g.slimes.map(monster=>'<option value="'+monster.id+'">'+(monster.id===Number(g.main)?'★ メイン · ':monster.id===Number(g.sub)?'サブ · ':'')+monsterDisplayName(monster)+' · Lv.'+monster.level+' · '+getType(monster)+'</option>').join('');
+ select.value=String(g.main??g.slimes[0]?.id??'');document.getElementById('worldTreeAscensionRewardText').textContent='今回の獲得：'+fmt(worldTreeAscensionReward())+' EP　／　引き継ぐ魔素：'+fmt(g.maso)+'　／　世界樹：第'+g.worldTreeStage+'段階 → 第'+(g.worldTreeStage+1)+'段階';
+ worldTreeRenderCarryPreview();dialog.showModal();sfx('tap');
+}
+function worldTreeAscend(monsterId){
+ worldTreeEnsure();const cost=worldTreeCost(),monster=g.slimes.find(candidate=>candidate.id===Number(monsterId));
+ if(g.worldTreeStage>=10||!cost||g.worldTreeMaso<cost||!monster)return false;
+ const reward=worldTreeAscensionReward(),carriedMonster=JSON.parse(JSON.stringify(monster));carriedMonster.locked=true;
+ const equipment={...(g.treasureEquip||{main:null,sub:null})},selectedSlot=Number(monster.id)===Number(g.sub)?'sub':'main';
+ const carry={maso:Number(g.maso)||0,worldTreeStage:g.worldTreeStage+1,worldTreeEnergy:g.worldTreeEnergy+reward,worldTreeSkills:{...g.worldTreeSkills},treasureChests:JSON.parse(JSON.stringify(g.treasureChests||[])),treasureCharms:JSON.parse(JSON.stringify(g.treasureCharms||[])),treasureEquip:{main:selectedSlot==='sub'?(equipment.sub||null):(equipment.main||null),sub:null},treasureNextId:Math.max(1,Number(g.treasureNextId)||1),seenSpecies:{...(g.seenSpecies||{})},seenEnemies:{...(g.seenEnemies||{})},nextId:Math.max(Number(g.nextId)||1,Number(carriedMonster.id)+1),autoNext:!!g.autoNext,firstFusionUsed:!!g.firstFusionUsed};
+ Object.assign(g,fresh(),carry,{worldTreeMaso:0,slimes:[carriedMonster],main:carriedMonster.id,sub:null,monsterCapacity:100,tiles:makeTiles(2),stage:1,maxStage:1,enemyHP:36,teamHP:1,won:false,clearedStages:{},kills:0,wins:0,fails:0,hearts:0,heartItems:[],logs:[],bLogs:[],autoFight:false});
+ g.teamHP=teamMax();g.enemyHP=enemyMax(1);document.getElementById('worldTreeAscensionDialog').close();sfx('win');log('🌳 アセンション完了：'+monsterDisplayName(carriedMonster)+'・魔素・おまもりと装備を引き継ぎ、エネルギーポイント +'+reward);save();render();return true;
+}
 function worldTreeRender(){
  const scene=document.querySelector('.world-tree-scene');if(!scene||!g)return;worldTreeEnsure();
  const image=document.getElementById('worldTreeArt'),primary=document.getElementById('worldTreePrimary'),label=document.getElementById('worldTreeActionLabel'),progress=document.getElementById('worldTreeProgress'),skillsButton=document.getElementById('worldTreeSkillsButton');
@@ -78,7 +108,7 @@ function worldTreeRenderSkills(){
 }
 function worldTreeDonate(){
  worldTreeEnsure();const cost=worldTreeCost();if(!cost||g.worldTreeStage>=10)return;
- if(g.worldTreeMaso>=cost){const reward=worldTreeAscensionReward();g.worldTreeStage++;g.worldTreeMaso=0;g.worldTreeEnergy+=reward;sfx('win');log('🌳 世界樹が第'+g.worldTreeStage+'段階へ成長。エネルギーポイント +'+reward);save();render();return;}
+ if(g.worldTreeMaso>=cost){worldTreeOpenAscension();return;}
  const amount=Math.min(Math.max(0,Number(g.maso)||0),cost-g.worldTreeMaso);if(amount<=0){sfx('fail');return;}
  g.maso-=amount;g.worldTreeMaso+=amount;sfx('buy');save();render();
 }
@@ -96,6 +126,9 @@ render=function(options){const result=worldTreeBaseRender(options);worldTreeRend
 document.addEventListener('DOMContentLoaded',()=>{
  worldTreeEnsure();worldTreeRender();
  document.getElementById('worldTreePrimary').addEventListener('click',worldTreeDonate);
+ document.getElementById('worldTreeCarryMonster').addEventListener('change',worldTreeRenderCarryPreview);
+ document.getElementById('worldTreeAscensionCancel').addEventListener('click',()=>document.getElementById('worldTreeAscensionDialog').close());
+ document.getElementById('worldTreeAscensionAccept').addEventListener('click',()=>worldTreeAscend(document.getElementById('worldTreeCarryMonster').value));
  document.getElementById('worldTreeSkillsButton').addEventListener('click',()=>{if(g.worldTreeStage>=2){worldTreeRenderSkills();document.getElementById('worldTreeMainView').hidden=true;document.getElementById('worldTreeSkillsView').hidden=false;sfx('tab')}});
  document.getElementById('worldTreeSkillsClose').addEventListener('click',()=>{document.getElementById('worldTreeSkillsView').hidden=true;document.getElementById('worldTreeMainView').hidden=false;sfx('tab')});
  document.getElementById('worldTreeSkillList').addEventListener('click',event=>{const button=event.target.closest('[data-world-tree-skill]');if(button)worldTreeBuySkill(button.dataset.worldTreeSkill)});
