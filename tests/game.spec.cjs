@@ -1148,11 +1148,12 @@ test('game controls read as raised actions beside the quieter display panels',as
  expect(affordance.buttonBorder).not.toBe(affordance.panelBorder);
  expect(affordance.shadow).toContain('rgb(17, 20, 24)');
 });
-test('world tree accepts capped mana, ascends for stage-based EP, and permanently upgrades the skill tree',async({page})=>{
+test('world tree uses a framed scene below the shared header and awards one EP per ascension',async({page})=>{
  await page.setViewportSize({width:1920,height:1080});
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await expect(page.locator('#worldTreeMainView button')).toHaveCount(2);
- const desktopScene=await page.locator('.world-tree-scene').boundingBox();expect(desktopScene).toEqual({x:0,y:0,width:1920,height:1080});
+ const desktopScene=await page.evaluate(()=>{const scene=document.querySelector('.world-tree-scene'),box=scene.getBoundingClientRect(),topbar=document.querySelector('#uiTopbar').getBoundingClientRect(),frame=document.querySelector('.world-tree-frame').getBoundingClientRect();return{scene:{x:box.x,y:box.y,width:box.width,height:box.height},frame:{x:frame.x,y:frame.y,width:frame.width,height:frame.height},top:Math.ceil(topbar.bottom+8),clientWidth:document.body.clientWidth}});
+ expect(desktopScene.scene).toEqual({x:12,y:desktopScene.top,width:desktopScene.clientWidth-24,height:1080-desktopScene.top-12});expect(desktopScene.frame).toEqual(desktopScene.scene);
  expect(await page.locator('#worldTreeArt').evaluate(image=>getComputedStyle(image).objectFit)).toBe('cover');
  await expect(page.locator('.world-tree-frame')).toBeVisible();
  expect(await page.locator('.world-tree-frame').evaluate(frame=>getComputedStyle(frame).pointerEvents)).toBe('none');
@@ -1168,27 +1169,26 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  await holdWorldTreePrimary(page,800);
  expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso}))).toEqual({maso:1300,donated:1000});
  await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
- await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 2 EP · STAGE 100突破');
+ await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 1 EP · STAGE 100突破');
  await page.locator('#worldTreePrimary').evaluate(button=>button.click());
  await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await expect(page.locator('#worldTreeCarryMonster option')).toHaveCount(1);
  await page.locator('#worldTreeAscensionAccept').click();
   await expect(page.locator('#worldTreeAscensionVideoLayer')).toHaveCount(0);
- expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:2});
+ expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:1});
  expect(await page.evaluate(()=>({maso:g.maso,stage:g.stage,maxStage:g.maxStage,slimes:g.slimes.length,field:g.lv}))).toEqual({maso:1300,stage:1,maxStage:1,slimes:1,field:0});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-02\.webp$/);
  await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
  await page.locator('#worldTreeSkillsButton').click();await expect(page.locator('#worldTreeMainView')).toBeHidden();await expect(page.locator('#worldTreeSkillsView')).toBeVisible();
- const baseMasoGain=await page.evaluate(()=>teamFarmStats().masoGain);
- await page.locator('[data-world-tree-skill="resonance"]').click();
- const upgraded=await page.evaluate(()=>({ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(upgraded.ep).toBe(1);expect(upgraded.level).toBe(1);expect(upgraded.masoGain).toBe(baseMasoGain+5);
+ await expect(page.locator('#worldTreeSkillList .world-tree-empty')).toBeVisible();await expect(page.locator('#worldTreeSkillList button')).toHaveCount(0);await expect(page.locator('#worldTreeSkillsPoints')).toHaveText('エネルギーポイント：1 EP');
  await page.reload();
- const reloaded=await page.evaluate(()=>({stage:g.worldTreeStage,ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(reloaded.stage).toBe(2);expect(reloaded.ep).toBe(1);expect(reloaded.level).toBe(1);expect(reloaded.masoGain).toBe(baseMasoGain+5);
+ const reloaded=await page.evaluate(()=>({stage:g.worldTreeStage,ep:g.worldTreeEnergy}));expect(reloaded.stage).toBe(2);expect(reloaded.ep).toBe(1);
 });
 test('world tree reaches its tenth artwork and stops further donations or ascensions',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await page.setViewportSize({width:390,height:844});
- const mobileScene=await page.locator('.world-tree-scene').boundingBox();expect(mobileScene).toEqual({x:0,y:0,width:390,height:844});
+ await expect.poll(()=>page.evaluate(()=>{const box=document.querySelector('.world-tree-scene').getBoundingClientRect(),bar=document.querySelector('#uiTopbar').getBoundingClientRect();return box.y>=Math.ceil(bar.bottom+8)})).toBe(true);
+ const mobileScene=await page.evaluate(()=>{const scene=document.querySelector('.world-tree-scene').getBoundingClientRect(),topbar=document.querySelector('#uiTopbar').getBoundingClientRect(),top=Math.ceil(topbar.bottom+8);return{x:scene.x,y:scene.y,width:scene.width,height:scene.height,top,clientWidth:document.body.clientWidth}});expect(mobileScene).toEqual({x:12,y:mobileScene.top,width:mobileScene.clientWidth-24,height:844-mobileScene.top-12,top:mobileScene.top,clientWidth:mobileScene.clientWidth});
  await page.evaluate(()=>{g.worldTreeStage=10;g.worldTreeMaso=1e12;render()});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-10\.webp$/);
  await expect(page.locator('#worldTreePrimary')).toBeDisabled();
@@ -1199,13 +1199,11 @@ test('world tree reaches its tenth artwork and stops further donations or ascens
  await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
 });
 
-test('world tree skill costs and ascension rewards are paced against stage progress',async({page})=>{
+test('world tree awards exactly one EP per ascension regardless of stage milestone',async({page})=>{
  await page.goto('./');
- const pacing=await page.evaluate(()=>{const rewards=[];for(let stage=1;stage<=9;stage++){g.worldTreeStage=stage;rewards.push(worldTreeAscensionReward())}return{rewards,costs:WORLD_TREE_COSTS.slice(0,9),skillCosts:Object.values(WORLD_TREE_SKILLS).map(skill=>skill.costs.reduce((sum,cost)=>sum+cost,0))}});
- expect(pacing.rewards).toEqual([2,5,7,10,12,15,17,20,22]);
+ const pacing=await page.evaluate(()=>{const rewards=[];for(let stage=1;stage<=9;stage++){g.worldTreeStage=stage;rewards.push(worldTreeAscensionReward())}return{rewards,costs:WORLD_TREE_COSTS.slice(0,9)}});
+ expect(pacing.rewards).toEqual([1,1,1,1,1,1,1,1,1]);
  expect(pacing.costs).toEqual([1000,2500,5000,9000,15000,23000,33000,46000,62000]);
- expect(pacing.skillCosts).toEqual([12,12,12,12]);
- expect(pacing.skillCosts.reduce((sum,cost)=>sum+cost,0)).toBe(48);
 });
 
 test('ascension requires each hundred-stage milestone and the tenth image clears only at stage 1000',async({page})=>{
@@ -1253,11 +1251,11 @@ test('ascension warns, lets the player choose one monster and preserves mana, wo
  await page.locator('#worldTreeAscensionAccept').click();
   await expect(page.locator('#worldTreeAscensionVideoLayer')).toHaveCount(0);
  const result=await page.evaluate(()=>({maso:g.maso,tree:[g.worldTreeStage,g.worldTreeMaso,g.worldTreeEnergy,g.worldTreeSkills.vitality,g.worldTreeSkills.might,g.worldTreeSkills.resonance,g.worldTreeSkills.fortune],stage:[g.stage,g.maxStage,g.kills,g.won,Object.keys(g.clearedStages).length],field:[g.lv,g.yield,g.rangeLv,g.spawnUpgradeLv,g.batchUnlocked,g.dragCollectUnlocked],ranch:[g.slimes.length,g.slimes[0].id,g.main,g.sub,g.slimes[0].level,g.hearts,g.heartItems.length,g.monsterCapacity,g.wins,g.fails,g.firstFusionUsed],gear:[g.treasureChests.length,g.treasureCharms.length,g.treasureEquip.main,g.treasureEquip.sub]}));
- expect(result.maso).toBe(54321);expect(result.tree).toEqual([3,0,11,2,1,3,1]);expect(result.stage).toEqual([1,1,0,false,0]);
+ expect(result.maso).toBe(54321);expect(result.tree).toEqual([3,0,7,2,1,3,1]);expect(result.stage).toEqual([1,1,0,false,0]);
  expect(result.field).toEqual([0,0,0,0,false,false]);expect(result.ranch).toEqual([1,selected,selected,null,1,0,0,100,0,0,true]);
  expect(result.gear).toEqual([1,2,702,null]);
  await page.reload();
- expect(await page.evaluate(()=>({maso:g.maso,tree:g.worldTreeStage,energy:g.worldTreeEnergy,slimes:g.slimes.length,main:g.main,gear:g.treasureEquip}))).toEqual({maso:54321,tree:3,energy:11,slimes:1,main:selected,gear:{main:702,sub:null}});
+ expect(await page.evaluate(()=>({maso:g.maso,tree:g.worldTreeStage,energy:g.worldTreeEnergy,slimes:g.slimes.length,main:g.main,gear:g.treasureEquip}))).toEqual({maso:54321,tree:3,energy:7,slimes:1,main:selected,gear:{main:702,sub:null}});
 });
 
 test('canceling the ascension warning leaves the current run and save intact',async({page})=>{
