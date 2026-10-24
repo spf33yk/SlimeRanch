@@ -1152,7 +1152,9 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  await page.setViewportSize({width:1920,height:1080});
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await expect(page.locator('#worldTreeMainView button')).toHaveCount(2);
- const desktopScene=await page.locator('.world-tree-scene').boundingBox();expect(desktopScene.x).toBeGreaterThanOrEqual(-8);expect(desktopScene.width).toBe(1920);
+ const desktopScene=await page.locator('.world-tree-scene').boundingBox();expect(desktopScene).toEqual({x:0,y:0,width:1920,height:1080});
+ expect(await page.locator('#worldTreeArt').evaluate(image=>getComputedStyle(image).objectFit)).toBe('cover');
+ expect(Number(await page.locator('#uiTopbar').evaluate(bar=>getComputedStyle(bar).zIndex))).toBeGreaterThan(1);
  await expect(page.locator('.world-tree-aura')).toHaveCount(0);
  expect(await page.locator('#worldTreePrimary').evaluate(button=>getComputedStyle(button).animationName)).toBe('none');
  await page.screenshot({path:test.info().outputPath('world-tree-first-stage.png')});
@@ -1184,7 +1186,7 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
 test('world tree reaches its tenth artwork and stops further donations or ascensions',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await page.setViewportSize({width:390,height:844});
- const mobileScene=await page.locator('.world-tree-scene').boundingBox();expect(mobileScene.x).toBeGreaterThanOrEqual(-8);expect(mobileScene.x+mobileScene.width).toBeLessThanOrEqual(390);
+ const mobileScene=await page.locator('.world-tree-scene').boundingBox();expect(mobileScene).toEqual({x:0,y:0,width:390,height:844});
  await page.evaluate(()=>{g.worldTreeStage=10;g.worldTreeMaso=1e12;render()});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-10\.webp$/);
  await expect(page.locator('#worldTreePrimary')).toBeDisabled();

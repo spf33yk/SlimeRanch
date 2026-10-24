@@ -47,6 +47,15 @@
  .ui-v2 .world-tree-skill{padding:11px;}
 }
 @media(max-width:700px) and (orientation:landscape){.ui-v2 .world-tree-scene{height:calc(100dvh - 130px);min-height:300px}.ui-v2 .world-tree-actions{flex-direction:row;align-items:end}.ui-v2 .world-tree-actions button{min-height:54px}.ui-v2 .world-tree-primary{width:min(420px,58vw)}.ui-v2 .world-tree-skills{width:min(280px,36vw)}}
+/* The World Tree artwork is an immersive full-viewport backdrop; the shared header stays above it. */
+.ui-v2 #worldtree.scene-enter{animation:world-tree-fade .24s ease-out both}
+@keyframes world-tree-fade{from{opacity:0}to{opacity:1}}
+.ui-v2 #worldtree.active .world-tree-scene{position:fixed;inset:0;z-index:1;width:100vw;height:100dvh;min-height:0;max-height:none;border-radius:0}
+.ui-v2 #worldtree.active{min-height:min(78dvh,850px)}
+.ui-v2 #worldtree.active .world-tree-art{object-fit:cover;object-position:center center}
+body.ui-v2:has(#worldtree.active) #uiTopbar{background:#23272cdb;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+@media(max-width:700px){.ui-v2 #worldtree.active{min-height:calc(100dvh - 155px)}}
+@media(max-width:700px) and (orientation:landscape){.ui-v2 #worldtree.active{min-height:calc(100dvh - 130px)}}
 @media(prefers-reduced-motion:reduce){.ui-v2 .world-tree-art,.ui-v2 .world-tree-actions button{transition:none}}
 </style>
 <script>
