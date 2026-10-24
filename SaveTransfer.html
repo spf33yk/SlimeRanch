@@ -75,9 +75,9 @@
  }
  window.SlimeSaveTransfer={parse,encode,restore};
  document.addEventListener('DOMContentLoaded',()=>{
-  const host=document.getElementById('uiSettings')||document.getElementById('guideResearch');
+   const host=document.querySelector('#uiSettings [aria-labelledby="uiDataSettingsTitle"]')||document.getElementById('uiSettings')||document.getElementById('guideResearch');
   const section=document.createElement('section');
-  section.style.cssText='margin-top:20px;border-top:1px solid #6b737c;padding-top:14px';
+   section.className='ui-save-transfer';
   section.innerHTML='<h3>セーブの引き継ぎ</h3><p class="small">GAS版からの移行・端末変更はJSONで引き継げます。データは端末内だけで扱います。</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="saveExport">バックアップを書き出す</button><button type="button" id="saveImport">JSONを読み込む</button><button type="button" id="savePrevious">読み込み前のデータを書き出す</button></div><input id="saveImportFile" type="file" accept=".json,application/json" hidden><p id="saveTransferStatus" role="status" style="line-height:1.7"></p><details><summary>ファイルを保存できない場合</summary><p class="small">書き出し後に表示されるJSONをコピーし、.jsonファイルに保存してください。</p><textarea id="saveTransferText" readonly aria-label="セーブJSON" style="width:100%;min-height:100px"></textarea></details>';
   host.append(section);
   const get=id=>document.getElementById(id),status=get('saveTransferStatus'),file=get('saveImportFile');

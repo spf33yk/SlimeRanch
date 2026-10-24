@@ -34,6 +34,13 @@ test('opening screen loads the game art and offers start, options and end action
  await expect(page.locator('#uiSfxVolume')).toHaveValue('50');
  await expect(page.locator('#uiReducedMotion')).toBeVisible();
  await expect(page.locator('#uiResetGame')).toBeVisible();
+ await expect(page.locator('#uiSettings .ui-settings-section')).toHaveCount(3);
+ await expect(page.locator('#uiSettings #uiManualSave')).toBeVisible();
+ await expect(page.locator('#saveExport').locator('xpath=ancestor::section[contains(@class,"ui-settings-section")]')).toHaveAttribute('aria-labelledby','uiDataSettingsTitle');
+ expect(await page.locator('#uiSettings .ui-settings-section').evaluateAll(xs=>xs.map(x=>getComputedStyle(x).borderRadius))).toEqual(['6px','6px','6px']);
+ await page.setViewportSize({width:390,height:844});
+ const mobileOptions=await page.locator('#uiSettings').evaluate(e=>({left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right,width:e.clientWidth,content:e.scrollWidth}));
+ expect(mobileOptions.left).toBeGreaterThanOrEqual(0);expect(mobileOptions.right).toBeLessThanOrEqual(390);expect(mobileOptions.content).toBeLessThanOrEqual(mobileOptions.width+1);
  await page.locator('#uiSfxVolume').fill('24');
  expect(await page.evaluate(()=>localStorage.getItem('slimeRanchSfxVolume'))).toBe('24');
  await page.locator('#soundToggle').uncheck();
@@ -909,6 +916,8 @@ test('three un-equipped charms of one rarity reroll into one charm of that rarit
 });
 test('charm reroll rejects mixed rarity and retains legendary freeze at a total multiplier of exactly ten',async({page})=>{
  await page.goto('./');
+ const thresholds=await page.evaluate(()=>[9.99,10,10.01].map(total=>treasureCharmHasFreeze({rarity:'legendary',effects:[{mult:total}]})).concat(treasureCharmHasFreeze({rarity:'epic',effects:[{mult:10}]})));
+ expect(thresholds).toEqual([false,true,true,false]);
  await page.evaluate(()=>{
   for(let i=0;i<3;i++)g.treasureCharms.push({id:g.treasureNextId++,rarity:'legendary',name:'変換素材'+i,effects:[{key:'hp',label:'HP',mult:2},{key:'atk',label:'攻撃力',mult:2},{key:'def',label:'守備力',mult:2}]});
   treasureDialog('main');document.querySelector('#treasureCharmSection summary').click();
