@@ -43,10 +43,10 @@
 <script>
 const WORLD_TREE_COSTS=[1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e10,1e11,1e12];
 const WORLD_TREE_SKILLS={
- vitality:{name:'根の守り',icon:'🛡️',description:'チームの最大HPが1段階ごとに10%上昇。',costs:[1,2,3,5,8]},
- might:{name:'大樹の力',icon:'⚔️',description:'チームの攻撃力が1段階ごとに5%上昇。',costs:[1,2,3,5,8]},
- resonance:{name:'魔素共鳴',icon:'✨',description:'魔素の取得量が1段階ごとに5%上昇。',costs:[1,2,3,5,8]},
- fortune:{name:'生命の祝福',icon:'💗',description:'ハートのドロップ率が1段階ごとに0.5ポイント上昇。',costs:[1,2,3,5,8]}
+ vitality:{name:'根の守り',icon:'🛡️',description:'チームの最大HPが1段階ごとに10%上昇。',costs:[1,1,2,3,5]},
+ might:{name:'大樹の力',icon:'⚔️',description:'チームの攻撃力が1段階ごとに5%上昇。',costs:[1,1,2,3,5]},
+ resonance:{name:'魔素共鳴',icon:'✨',description:'魔素の取得量が1段階ごとに5%上昇。',costs:[1,1,2,3,5]},
+ fortune:{name:'生命の祝福',icon:'💗',description:'ハートのドロップ率が1段階ごとに0.5ポイント上昇。',costs:[1,1,2,3,5]}
 };
 function worldTreeEnsure(){
  if(!g||typeof g!=='object')return;
@@ -57,7 +57,7 @@ function worldTreeEnsure(){
  for(const [key,skill] of Object.entries(WORLD_TREE_SKILLS))g.worldTreeSkills[key]=Math.max(0,Math.min(skill.costs.length,Math.floor(Number(g.worldTreeSkills[key])||0)));
 }
 function worldTreeCost(){return WORLD_TREE_COSTS[g.worldTreeStage-1]||0}
-function worldTreeAscensionReward(){return Math.max(1,Math.floor(Math.max(1,Number(g.maxStage)||1)*(g.worldTreeStage+1)/25))}
+function worldTreeAscensionReward(){return Math.max(1,Math.floor(Math.max(1,Number(g.maxStage)||1)*(g.worldTreeStage+1)/15))}
 function worldTreeArtPath(stage){return 'assets/game-art/world-tree/stage-'+String(stage).padStart(2,'0')+'.webp'}
 function worldTreeRender(){
  const scene=document.querySelector('.world-tree-scene');if(!scene||!g)return;worldTreeEnsure();

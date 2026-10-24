@@ -1179,3 +1179,11 @@ test('world tree reaches its tenth artwork and stops further donations or ascens
  await expect(page.locator('#worldTreeActionLabel')).toHaveText('世界樹は完全に復活した');
  await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
 });
+
+test('world tree skill costs and ascension rewards are paced against stage progress',async({page})=>{
+ await page.goto('./');
+ const pacing=await page.evaluate(()=>{g.worldTreeStage=1;g.maxStage=100;return{reward:worldTreeAscensionReward(),costs:Object.values(WORLD_TREE_SKILLS).map(skill=>skill.costs.reduce((sum,cost)=>sum+cost,0))}});
+ expect(pacing.reward).toBe(13);
+ expect(pacing.costs).toEqual([12,12,12,12]);
+ expect(pacing.costs.reduce((sum,cost)=>sum+cost,0)).toBe(48);
+});
