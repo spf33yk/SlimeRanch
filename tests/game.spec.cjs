@@ -1153,25 +1153,27 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  await page.screenshot({path:test.info().outputPath('world-tree-first-stage.png')});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-01\.webp$/);
  await expect(page.locator('#worldTreeSkillsButton')).toBeDisabled();
- await page.evaluate(()=>{g.maso=2300;render()});
+ await page.evaluate(()=>{g.maso=2300;g.clearedStages[100]=true;render()});
  await page.locator('#worldTreePrimary').click();
  expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso}))).toEqual({maso:1300,donated:1000});
  await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
- await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 1 EP');
+ await expect(page.locator('#worldTreeProgress')).toHaveText('獲得 2 EP · STAGE 100突破');
  await page.locator('#worldTreePrimary').click();
  await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await expect(page.locator('#worldTreeCarryMonster option')).toHaveCount(1);
  await page.locator('#worldTreeAscensionAccept').click();
- expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:1});
+ await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeVisible();
+ await page.evaluate(()=>document.getElementById('worldTreeAscensionVideo').onended());
+ expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:2});
  expect(await page.evaluate(()=>({maso:g.maso,stage:g.stage,maxStage:g.maxStage,slimes:g.slimes.length,field:g.lv}))).toEqual({maso:1300,stage:1,maxStage:1,slimes:1,field:0});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-02\.webp$/);
  await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
  await page.locator('#worldTreeSkillsButton').click();await expect(page.locator('#worldTreeMainView')).toBeHidden();await expect(page.locator('#worldTreeSkillsView')).toBeVisible();
  const baseMasoGain=await page.evaluate(()=>teamFarmStats().masoGain);
  await page.locator('[data-world-tree-skill="resonance"]').click();
- const upgraded=await page.evaluate(()=>({ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(upgraded.ep).toBe(0);expect(upgraded.level).toBe(1);expect(upgraded.masoGain).toBe(baseMasoGain+5);
+ const upgraded=await page.evaluate(()=>({ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(upgraded.ep).toBe(1);expect(upgraded.level).toBe(1);expect(upgraded.masoGain).toBe(baseMasoGain+5);
  await page.reload();
- const reloaded=await page.evaluate(()=>({stage:g.worldTreeStage,ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(reloaded.stage).toBe(2);expect(reloaded.ep).toBe(0);expect(reloaded.level).toBe(1);expect(reloaded.masoGain).toBe(baseMasoGain+5);
+ const reloaded=await page.evaluate(()=>({stage:g.worldTreeStage,ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(reloaded.stage).toBe(2);expect(reloaded.ep).toBe(1);expect(reloaded.level).toBe(1);expect(reloaded.masoGain).toBe(baseMasoGain+5);
 });
 test('world tree reaches its tenth artwork and stops further donations or ascensions',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
@@ -1180,22 +1182,59 @@ test('world tree reaches its tenth artwork and stops further donations or ascens
  await page.evaluate(()=>{g.worldTreeStage=10;g.worldTreeMaso=1e12;render()});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-10\.webp$/);
  await expect(page.locator('#worldTreePrimary')).toBeDisabled();
- await expect(page.locator('#worldTreeActionLabel')).toHaveText('世界樹は完全に復活した');
+ await expect(page.locator('#worldTreeActionLabel')).toHaveText('🌳 世界樹は完全に復活した');
+ await expect(page.locator('#worldTreeProgress')).toHaveText('STAGE 1000を突破してゲームクリア');
+ await page.evaluate(()=>{g.clearedStages[1000]=true;render()});
+ await expect(page.locator('#worldTreeActionLabel')).toContainText('ゲームクリア');
  await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
 });
 
 test('world tree skill costs and ascension rewards are paced against stage progress',async({page})=>{
  await page.goto('./');
- const pacing=await page.evaluate(()=>{g.worldTreeStage=1;g.maxStage=100;return{reward:worldTreeAscensionReward(),costs:Object.values(WORLD_TREE_SKILLS).map(skill=>skill.costs.reduce((sum,cost)=>sum+cost,0))}});
- expect(pacing.reward).toBe(13);
- expect(pacing.costs).toEqual([12,12,12,12]);
- expect(pacing.costs.reduce((sum,cost)=>sum+cost,0)).toBe(48);
+ const pacing=await page.evaluate(()=>{const rewards=[];for(let stage=1;stage<=9;stage++){g.worldTreeStage=stage;rewards.push(worldTreeAscensionReward())}return{rewards,costs:WORLD_TREE_COSTS.slice(0,9),skillCosts:Object.values(WORLD_TREE_SKILLS).map(skill=>skill.costs.reduce((sum,cost)=>sum+cost,0))}});
+ expect(pacing.rewards).toEqual([2,5,7,10,12,15,17,20,22]);
+ expect(pacing.costs).toEqual([1000,2500,5000,9000,15000,23000,33000,46000,62000]);
+ expect(pacing.skillCosts).toEqual([12,12,12,12]);
+ expect(pacing.skillCosts.reduce((sum,cost)=>sum+cost,0)).toBe(48);
+});
+
+test('ascension requires each hundred-stage milestone and the tenth image clears only at stage 1000',async({page})=>{
+ await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
+ await page.evaluate(()=>{g.maso=5000;g.worldTreeMaso=1000;render()});
+ await expect(page.locator('#worldTreeActionLabel')).toHaveText('🔒 突破条件を達成しよう');
+ await expect(page.locator('#worldTreeProgress')).toContainText('STAGE 100クリア');
+ await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeHidden();
+ await page.evaluate(()=>{g.clearedStages[100]=true;render()});
+ await expect(page.locator('#worldTreeActionLabel')).toHaveText(/アセンション/);
+ await expect(page.locator('#worldTreeProgress')).toContainText('STAGE 100突破');
+});
+
+test('ascension video is a playable WebM scene and runs before the reset',async({page})=>{
+ await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
+ await page.evaluate(()=>{g.worldTreeMaso=1000;g.clearedStages[100]=true;render()});
+ await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
+ await page.locator('#worldTreeAscensionAccept').click();
+ await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeVisible();
+ await page.waitForFunction(()=>{const video=document.getElementById('worldTreeAscensionVideo');return video&&video.readyState>=1},{timeout:10000});
+ const metadata=await page.locator('#worldTreeAscensionVideo').evaluate(video=>({duration:video.duration,width:video.videoWidth,height:video.videoHeight,source:video.querySelector('source').getAttribute('src')}));
+ expect(metadata.duration).toBeGreaterThan(3.5);expect(metadata.width).toBe(960);expect(metadata.height).toBe(540);expect(metadata.source).toMatch(/ascension\.webm$/);
+ await page.evaluate(()=>document.getElementById('worldTreeAscensionVideo').onended());
+ await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeHidden();
+ expect(await page.evaluate(()=>g.worldTreeStage)).toBe(2);
+});
+
+test('resource prices, battle rewards and monster growth follow the revised pacing',async({page})=>{
+ await page.goto('./');
+ const economy=await page.evaluate(()=>{g.yield=0;g.spawnUpgradeLv=0;g.rangeLv=0;g.slimes=[main()];return{field:COSTS.slice(1),spawn:[0,1,2].map(lv=>{g.spawnUpgradeLv=lv;return spawnUpgradeCost()}),range:[0,1,2,3,4].map(lv=>{g.rangeLv=lv;return rangeCost()}),yield:[0,1,2].map(lv=>{g.yield=lv;return Math.ceil(20*Math.pow(1.55,lv))}),fusion:fuseCost(),battle:[1,100,1000].map(battleManaReward),xp:[1,250,1000].map(battleMonsterXpReward)}});
+ expect(economy.field).toEqual([50,160,420,1100,2800,6500]);
+ expect(economy.spawn).toEqual([60,90,135]);expect(economy.range).toEqual([100,280,700,1600,null]);expect(economy.yield).toEqual([20,31,49]);
+ expect(economy.fusion).toBe(23);expect(economy.battle).toEqual([10,208,2008]);expect(economy.xp).toEqual([2,3,6]);
 });
 
 test('ascension warns, lets the player choose one monster and preserves mana, world tree and equipment while resetting the run',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
  await page.evaluate(()=>{
-  const extra=monster('炎スライム');g.slimes.push(extra);g.main=g.slimes[0].id;g.sub=extra.id;g.kills=31;g.stage=27;g.maxStage=31;g.clearedStages={1:true,27:true};g.enemyHP=12;g.won=true;
+  const extra=monster('炎スライム');g.slimes.push(extra);g.main=g.slimes[0].id;g.sub=extra.id;g.kills=31;g.stage=27;g.maxStage=31;g.clearedStages={1:true,27:true,200:true};g.enemyHP=12;g.won=true;
   g.maso=54321;g.worldTreeStage=2;g.worldTreeMaso=1e4;g.worldTreeEnergy=6;g.worldTreeSkills={vitality:2,might:1,resonance:3,fortune:1};
   g.lv=4;g.tiles=makeTiles(8);g.yield=5;g.rangeLv=3;g.spawnUpgradeLv=4;g.batchUnlocked=true;g.batchLast=Date.now();g.dragCollectUnlocked=true;g.monsterCapacity=140;
   g.hearts=1;g.heartItems=[{type:'atk',value:2}];g.wins=12;g.fails=4;g.firstFusionUsed=true;
@@ -1207,18 +1246,19 @@ test('ascension warns, lets the player choose one monster and preserves mana, wo
  await page.locator('#worldTreeCarryMonster').selectOption(String(selected));
  await expect(page.locator('#worldTreeCarryPreview')).toContainText('森のおまもり');
  await page.locator('#worldTreeAscensionAccept').click();
+ await expect(page.locator('#worldTreeAscensionVideoLayer')).toBeVisible();await page.evaluate(()=>document.getElementById('worldTreeAscensionVideo').onended());
  const result=await page.evaluate(()=>({maso:g.maso,tree:[g.worldTreeStage,g.worldTreeMaso,g.worldTreeEnergy,g.worldTreeSkills.vitality,g.worldTreeSkills.might,g.worldTreeSkills.resonance,g.worldTreeSkills.fortune],stage:[g.stage,g.maxStage,g.kills,g.won,Object.keys(g.clearedStages).length],field:[g.lv,g.yield,g.rangeLv,g.spawnUpgradeLv,g.batchUnlocked,g.dragCollectUnlocked],ranch:[g.slimes.length,g.slimes[0].id,g.main,g.sub,g.slimes[0].level,g.hearts,g.heartItems.length,g.monsterCapacity,g.wins,g.fails,g.firstFusionUsed],gear:[g.treasureChests.length,g.treasureCharms.length,g.treasureEquip.main,g.treasureEquip.sub]}));
- expect(result.maso).toBe(54321);expect(result.tree).toEqual([3,0,12,2,1,3,1]);expect(result.stage).toEqual([1,1,0,false,0]);
+ expect(result.maso).toBe(54321);expect(result.tree).toEqual([3,0,11,2,1,3,1]);expect(result.stage).toEqual([1,1,0,false,0]);
  expect(result.field).toEqual([0,0,0,0,false,false]);expect(result.ranch).toEqual([1,selected,selected,null,1,0,0,100,0,0,true]);
  expect(result.gear).toEqual([1,2,702,null]);
  await page.reload();
- expect(await page.evaluate(()=>({maso:g.maso,tree:g.worldTreeStage,energy:g.worldTreeEnergy,slimes:g.slimes.length,main:g.main,gear:g.treasureEquip}))).toEqual({maso:54321,tree:3,energy:12,slimes:1,main:selected,gear:{main:702,sub:null}});
+ expect(await page.evaluate(()=>({maso:g.maso,tree:g.worldTreeStage,energy:g.worldTreeEnergy,slimes:g.slimes.length,main:g.main,gear:g.treasureEquip}))).toEqual({maso:54321,tree:3,energy:11,slimes:1,main:selected,gear:{main:702,sub:null}});
 });
 
 test('canceling the ascension warning leaves the current run and save intact',async({page})=>{
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
- await page.evaluate(()=>{g.maso=900;g.worldTreeMaso=1000;g.maxStage=8;g.slimes.push(monster('海スライム'));render();save()});
+ await page.evaluate(()=>{g.maso=900;g.worldTreeMaso=1000;g.maxStage=101;g.clearedStages[100]=true;g.slimes.push(monster('海スライム'));render();save()});
  await page.locator('#worldTreePrimary').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeVisible();
  await page.locator('#worldTreeAscensionCancel').click();await expect(page.locator('#worldTreeAscensionDialog')).toBeHidden();
- expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso,stage:g.worldTreeStage,slimes:g.slimes.length,maxStage:g.maxStage}))).toEqual({maso:900,donated:1000,stage:1,slimes:2,maxStage:8});
+ expect(await page.evaluate(()=>({maso:g.maso,donated:g.worldTreeMaso,stage:g.worldTreeStage,slimes:g.slimes.length,maxStage:g.maxStage}))).toEqual({maso:900,donated:1000,stage:1,slimes:2,maxStage:101});
 });

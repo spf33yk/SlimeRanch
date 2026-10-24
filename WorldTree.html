@@ -4,13 +4,24 @@
 .ui-v2 .world-tree-scene::before{position:absolute;inset:0;z-index:0;content:"";background:inherit;filter:blur(18px) brightness(.62);transform:scale(1.06);}
 .ui-v2 .world-tree-art{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;transition:opacity .35s ease;}
 .ui-v2 .world-tree-art.is-changing{opacity:.25;}
-.ui-v2 .world-tree-vignette{position:absolute;z-index:2;inset:0;pointer-events:none;background:linear-gradient(180deg,#080c1330 0%,transparent 25%,transparent 58%,#090e13d9 100%),linear-gradient(90deg,#080c1320,transparent 22%,transparent 78%,#080c1320);}
-.ui-v2 .world-tree-actions{position:absolute;z-index:3;right:0;bottom:0;left:0;display:flex;align-items:stretch;justify-content:center;gap:12px;padding:22px clamp(12px,4vw,64px) max(22px,env(safe-area-inset-bottom));}
-.ui-v2 .world-tree-actions button{position:relative;display:flex;min-height:66px;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;border:2px solid #dfc376;border-radius:5px;color:#fff4d0;font:inherit;font-size:clamp(14px,1.35vw,18px);font-weight:900;text-shadow:0 2px 3px #000b;cursor:pointer;box-shadow:0 5px 16px #0009,inset 0 1px #fff4;transition:filter .15s,transform .15s,border-color .15s;}
-.ui-v2 .world-tree-actions button:hover:not(:disabled){filter:brightness(1.14);transform:translateY(-2px);}
+.ui-v2 .world-tree-aura{position:absolute;z-index:2;inset:-10%;overflow:hidden;pointer-events:none;opacity:var(--aura-power,.08);transition:opacity 1.2s ease;mix-blend-mode:screen;}
+.ui-v2 .world-tree-aura::before,.ui-v2 .world-tree-aura::after{position:absolute;inset:0;content:"";}
+.ui-v2 .world-tree-aura::before{background:radial-gradient(ellipse at 50% 46%,#fff8cf4d 0%,#f7d77830 22%,#aee5bb20 42%,transparent 68%);animation:world-tree-breathe 4.8s ease-in-out infinite alternate;}
+.ui-v2 .world-tree-aura::after{inset:-35%;background:repeating-conic-gradient(from 0deg at 50% 50%,#fff2ad20 0deg 2deg,transparent 2deg 17deg);-webkit-mask-image:radial-gradient(ellipse,#000 0%,transparent 68%);mask-image:radial-gradient(ellipse,#000 0%,transparent 68%);animation:world-tree-rays 90s linear infinite;}
+@keyframes world-tree-breathe{from{transform:scale(.92);filter:brightness(.75)}to{transform:scale(1.12);filter:brightness(1.4)}}
+@keyframes world-tree-rays{to{transform:rotate(360deg)}}
+.ui-v2 .world-tree-scene.is-awakened .world-tree-art{filter:drop-shadow(0 0 18px #f6de8d45);}
+.ui-v2 .world-tree-vignette{position:absolute;z-index:3;inset:0;pointer-events:none;background:linear-gradient(180deg,#080c1330 0%,transparent 25%,transparent 58%,#090e13d9 100%),linear-gradient(90deg,#080c1320,transparent 22%,transparent 78%,#080c1320);}
+.ui-v2 .world-tree-actions{position:absolute;z-index:4;right:0;bottom:0;left:0;display:flex;align-items:stretch;justify-content:center;gap:12px;padding:22px clamp(12px,4vw,64px) max(22px,env(safe-area-inset-bottom));}
+.ui-v2 .world-tree-actions button{position:relative;display:flex;min-height:72px;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;border:2px solid #f3d98e;border-radius:7px;color:#fff4d0;font:inherit;font-size:clamp(14px,1.35vw,18px);font-weight:900;letter-spacing:.04em;text-shadow:0 2px 3px #000b;cursor:pointer;box-shadow:0 0 0 1px #593e1d,inset 0 1px #fff8,0 0 22px #f0cb6845,0 8px 22px #000b;transition:filter .2s,transform .2s,border-color .2s,box-shadow .2s;}
+.ui-v2 .world-tree-actions button::before{position:absolute;inset:3px;content:"";pointer-events:none;border:1px solid #fff5;border-radius:4px;}
+.ui-v2 .world-tree-actions button::after{position:absolute;top:-60%;left:-40%;width:34%;height:220%;content:"";pointer-events:none;background:linear-gradient(90deg,transparent,#fff6,transparent);transform:rotate(24deg);transition:left .7s ease;}
+.ui-v2 .world-tree-actions button:hover:not(:disabled){filter:brightness(1.2);transform:translateY(-3px);box-shadow:0 0 0 1px #593e1d,inset 0 1px #fff9,0 0 32px #f0cb6880,0 11px 25px #000b;}
+.ui-v2 .world-tree-actions button:hover:not(:disabled)::after{left:115%;}
 .ui-v2 .world-tree-actions button:focus-visible{outline:3px solid #fff3b8;outline-offset:3px;}
-.ui-v2 .world-tree-primary{width:min(420px,54vw);background:linear-gradient(180deg,#65794b,#354d36 58%,#263a30);}
-.ui-v2 .world-tree-primary.is-ascension{border-color:#fff0a1;background:linear-gradient(180deg,#a58340,#71542b 58%,#483622);}
+.ui-v2 .world-tree-primary{width:min(460px,56vw);background:radial-gradient(ellipse at 50% 0%,#9bb876 0%,transparent 68%),linear-gradient(180deg,#62774b,#354d36 58%,#263a30);}
+.ui-v2 .world-tree-primary.is-ascension{border-color:#fff4b5;background:radial-gradient(ellipse at 50% 0%,#ffefaa 0%,transparent 75%),linear-gradient(180deg,#b18b43,#795b2d 58%,#493923);animation:world-tree-button-glow 1.8s ease-in-out infinite alternate;}
+@keyframes world-tree-button-glow{to{box-shadow:0 0 0 1px #fff1b7,inset 0 1px #fff,0 0 38px #ffe18aa8,0 0 12px #ffd768;}}
 .ui-v2 .world-tree-primary:disabled{cursor:default;filter:grayscale(.55);opacity:.78;}
 .ui-v2 .world-tree-progress{position:relative;z-index:0;max-width:100%;font-size:11px;font-weight:700;color:#e8e2cb;font-variant-numeric:tabular-nums;}
 .ui-v2 .world-tree-skills{width:min(300px,38vw);border-color:#a9bdc5!important;background:linear-gradient(180deg,#485d68,#2a3942 65%,#1c292f)!important;}
@@ -34,6 +45,10 @@
 .ui-v2 .world-tree-ascension-dialog label{display:block;margin:14px 0 6px;color:#d2e5e0;font-weight:800;}
 .ui-v2 .world-tree-ascension-dialog select{width:100%;min-height:46px;padding:8px 10px;border:1px solid #69777b;border-radius:4px;background:#1b2126;color:#f2eddf;font:inherit;}
 .ui-v2 .world-tree-ascension-dialog .world-tree-carry-preview{min-height:38px;margin:8px 0;padding:9px 11px;border:1px solid #52605a;border-radius:4px;background:#202a29;color:#c6d6c5;font-size:12px;line-height:1.6;}
+.ui-v2 .world-tree-ascension-video-layer{position:fixed;z-index:10000;inset:0;display:grid;place-items:center;overflow:hidden;background:#020507;color:#fff1ba;}
+.ui-v2 .world-tree-ascension-video-layer[hidden]{display:none;}
+.ui-v2 .world-tree-ascension-video-layer video{width:100%;height:100%;object-fit:cover;}
+.ui-v2 .world-tree-ascension-video-layer p{position:absolute;bottom:max(24px,env(safe-area-inset-bottom));margin:0;padding:8px 16px;border:1px solid #f5dfa35c;border-radius:4px;background:#090c10a8;color:#fff3c5;font-size:clamp(13px,2vw,18px);letter-spacing:.18em;text-shadow:0 0 16px #ffdf72;}
 @media(max-width:700px){
  .ui-v2 .world-tree-scene{height:calc(100dvh - 155px);min-height:440px;max-height:760px;background-position:center;}
  .ui-v2 .world-tree-art{object-fit:cover;object-position:center center;}
@@ -44,10 +59,10 @@
  .ui-v2 .world-tree-skill{padding:11px;}
 }
 @media(max-width:700px) and (orientation:landscape){.ui-v2 .world-tree-scene{height:calc(100dvh - 130px);min-height:300px}.ui-v2 .world-tree-actions{flex-direction:row;align-items:end}.ui-v2 .world-tree-actions button{min-height:54px}.ui-v2 .world-tree-primary{width:min(420px,58vw)}.ui-v2 .world-tree-skills{width:min(280px,36vw)}}
-@media(prefers-reduced-motion:reduce){.ui-v2 .world-tree-art,.ui-v2 .world-tree-actions button{transition:none}}
+@media(prefers-reduced-motion:reduce){.ui-v2 .world-tree-art,.ui-v2 .world-tree-actions button{transition:none}.ui-v2 .world-tree-aura::before,.ui-v2 .world-tree-aura::after,.ui-v2 .world-tree-primary.is-ascension{animation:none}}
 </style>
 <script>
-const WORLD_TREE_COSTS=[1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e10,1e11,1e12];
+const WORLD_TREE_COSTS=[1e3,2500,5000,9000,15000,23000,33000,46000,62000,0];
 const WORLD_TREE_SKILLS={
  vitality:{name:'根の守り',icon:'🛡️',description:'チームの最大HPが1段階ごとに10%上昇。',costs:[1,1,2,3,5]},
  might:{name:'大樹の力',icon:'⚔️',description:'チームの攻撃力が1段階ごとに5%上昇。',costs:[1,1,2,3,5]},
@@ -63,7 +78,11 @@ function worldTreeEnsure(){
  for(const [key,skill] of Object.entries(WORLD_TREE_SKILLS))g.worldTreeSkills[key]=Math.max(0,Math.min(skill.costs.length,Math.floor(Number(g.worldTreeSkills[key])||0)));
 }
 function worldTreeCost(){return WORLD_TREE_COSTS[g.worldTreeStage-1]||0}
-function worldTreeAscensionReward(){return Math.max(1,Math.floor(Math.max(1,Number(g.maxStage)||1)*(g.worldTreeStage+1)/15))}
+function worldTreeMinimumBreakthrough(){return Math.min(1000,Math.max(1,g.worldTreeStage)*100)}
+function worldTreeHighestBreakthrough(){return Math.max(0,...Object.keys(g.clearedStages||{}).filter(stage=>g.clearedStages[stage]).map(Number).filter(Number.isFinite))}
+function worldTreeBreakthroughReached(){return worldTreeHighestBreakthrough()>=worldTreeMinimumBreakthrough()}
+function worldTreeAscensionReward(){return Math.max(1,Math.floor(worldTreeMinimumBreakthrough()/40))}
+function worldTreeGameCleared(){return g.worldTreeStage>=10&&!!g.clearedStages?.[1000]}
 function worldTreeArtPath(stage){return 'assets/game-art/world-tree/stage-'+String(stage).padStart(2,'0')+'.webp'}
 function worldTreeSelectedMonster(){return g.slimes.find(monster=>monster.id===Number(document.getElementById('worldTreeCarryMonster')?.value))||null}
 function worldTreeRenderCarryPreview(){
@@ -75,29 +94,44 @@ function worldTreeRenderCarryPreview(){
 }
 function worldTreeOpenAscension(){
  worldTreeEnsure();const dialog=document.getElementById('worldTreeAscensionDialog'),select=document.getElementById('worldTreeCarryMonster');
- if(!dialog||g.worldTreeStage>=10||g.worldTreeMaso<worldTreeCost())return;
+ if(!dialog||g.worldTreeStage>=10||g.worldTreeMaso<worldTreeCost()||!worldTreeBreakthroughReached())return;
  select.innerHTML=g.slimes.map(monster=>'<option value="'+monster.id+'">'+(monster.id===Number(g.main)?'★ メイン · ':monster.id===Number(g.sub)?'サブ · ':'')+monsterDisplayName(monster)+' · Lv.'+monster.level+' · '+getType(monster)+'</option>').join('');
- select.value=String(g.main??g.slimes[0]?.id??'');document.getElementById('worldTreeAscensionRewardText').textContent='今回の獲得：'+fmt(worldTreeAscensionReward())+' EP　／　引き継ぐ魔素：'+fmt(g.maso)+'　／　世界樹：第'+g.worldTreeStage+'段階 → 第'+(g.worldTreeStage+1)+'段階';
+ select.value=String(g.main??g.slimes[0]?.id??'');document.getElementById('worldTreeAscensionRewardText').textContent='突破確認：STAGE '+worldTreeMinimumBreakthrough()+'　／　今回の獲得：'+fmt(worldTreeAscensionReward())+' EP　／　引き継ぐ魔素：'+fmt(g.maso)+'　／　世界樹：第'+g.worldTreeStage+'段階 → 第'+(g.worldTreeStage+1)+'段階';
  worldTreeRenderCarryPreview();dialog.showModal();sfx('tap');
 }
 function worldTreeAscend(monsterId){
  worldTreeEnsure();const cost=worldTreeCost(),monster=g.slimes.find(candidate=>candidate.id===Number(monsterId));
- if(g.worldTreeStage>=10||!cost||g.worldTreeMaso<cost||!monster)return false;
+ if(g.worldTreeStage>=10||!cost||g.worldTreeMaso<cost||!worldTreeBreakthroughReached()||!monster)return false;
  const reward=worldTreeAscensionReward(),carriedMonster=JSON.parse(JSON.stringify(monster));carriedMonster.locked=true;
  const equipment={...(g.treasureEquip||{main:null,sub:null})},selectedSlot=Number(monster.id)===Number(g.sub)?'sub':'main';
  const carry={maso:Number(g.maso)||0,worldTreeStage:g.worldTreeStage+1,worldTreeEnergy:g.worldTreeEnergy+reward,worldTreeSkills:{...g.worldTreeSkills},treasureChests:JSON.parse(JSON.stringify(g.treasureChests||[])),treasureCharms:JSON.parse(JSON.stringify(g.treasureCharms||[])),treasureEquip:{main:selectedSlot==='sub'?(equipment.sub||null):(equipment.main||null),sub:null},treasureNextId:Math.max(1,Number(g.treasureNextId)||1),seenSpecies:{...(g.seenSpecies||{})},seenEnemies:{...(g.seenEnemies||{})},nextId:Math.max(Number(g.nextId)||1,Number(carriedMonster.id)+1),autoNext:!!g.autoNext,firstFusionUsed:!!g.firstFusionUsed};
  Object.assign(g,fresh(),carry,{worldTreeMaso:0,slimes:[carriedMonster],main:carriedMonster.id,sub:null,monsterCapacity:100,tiles:makeTiles(2),stage:1,maxStage:1,enemyHP:36,teamHP:1,won:false,clearedStages:{},kills:0,wins:0,fails:0,hearts:0,heartItems:[],logs:[],bLogs:[],autoFight:false});
  g.teamHP=teamMax();g.enemyHP=enemyMax(1);document.getElementById('worldTreeAscensionDialog').close();sfx('win');log('🌳 アセンション完了：'+monsterDisplayName(carriedMonster)+'・魔素・おまもりと装備を引き継ぎ、エネルギーポイント +'+reward);save();render();return true;
 }
+async function worldTreePlayAscension(monsterId){
+ let layer=document.getElementById('worldTreeAscensionVideoLayer');
+ if(!layer){layer=document.createElement('div');layer.id='worldTreeAscensionVideoLayer';layer.className='world-tree-ascension-video-layer';layer.innerHTML='<video id="worldTreeAscensionVideo" playsinline muted preload="auto" aria-label="世界樹が輝きながら成長するアセンション映像"><source src="assets/game-art/world-tree/ascension.webm" type="video/webm"></video><p role="status">世界樹の祈りが、光へと昇華する…</p>';document.body.appendChild(layer)}
+ const video=document.getElementById('worldTreeAscensionVideo');
+ document.getElementById('worldTreeAscensionDialog').close();
+ if(!layer||!video||matchMedia('(prefers-reduced-motion: reduce)').matches){worldTreeAscend(monsterId);return}
+ layer.hidden=false;video.currentTime=0;
+ const finish=()=>{video.onended=null;video.onerror=null;layer.hidden=true;worldTreeAscend(monsterId)};
+ video.onended=finish;video.onerror=finish;
+ try{await video.play()}catch{finish()}
+}
 function worldTreeRender(){
  const scene=document.querySelector('.world-tree-scene');if(!scene||!g)return;worldTreeEnsure();
+ if(!scene.querySelector('.world-tree-aura')){const aura=document.createElement('div');aura.className='world-tree-aura';aura.setAttribute('aria-hidden','true');scene.insertBefore(aura,scene.querySelector('.world-tree-vignette'))}
  const image=document.getElementById('worldTreeArt'),primary=document.getElementById('worldTreePrimary'),label=document.getElementById('worldTreeActionLabel'),progress=document.getElementById('worldTreeProgress'),skillsButton=document.getElementById('worldTreeSkillsButton');
+ const required=worldTreeMinimumBreakthrough(),highest=worldTreeHighestBreakthrough(),breakthrough=worldTreeBreakthroughReached(),complete=worldTreeGameCleared();scene.style.setProperty('--aura-power',(.08+g.worldTreeStage*.07).toFixed(2));scene.classList.toggle('is-awakened',g.worldTreeStage>=4);
  const art=worldTreeArtPath(g.worldTreeStage);if(scene.dataset.art!==art){scene.dataset.art=art;scene.style.backgroundImage='linear-gradient(#10151a33,#10151a33),url("'+art+'")';}if(image.getAttribute('src')!==art){image.classList.add('is-changing');image.onload=()=>image.classList.remove('is-changing');image.src=art;image.alt='世界樹 成長段階 '+g.worldTreeStage+' / 10';}
- const max=worldTreeCost(),remaining=Math.max(0,max-g.worldTreeMaso),ready=g.worldTreeStage<10&&remaining<=0;
+ const max=worldTreeCost(),remaining=Math.max(0,max-g.worldTreeMaso),ready=g.worldTreeStage<10&&remaining<=0&&breakthrough;
  primary.disabled=g.worldTreeStage>=10;primary.classList.toggle('is-ascension',ready);
- if(g.worldTreeStage>=10){label.textContent='世界樹は完全に復活した';progress.textContent='全10段階を達成';}
- else if(ready){label.textContent='🌟 アセンション';progress.textContent='獲得 '+worldTreeAscensionReward()+' EP';}
- else {label.textContent='🌱 魔素を捧げる';progress.textContent=fmt(g.worldTreeMaso)+' / '+fmt(max)+' 魔素';}
+ if(complete){label.textContent='🌟 世界樹が完全復活 · ゲームクリア';progress.textContent='全10段階 · STAGE 1000突破達成';}
+ else if(g.worldTreeStage>=10){label.textContent='🌳 世界樹は完全に復活した';progress.textContent='STAGE 1000を突破してゲームクリア';}
+ else if(ready){label.textContent='🌟 アセンション';progress.textContent='獲得 '+worldTreeAscensionReward()+' EP · STAGE '+required+'突破';}
+ else if(remaining<=0){label.textContent='🔒 突破条件を達成しよう';progress.textContent='STAGE '+required+'クリア · 現在の最高突破 '+highest;}
+ else {label.textContent='🌱 魔素を捧げる';progress.textContent=fmt(g.worldTreeMaso)+' / '+fmt(max)+' 魔素 · STAGE '+required+'突破';}
  const unlocked=g.worldTreeStage>=2;skillsButton.disabled=!unlocked;skillsButton.textContent=unlocked?'🌿 スキルツリー　·　'+fmt(g.worldTreeEnergy)+' EP':'🔒 スキルツリー（2段階目で解放）';
  if(!document.getElementById('worldTreeSkillsView')?.hidden)worldTreeRenderSkills();
 }
@@ -108,7 +142,7 @@ function worldTreeRenderSkills(){
 }
 function worldTreeDonate(){
  worldTreeEnsure();const cost=worldTreeCost();if(!cost||g.worldTreeStage>=10)return;
- if(g.worldTreeMaso>=cost){worldTreeOpenAscension();return;}
+ if(g.worldTreeMaso>=cost){if(!worldTreeBreakthroughReached()){$('worldTreeProgress').textContent='STAGE '+worldTreeMinimumBreakthrough()+'クリア · 現在 '+worldTreeHighestBreakthrough();sfx('fail');return}worldTreeOpenAscension();return;}
  const amount=Math.min(Math.max(0,Number(g.maso)||0),cost-g.worldTreeMaso);if(amount<=0){sfx('fail');return;}
  g.maso-=amount;g.worldTreeMaso+=amount;sfx('buy');save();render();
 }
@@ -128,7 +162,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  document.getElementById('worldTreePrimary').addEventListener('click',worldTreeDonate);
  document.getElementById('worldTreeCarryMonster').addEventListener('change',worldTreeRenderCarryPreview);
  document.getElementById('worldTreeAscensionCancel').addEventListener('click',()=>document.getElementById('worldTreeAscensionDialog').close());
- document.getElementById('worldTreeAscensionAccept').addEventListener('click',()=>worldTreeAscend(document.getElementById('worldTreeCarryMonster').value));
+ document.getElementById('worldTreeAscensionAccept').addEventListener('click',()=>worldTreePlayAscension(document.getElementById('worldTreeCarryMonster').value));
  document.getElementById('worldTreeSkillsButton').addEventListener('click',()=>{if(g.worldTreeStage>=2){worldTreeRenderSkills();document.getElementById('worldTreeMainView').hidden=true;document.getElementById('worldTreeSkillsView').hidden=false;sfx('tab')}});
  document.getElementById('worldTreeSkillsClose').addEventListener('click',()=>{document.getElementById('worldTreeSkillsView').hidden=true;document.getElementById('worldTreeMainView').hidden=false;sfx('tab')});
  document.getElementById('worldTreeSkillList').addEventListener('click',event=>{const button=event.target.closest('[data-world-tree-skill]');if(button)worldTreeBuySkill(button.dataset.worldTreeSkill)});
