@@ -1148,7 +1148,7 @@ test('game controls read as raised actions beside the quieter display panels',as
 test('world tree accepts capped mana, ascends for stage-based EP, and permanently upgrades the skill tree',async({page})=>{
  await page.setViewportSize({width:1920,height:1080});
  await page.goto('./');await page.locator('[data-tab="worldtree"]').click();
- await expect(page.locator('#worldtree button')).toHaveCount(2);
+ await expect(page.locator('#worldTreeMainView button')).toHaveCount(2);
  const desktopScene=await page.locator('.world-tree-scene').boundingBox();expect(desktopScene.x).toBeGreaterThanOrEqual(-8);expect(desktopScene.width).toBe(1920);
  await page.screenshot({path:test.info().outputPath('world-tree-first-stage.png')});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-01\.webp$/);
@@ -1162,7 +1162,7 @@ test('world tree accepts capped mana, ascends for stage-based EP, and permanentl
  expect(await page.evaluate(()=>({stage:g.worldTreeStage,energy:g.worldTreeEnergy}))).toEqual({stage:2,energy:1});
  await expect(page.locator('#worldTreeArt')).toHaveAttribute('src',/stage-02\.webp$/);
  await expect(page.locator('#worldTreeSkillsButton')).toBeEnabled();
- await page.locator('#worldTreeSkillsButton').click();await expect(page.locator('#worldTreeSkillsDialog')).toBeVisible();
+ await page.locator('#worldTreeSkillsButton').click();await expect(page.locator('#worldTreeMainView')).toBeHidden();await expect(page.locator('#worldTreeSkillsView')).toBeVisible();
  const baseMasoGain=await page.evaluate(()=>teamFarmStats().masoGain);
  await page.locator('[data-world-tree-skill="resonance"]').click();
  const upgraded=await page.evaluate(()=>({ep:g.worldTreeEnergy,level:g.worldTreeSkills.resonance,masoGain:teamFarmStats().masoGain}));expect(upgraded.ep).toBe(0);expect(upgraded.level).toBe(1);expect(upgraded.masoGain).toBe(baseMasoGain+5);
